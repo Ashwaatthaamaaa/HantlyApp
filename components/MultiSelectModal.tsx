@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   View,
@@ -11,26 +11,8 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
-// Approximate Colors - Replace with exact Figma values
-const COLORS = {
-  background: '#FFFFFF',
-  textPrimary: '#333333',
-  textSecondary: '#888888',
-  accent: '#007AFF', // Used for checkmarks/radios
-  modalBackdrop: 'rgba(0, 0, 0, 0.5)',
-  borderColor: '#E0E0E0',
-  buttonBg: '#696969', // Match other buttons
-  buttonText: '#FFFFFF',
-  selectedItemBg: '#EFEFEF',
-};
-
-// Define the shape of the data items
-interface DataItem {
-  id: string;
-  name: string;
-}
-
-// Define the props for the component
+// --- Interfaces ---
+interface DataItem { id: string; name: string; }
 interface SelectModalProps {
   visible: boolean;
   title: string;
@@ -42,8 +24,15 @@ interface SelectModalProps {
   onConfirmSingle?: (selectedId: string | null) => void;
   onConfirmMulti?: (selectedIds: string[]) => void;
 }
+// --- Colors ---
+const COLORS = { // Use your actual color constants
+  background: '#FFFFFF', textPrimary: '#333333', textSecondary: '#888888',
+  accent: '#007AFF', modalBackdrop: 'rgba(0, 0, 0, 0.5)', borderColor: '#E0E0E0',
+  buttonBg: '#696969', buttonText: '#FFFFFF', selectedItemBg: '#EFEFEF',
+};
 
-export default function SelectModal({ // Ensure component name matches import if changed
+
+export default function SelectModal({
   visible,
   title,
   data,
@@ -56,26 +45,37 @@ export default function SelectModal({ // Ensure component name matches import if
 }: SelectModalProps) {
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Ref to track if the modal has just been opened
+  const isInitialMount = useRef(true);
 
-  // Effect to set initial state when modal becomes visible or mode changes
+  // Updated useEffect to initialize ONLY when modal opens
   useEffect(() => {
     if (visible) {
-      const initialSet = mode === 'single' && initialSelectedId
-                          ? new Set([initialSelectedId])
-                          : new Set(initialSelectedIds);
-      setSelectedIds(initialSet);
+        // Only initialize on the first render after becoming visible
+        if (isInitialMount.current) {
+            console.log(`Modal "${title}" - Initializing selection.`);
+            const initialSet = mode === 'single' && initialSelectedId
+                                ? new Set([initialSelectedId])
+                                : new Set(initialSelectedIds || []); // Use || [] for safety if prop could be undefined
+            setSelectedIds(initialSet);
+            isInitialMount.current = false; // Mark initialization as done
+        }
+    } else {
+        // Reset the flag when the modal is closed/not visible
+        isInitialMount.current = true;
     }
+    // Depend only on visibility and the initial props themselves
   }, [visible, mode, initialSelectedId, initialSelectedIds]);
 
 
   const handleSelectItem = (id: string) => {
     if (mode === 'single') {
+      // In single mode, update immediately and close
       setSelectedIds(new Set([id]));
-      if (onConfirmSingle) {
-        onConfirmSingle(id);
-      }
-      onClose(); // Close immediately on single select
-    } else { // Multi-select mode
+      if (onConfirmSingle) { onConfirmSingle(id); }
+      onClose();
+    } else {
+      // In multi mode, just toggle the selection in the internal state
       setSelectedIds((prevSelectedIds) => {
         const newSelectedIds = new Set(prevSelectedIds);
         if (newSelectedIds.has(id)) { newSelectedIds.delete(id); }
@@ -93,7 +93,7 @@ export default function SelectModal({ // Ensure component name matches import if
     onClose();
   };
 
-  // Consistent RenderItem Function
+  // Render list item
   const renderItem = ({ item }: { item: DataItem }) => {
       const isSelected = selectedIds.has(item.id);
       return (
@@ -104,21 +104,15 @@ export default function SelectModal({ // Ensure component name matches import if
           {mode === 'multi' ? (
             <MaterialCommunityIcons
               name={isSelected ? 'checkbox-marked' : 'checkbox-blank-outline'}
-              size={24}
-              color={isSelected ? COLORS.accent : COLORS.textSecondary}
-              style={{ marginRight: 15 }} // Ensure consistent margin
-            />
-          ) : (
-             <View style={styles.iconPlaceholder} /> // Placeholder for alignment
-          )}
-          {/* Use specific style based on mode for consistent text indent */}
+              size={24} color={isSelected ? COLORS.accent : COLORS.textSecondary} style={{ marginRight: 15 }} />
+          ) : ( <View style={styles.iconPlaceholder} /> )}
           <Text style={mode === 'multi' ? styles.itemTextMulti : styles.itemText}>{item.name}</Text>
            {mode === 'single' && isSelected && (
                <Ionicons name="checkmark" size={24} color={COLORS.accent} style={styles.checkmarkIcon} />
            )}
         </TouchableOpacity>
       );
-    };
+  };
 
   return (
     <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
@@ -140,17 +134,18 @@ export default function SelectModal({ // Ensure component name matches import if
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 style={styles.list}
-                extraData={selectedIds} // Ensures re-render on selection change
+                contentContainerStyle={styles.listContentContainer}
+                extraData={selectedIds} // Important for list item re-renders
             />
 
-             {/* --- Confirm Button (Only for Multi-Select Mode) --- */}
+            {/* Confirm Button */}
             {mode === 'multi' && (
-              <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmMultiPress}>
-                <Text style={styles.confirmButtonText}>Confirm Selection</Text>
-              </TouchableOpacity>
+              <View style={styles.confirmButtonContainer}>
+                  <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmMultiPress}>
+                    <Text style={styles.confirmButtonText}>Confirm Selection</Text>
+                  </TouchableOpacity>
+              </View>
             )}
-            {/* --- End Confirm Button --- */}
-
           </View>
         </SafeAreaView>
       </View>
@@ -160,19 +155,101 @@ export default function SelectModal({ // Ensure component name matches import if
 
 // --- Styles ---
 const styles = StyleSheet.create({
-    modalBackdrop: { flex: 1, backgroundColor: COLORS.modalBackdrop, justifyContent: 'center', alignItems: 'center' },
-    safeAreaContainer: { width: '90%', maxHeight: '80%', backgroundColor: COLORS.background, borderRadius: 10, overflow: 'hidden'},
-    modalContent: { flexGrow: 1, paddingBottom: 10, },
-    header: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 15, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor, position: 'relative' },
-    title: { fontSize: 18, fontWeight: 'bold', color: COLORS.textPrimary, textAlign: 'center', flex: 1 },
-    closeButton: { padding: 5, position: 'absolute', right: 10, top: 10 },
-    list: { flexGrow: 1 },
-    itemContainer: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor },
-    itemSelected: { backgroundColor: COLORS.selectedItemBg },
-    iconPlaceholder: { width: 24, marginRight: 15 }, // For alignment in single-select
-    itemText: { flex: 1, fontSize: 16, color: COLORS.textPrimary, marginLeft: 0 /* Reset margin when using placeholder */ },
-    itemTextMulti: { flex: 1, fontSize: 16, color: COLORS.textPrimary, marginLeft: 0 /* No margin needed with explicit icon margin */ }, // Refined multi style
-    checkmarkIcon: { marginLeft: 10 },
-    confirmButton: { backgroundColor: COLORS.buttonBg, paddingVertical: 15, borderRadius: 8, alignItems: 'center', marginHorizontal: 20, marginTop: 15 },
-    confirmButtonText: { color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold' },
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: COLORS.modalBackdrop,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    safeAreaContainer: {
+        width: '90%',
+        maxHeight: '80%', // Limit modal height
+        backgroundColor: COLORS.background,
+        borderRadius: 10,
+        overflow: 'hidden',
+    },
+    modalContent: {
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 15,
+        paddingHorizontal: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.borderColor,
+        position: 'relative',
+        flexShrink: 0, // Prevent header from shrinking
+    },
+    title: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: COLORS.textPrimary,
+        textAlign: 'center',
+        flex: 1 // Allow title to take space and center
+    },
+    closeButton: {
+        padding: 5, // Easier to press
+        position: 'absolute',
+        right: 10,
+        top: 10,
+    },
+    list: {
+        flex: 1, // Allow list to take available space
+        width: '100%',
+    },
+    listContentContainer: {
+        paddingBottom: 10, // Padding at the end of list content
+    },
+    itemContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.borderColor
+    },
+    itemSelected: {
+        backgroundColor: COLORS.selectedItemBg
+    },
+    iconPlaceholder: { // Used in single select for alignment
+        width: 24,
+        marginRight: 15
+    },
+    itemText: {
+        flex: 1,
+        fontSize: 16,
+        color: COLORS.textPrimary,
+        marginLeft: 0 // When using placeholder
+    },
+    itemTextMulti: {
+        flex: 1,
+        fontSize: 16,
+        color: COLORS.textPrimary,
+        marginLeft: 0 // Margin handled by icon
+    },
+    checkmarkIcon: {
+        marginLeft: 10
+    },
+    confirmButtonContainer: {
+        padding: 15,
+        borderTopWidth: 1,
+        borderTopColor: COLORS.borderColor,
+        flexShrink: 0, // Prevent button container from shrinking
+    },
+    confirmButton: {
+        backgroundColor: COLORS.buttonBg,
+        paddingVertical: 15,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    confirmButtonText: {
+        color: COLORS.buttonText,
+        fontSize: 16,
+        fontWeight: 'bold'
+    },
 });
