@@ -1,31 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  Image,
+  Image, // Import Image component
   TouchableOpacity,
   FlatList,
-  Alert, // For placeholder actions
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'; // Example icon sets
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
+import { Ionicons } from '@expo/vector-icons';
+import RegisterTypeModal from '@/components/RegisterTypeModal'; // Import the Register Type modal
 
-// --- Placeholder Data & Icons ---
-// Replace with actual data and correct icon names/sets
-const serviceCategories = [
-  { id: '1', name: 'Cleaning', icon: 'cloud-outline', iconSet: 'ion' }, // Placeholder icon
-  { id: '2', name: 'Carpenter', icon: 'hammer-outline', iconSet: 'ion' }, // Placeholder icon
-  { id: '3', name: 'Painter', icon: 'color-palette-outline', iconSet: 'ion' }, // Placeholder icon
-  { id: '4', name: 'Electrician', icon: 'flash-outline', iconSet: 'ion' }, // Placeholder icon
-];
-// -----------------------------
+// --- Define Types based on API Response ---
+interface Service {
+  serviceId: number;
+  serviceName: string;
+  imagePath: string;
+  imageContentType: string; // Include content type for checking
+}
+
+// Interface for the item passed to FlatList/ServiceItem
+interface ServiceListItem {
+    id: string;
+    name: string;
+    imageUri?: string; // Make optional
+    iconName?: string; // Optional icon name for fallback
+    iconSet?: 'ion'; // Optional icon set (add others if needed)
+    contentType?: string; // Store content type to help decide rendering
+}
+// -----------------------------------------
+
+
+// --- Base URL ---
+const BASE_URL = 'http://3.110.124.83:2030';
+// -----------------
 
 // --- Approximate Colors ---
-// Use your specific theme colors from Figma
 const COLORS = {
   background: '#F8F8F8',
   textPrimary: '#333333',
@@ -35,30 +50,65 @@ const COLORS = {
   buttonBg: '#696969', // Dark grey/brown buttons
   buttonText: '#FFFFFF',
   cardBg: '#FFFFFF',
-  iconColor: '#696969', // Match button color? Adjust
+  iconColor: '#696969', // Color for fallback icon
   borderColor: '#E0E0E0',
-  bannerPlaceholderBg: '#E0E0E0',
+  bannerPlaceholderBg: '#E0E0E0', // Kept in case image fails to load
+  errorText: '#D9534F', // Added for error messages
 };
 
-// --- Service Item Component ---
+// --- Service Item Component with Fallback ---
 interface ServiceItemProps {
-    item: { id: string; name: string; icon: string; iconSet: string };
+    item: ServiceListItem;
 }
 const ServiceItem: React.FC<ServiceItemProps> = ({ item }) => {
+    const router = useRouter();
+
     const handleItemPress = () => {
         Alert.alert("Service Pressed", item.name);
-        // Navigate to specific service category: router.push(`/services?category=${item.id}`);
+        // Navigate to specific service category:
+        // router.push(`/services?category=${item.id}`);
     }
 
-    const renderIcon = () => {
-        if (item.iconSet === 'material') {
-            return <MaterialCommunityIcons name={item.icon as any} size={32} color={COLORS.iconColor} />;
+    // Decide whether to render Image or Icon
+    const renderContent = () => {
+        // Prioritize fallback icon if explicitly set (e.g., for Carpenter)
+        if (item.iconName && item.iconSet === 'ion') {
+            return (
+                <Ionicons
+                    name={item.iconName as any}
+                    size={60}
+                    color={COLORS.iconColor}
+                    style={styles.serviceItemIcon}
+                />
+            );
         }
-        return <Ionicons name={item.icon as any} size={32} color={COLORS.iconColor} />;
+        // Otherwise, attempt to render the image if URI is present and looks valid
+        else if (item.imageUri && item.contentType?.startsWith('image/')) {
+             return (
+                 <Image
+                     source={{ uri: item.imageUri }}
+                     style={styles.serviceItemImage}
+                     resizeMode="contain"
+                     // onError={(e) => console.log(`Failed to load image: ${item.imageUri}`)} // Optional error handling
+                 />
+             );
+        }
+        // Default fallback icon
+        else {
+             return (
+                 <Ionicons
+                     name="help-circle-outline"
+                     size={60}
+                     color={COLORS.textSecondary}
+                     style={styles.serviceItemIcon}
+                 />
+             );
+        }
     };
+
     return (
         <TouchableOpacity style={styles.serviceItem} onPress={handleItemPress}>
-            {renderIcon()}
+            {renderContent()}
             <ThemedText style={styles.serviceItemText}>{item.name}</ThemedText>
         </TouchableOpacity>
     );
@@ -68,31 +118,78 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item }) => {
 // --- Main Home Screen Component ---
 export default function HomeScreen() {
   const router = useRouter();
+  const [services, setServices] = useState<ServiceListItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLoginPress = () => {
-    router.push('/login');
-  };
+  // State for the Register Type modal
+  const [isRegisterModalVisible, setIsRegisterModalVisible] = useState<boolean>(false);
 
-  const handleRegisterPress = () => {
-     router.push('/register'); // Or '/register-partner' depending on button's intent? Design just says Register.
-  };
+  // --- Fetch Services ---
+  useEffect(() => {
+    const fetchServices = async () => {
+      setIsLoading(true); setError(null);
+      const url = `${BASE_URL}/api/Service/GetServiceList`;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+        const contentType = response.headers.get("content-type");
+        if (contentType?.includes("application/json")) {
+            const data: Service[] = await response.json();
+            // Map API data, applying fallback logic for Carpenter
+            const formattedData: ServiceListItem[] = data.map(service => {
+                const baseItem = { id: service.serviceId.toString(), name: service.serviceName, contentType: service.imageContentType };
+                if (service.serviceId === 2 || service.serviceName === "Carpenter" || !service.imageContentType?.startsWith('image/')) {
+                    return { ...baseItem, iconName: 'hammer-outline', iconSet: 'ion' } as ServiceListItem;
+                } else {
+                    return { ...baseItem, imageUri: service.imagePath } as ServiceListItem;
+                }
+            });
+            setServices(formattedData);
+        } else { throw new Error("Received non-JSON response"); }
+      } catch (err: any) { console.error("Failed to fetch services:", err); setError(`Failed to load services: ${err.message}`); }
+      finally { setIsLoading(false); }
+    };
+    fetchServices();
+  }, []);
 
-  const handleNewJobRequestPress = () => {
-     Alert.alert("Placeholder", "Navigate to New Job Request screen");
-     // router.push('/new-job');
-  };
+  // --- Event Handlers ---
+  const handleLoginPress = () => router.push('/login');
+  const handleNewJobRequestPress = () => Alert.alert("Placeholder", "Navigate to New Job Request screen");
+  const handleViewAllServicesPress = () => router.push('/categories');
+  const handleUrgentJobPress = () => Alert.alert("Urgent Job", "Urgent Job 24/7 action placeholder");
+  const handleRegisterPress = () => setIsRegisterModalVisible(true); // Show modal
+  const handleSelectPartner = () => { setIsRegisterModalVisible(false); router.push('/register-partner'); };
+  const handleSelectUser = () => { setIsRegisterModalVisible(false); router.push('/register'); };
 
-   const handleViewAllServicesPress = () => {
-     router.push('/categories');
-   };
 
-   const handleUrgentJobPress = () => {
-       Alert.alert("Urgent Job", "Urgent Job 24/7 action placeholder");
-       // Add toggle logic or navigation if needed
-   }
+  // --- Render Content for FlatList ---
+  const renderListContent = () => {
+    if (isLoading) {
+      return <ActivityIndicator size="large" color={COLORS.accent} style={styles.loadingIndicator} />;
+    }
+    if (error) {
+      return <Text style={styles.errorText}>{error}</Text>;
+    }
+    if (services.length === 0) {
+        return <Text style={styles.noDataText}>No services available at the moment.</Text>;
+    }
+    return (
+      <FlatList
+         data={services}
+         renderItem={({item}) => <ServiceItem item={item} />}
+         keyExtractor={(item) => item.id}
+         numColumns={2}
+         columnWrapperStyle={styles.serviceGridRow}
+         scrollEnabled={false} // Scrolling handled by outer ScrollView
+         contentContainerStyle={styles.servicesGridContainer}
+         extraData={services}
+      />
+    );
+  }
 
+  // --- Main Return JSX ---
   return (
-    // Using edges prop to exclude bottom edge padding because of the Tab Bar
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
@@ -103,37 +200,23 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContentContainer}>
-        {/* Image Banner */}
+
+        {/* Updated Image Banner */}
         <View style={styles.bannerContainer}>
-          {/* --- Replace with your actual banner image --- */}
-          {/* Example: <Image source={require('@/assets/images/your-banner.jpg')} style={styles.bannerImage} /> */}
-          <ThemedText style={styles.bannerPlaceholder}>[Image Banner Here]</ThemedText>
-          {/* -------------------------------------------- */}
+          <Image
+             source={require('@/assets/images/banner.png')} // Path using alias
+             style={styles.bannerImage}
+             resizeMode='cover'
+           />
         </View>
 
-        {/* Services Section Header */}
+        {/* Services Section */}
         <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Services</ThemedText>
-            {/* Added TouchableOpacity for Urgent Job */}
-            <TouchableOpacity onPress={handleUrgentJobPress}>
-                <ThemedText style={styles.urgentJobText}>Urgent Job 24/7</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleViewAllServicesPress}>
-                <ThemedText style={styles.viewAllText}>View All</ThemedText>
-            </TouchableOpacity>
+            <TouchableOpacity onPress={handleUrgentJobPress}><ThemedText style={styles.urgentJobText}>Urgent Job 24/7</ThemedText></TouchableOpacity>
+            <TouchableOpacity onPress={handleViewAllServicesPress}><ThemedText style={styles.viewAllText}>View All</ThemedText></TouchableOpacity>
         </View>
-
-        {/* Services Grid */}
-        <View style={styles.servicesGridContainer}>
-          <FlatList
-             data={serviceCategories}
-             renderItem={({item}) => <ServiceItem item={item} />}
-             keyExtractor={(item) => item.id}
-             numColumns={2}
-             columnWrapperStyle={styles.serviceGridRow}
-             scrollEnabled={false} // Scrolling handled by outer ScrollView
-          />
-        </View>
+        {renderListContent()} {/* Render FlatList, Loading, or Error */}
 
          {/* Didn't Find Service Section */}
          <View style={styles.notFoundSection}>
@@ -143,33 +226,37 @@ export default function HomeScreen() {
 
         {/* Bottom Buttons */}
         <View style={styles.bottomButtonsContainer}>
-          <TouchableOpacity style={styles.button} onPress={handleNewJobRequestPress}>
-            <ThemedText style={styles.buttonText}>New Job Request</ThemedText>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={handleRegisterPress}>
-            <ThemedText style={styles.buttonText}>Register</ThemedText>
-          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleNewJobRequestPress}><ThemedText style={styles.buttonText}>New Job Request</ThemedText></TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleRegisterPress}><ThemedText style={styles.buttonText}>Register</ThemedText></TouchableOpacity>
         </View>
 
       </ScrollView>
-      {/* The actual Tab Bar is rendered by app/(tabs)/_layout.tsx */}
+
+      {/* Register Type Modal */}
+      <RegisterTypeModal
+        visible={isRegisterModalVisible}
+        onClose={() => setIsRegisterModalVisible(false)}
+        onSelectPartner={handleSelectPartner}
+        onSelectUser={handleSelectUser}
+      />
+
     </SafeAreaView>
   );
 }
 
-// --- Styles (Approximated from Untitled-2025-04-03-0805(8).jpg) ---
+// --- Styles ---
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background, // Apply background to safe area
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingVertical: 12, // Consistent padding
-    backgroundColor: '#FFFFFF', // White header background
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderColor,
   },
@@ -181,46 +268,41 @@ const styles = StyleSheet.create({
    loginText: {
      fontSize: 14,
      fontWeight: 'bold',
-     color: COLORS.accent, // Brownish accent
+     color: COLORS.accent,
    },
   scrollView: {
     flex: 1,
   },
   scrollContentContainer: {
-    paddingBottom: 20, // Padding at the end of scroll content
+    paddingBottom: 20,
   },
   bannerContainer: {
-    height: 160,
-    backgroundColor: COLORS.bannerPlaceholderBg,
-  },
-  bannerPlaceholder: {
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    paddingVertical: 20,
+    height: 160, // Adjust height as needed
+    width: '100%',
+    marginBottom: 20,
+    backgroundColor: COLORS.bannerPlaceholderBg, // Background if image fails
   },
   bannerImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover', // Or 'contain' depending on image aspect ratio
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    marginTop: 20, // Space above section header
-    marginBottom: 15, // Space below section header
+    // marginTop: 10, // Removed explicit top margin
+    marginBottom: 15,
   },
   sectionTitle: {
-    fontSize: 16, // Slightly smaller? Adjust based on Figma
+    fontSize: 16,
     fontWeight: 'bold',
     color: COLORS.textPrimary,
   },
   urgentJobText: {
       fontSize: 14,
       fontWeight: 'bold',
-      color: COLORS.urgentText, // Red color
-      // Add padding/margin if needed for spacing
+      color: COLORS.urgentText,
   },
    viewAllText: {
      fontSize: 14,
@@ -228,18 +310,18 @@ const styles = StyleSheet.create({
      fontWeight: '500',
    },
    servicesGridContainer: {
-       paddingHorizontal: 15, // Padding for the grid area
+       paddingHorizontal: 15, // Padding for the grid items
    },
   serviceGridRow: {
     justifyContent: 'space-between',
   },
   serviceItem: {
     backgroundColor: COLORS.cardBg,
-    paddingVertical: 20, // More vertical padding in cards
+    paddingVertical: 15,
     paddingHorizontal: 10,
     borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'center', // Center content vertically too
+    justifyContent: 'center',
     width: '48%',
     marginBottom: 12,
     shadowColor: '#000',
@@ -247,18 +329,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 1.41,
     elevation: 2,
-    minHeight: 120, // Give cards a minimum height
+    minHeight: 140,
+  },
+  serviceItemImage: {
+      width: 60,
+      height: 60,
+      marginBottom: 8,
+  },
+  serviceItemIcon: {
+      marginBottom: 8,
   },
   serviceItemText: {
-    marginTop: 10, // More space between icon and text
     fontSize: 14,
     textAlign: 'center',
     color: COLORS.textPrimary,
     fontWeight: '500',
+    flexShrink: 1,
+    paddingHorizontal: 4,
   },
    notFoundSection: {
      alignItems: 'center',
-     marginVertical: 25, // More vertical space around this section
+     marginVertical: 25,
      paddingHorizontal: 15,
    },
    notFoundText: {
@@ -277,9 +368,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingHorizontal: 15,
-    paddingTop: 20, // Padding above buttons
-    paddingBottom: 10, // Padding below buttons (before tab bar space)
-    // Removed top border as buttons seem separate from content above
+    paddingTop: 20,
+    paddingBottom: 10,
   },
   button: {
     backgroundColor: COLORS.buttonBg,
@@ -295,4 +385,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  loadingIndicator: {
+    marginTop: 50,
+    height: 100, // Give loading indicator space
+  },
+  errorText: {
+      color: COLORS.errorText,
+      textAlign: 'center',
+      marginTop: 20,
+      marginHorizontal: 15,
+      fontSize: 16,
+      height: 100, // Give error message space
+  },
+   noDataText: {
+       color: COLORS.textSecondary,
+       textAlign: 'center',
+       marginTop: 20,
+       marginHorizontal: 15,
+       fontSize: 16,
+       height: 100, // Give no data message space
+   }
 });
