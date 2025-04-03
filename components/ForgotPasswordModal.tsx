@@ -11,10 +11,23 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  ActivityIndicator, // Added
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
-// Approximate Colors - Replace with exact Figma values
+// --- Base URL ---
+const BASE_URL = 'http://3.110.124.83:2030';
+// -----------------
+
+// API Response Type (Generic Success/Error)
+interface ApiResponse {
+    statusCode: number;
+    statusMessage: string;
+}
+// --------------------
+
+
+// Approximate Colors - Replace with exact Figma values if different
 const COLORS = {
   background: '#FFFFFF',
   textPrimary: '#333333',
@@ -25,6 +38,8 @@ const COLORS = {
   borderColor: '#E0E0E0',
   buttonBg: '#696969', // Dark grey/brown button approximation
   buttonText: '#FFFFFF',
+  buttonDisabledBg: '#AAAAAA', // Added
+  error: '#D9534F',
 };
 
 // Define the props for the component
@@ -43,45 +58,148 @@ export default function ForgotPasswordModal({
   const [email, setEmail] = useState<string>('');
   const [isPartner, setIsPartner] = useState<boolean>(false);
   const [newPassword, setNewPassword] = useState<string>('');
-  const [otp, setOtp] = useState<string>('');
+  const [otp, setOtp] = useState<string>(''); // OTP is the 'token' in ResetPasswordModel
+
+  // *** State for API call loading status ***
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
 
   // Reset state when modal is closed or opened
   useEffect(() => {
     if (visible) {
       setStep('enterEmail');
-      // Keep email? Or clear? Let's clear for now.
-      // setEmail('');
-      setIsPartner(false);
+      // Reset fields when modal becomes visible
+      // setEmail(''); // Keep email? Let's keep it for now if user re-opens quickly
+      setIsPartner(false); // Default to user
       setNewPassword('');
       setOtp('');
+      setIsLoading(false); // Reset loading state
     }
   }, [visible]);
 
-  // --- Step 1 Logic ---
+  // --- Step 1 Logic: Send Reset Link/OTP ---
   const handleSendResetLink = async () => {
-    console.log('Sending reset link/OTP for:', { email, isPartner });
-    // --- Placeholder for API call to request password reset ---
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      Alert.alert('Email Required', 'Please enter your email address.');
+      return;
+    }
+
+    setIsLoading(true);
+    const endpoint = isPartner ? '/api/Company/ForgotPassword' : '/api/User/ForgotPassword';
+    const url = `${BASE_URL}${endpoint}`;
+
+    console.log(`--- Sending Forgot Password Request (${isPartner ? 'Partner' : 'User'}) ---`);
+    console.log(`URL: ${url}`);
+    // Spec indicates request body is just the email string, JSON encoded
+    const requestBody = JSON.stringify(trimmedEmail);
+    console.log(`Request Body: ${requestBody}`);
+
     try {
-      // await api.sendResetRequest(email, isPartner); // Example API call
-      Alert.alert('Request Sent', 'Password reset instructions/OTP sent to your email.');
-      setStep('resetPassword'); // Move to next step on success
-    } catch (error) {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // 'Accept': 'text/plain', // Optional: Server might respond non-JSON on success
+        },
+        body: requestBody,
+      });
+
+       console.log(`Response Status: ${response.status}`);
+       const responseText = await response.text(); // Read response text
+       console.log(`Raw Response Text: ${responseText}`);
+
+      if (response.ok) { // Assume 2xx status means success as per spec
+        Alert.alert(
+            'Request Sent',
+            'If an account exists for this email, password reset instructions (or OTP) have been sent.'
+        );
+        setStep('resetPassword'); // Move to next step
+      } else {
+        // Handle potential errors (e.g., 404 Not Found if email doesn't exist)
+         let errorMessage = `Failed to send request (Status: ${response.status})`;
+         // Try to parse response text for a more specific message if needed
+         // e.g., if API returns specific error messages in plain text or simple JSON
+         if (responseText) {
+             errorMessage = responseText; // Use raw text if available
+             try {
+                 const errorJson = JSON.parse(responseText);
+                 errorMessage = errorJson.statusMessage || errorJson.title || errorJson.detail || responseText;
+             } catch (e) {/* Ignore parsing error, stick with raw text */}
+         }
+         Alert.alert('Error', errorMessage);
+      }
+    } catch (error: any) {
       console.error("Error sending reset link:", error);
-      Alert.alert('Error', 'Could not send reset request. Please try again.');
+      Alert.alert('Error', `Could not send reset request. Please check your connection and try again. ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // --- Step 2 Logic ---
+  // --- Step 2 Logic: Reset Password ---
   const handleResetPassword = async () => {
-    console.log('Resetting password with:', { email, isPartner, newPassword, otp });
-     // --- Placeholder for API call to reset password ---
+    const trimmedEmail = email.trim(); // Need email again for reset API
+    if (!trimmedEmail || !newPassword || !otp) {
+        Alert.alert('Missing Information', 'Please enter the OTP and your new password.');
+        return;
+    }
+     if (newPassword.length < 8) { // Add password length check if desired
+         Alert.alert('Password Too Short', 'New password must be at least 8 characters.');
+         return;
+     }
+
+    setIsLoading(true);
+    const endpoint = isPartner ? '/api/Company/ResetPassword' : '/api/User/ResetPassword';
+    const url = `${BASE_URL}${endpoint}`;
+
+    // Request body based on ResetPasswordModel
+    const requestBody = {
+      emailId: trimmedEmail,
+      token: otp, // The OTP entered by the user acts as the token
+      newPassword: newPassword,
+    };
+
+    console.log(`--- Attempting Password Reset (${isPartner ? 'Partner' : 'User'}) ---`);
+    console.log(`URL: ${url}`);
+    console.log(`Request Body: ${JSON.stringify(requestBody)}`);
+
      try {
-        // await api.resetPasswordWithOtp(email, isPartner, otp, newPassword); // Example API call
-        Alert.alert('Success', 'Your password has been reset successfully.');
-        onClose(); // Close modal on success
-     } catch (error) {
+        const response = await fetch(url, {
+             method: 'POST',
+             headers: {
+                 'Content-Type': 'application/json',
+             },
+             body: JSON.stringify(requestBody),
+        });
+
+         console.log(`Response Status: ${response.status}`);
+         const responseText = await response.text(); // Read response text
+         console.log(`Raw Response Text: ${responseText}`);
+
+        if (response.ok) { // Assume 2xx status means success
+            Alert.alert(
+                'Success',
+                'Your password has been reset successfully.',
+                [{ text: 'OK', onPress: onClose }] // Close modal on success
+            );
+        } else {
+             // Handle errors (e.g., invalid OTP/token, password policy violation)
+              let errorMessage = `Password reset failed (Status: ${response.status})`;
+             if (responseText) {
+                 errorMessage = responseText; // Use raw text if available
+                 try {
+                     const errorJson = JSON.parse(responseText);
+                     errorMessage = errorJson.statusMessage || errorJson.title || errorJson.detail || responseText;
+                 } catch (e) {/* Ignore parsing error, stick with raw text */}
+             }
+            Alert.alert('Error', errorMessage);
+        }
+     } catch (error: any) {
          console.error("Error resetting password:", error);
-         Alert.alert('Error', 'Could not reset password. Please check OTP or try again.');
+         Alert.alert('Error', `Could not reset password. Please try again. ${error.message}`);
+     } finally {
+        setIsLoading(false);
      }
   };
 
@@ -92,31 +210,42 @@ export default function ForgotPasswordModal({
         <>
           <Text style={styles.subtitle}>Enter your email address</Text>
           <View style={styles.inputContainer}>
-            {/* Email input doesn't seem to have icon in this modal */}
             <TextInput
-              style={styles.input}
+               style={styles.input}
               placeholder="Email Address"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               placeholderTextColor={COLORS.placeholder}
+              editable={!isLoading} // Disable when loading
             />
-             {/* Optional clear button shown in step 2 - add here too? */}
           </View>
-          <TouchableOpacity style={styles.checkboxContainer} onPress={() => setIsPartner(!isPartner)}>
+          <TouchableOpacity
+             style={styles.checkboxContainer}
+             onPress={() => !isLoading && setIsPartner(!isPartner)} // Disable when loading
+             disabled={isLoading}
+          >
             <MaterialCommunityIcons
               name={isPartner ? 'checkbox-marked' : 'checkbox-blank-outline'}
               size={24}
-              color={isPartner ? COLORS.buttonBg : COLORS.textSecondary} // Use button color when checked?
+              color={isLoading ? COLORS.textSecondary : (isPartner ? COLORS.buttonBg : COLORS.textSecondary)}
             />
-            <Text style={styles.checkboxLabel}>Partner</Text>
+            <Text style={[styles.checkboxLabel, isLoading && styles.disabledText]}>Partner account</Text>
           </TouchableOpacity>
           <Text style={styles.infoText}>
-            Password reset link will be sent to your above email address
+            Password reset instructions will be sent to your email address.
           </Text>
-          <TouchableOpacity style={styles.actionButton} onPress={handleSendResetLink}>
-            <Text style={styles.actionButtonText}>Ok</Text>
+          <TouchableOpacity
+             style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+             onPress={handleSendResetLink}
+             disabled={isLoading}
+           >
+             {isLoading ? (
+                <ActivityIndicator size="small" color={COLORS.buttonText} />
+             ) : (
+                <Text style={styles.actionButtonText}>Ok</Text>
+             )}
           </TouchableOpacity>
         </>
       );
@@ -125,39 +254,28 @@ export default function ForgotPasswordModal({
     if (step === 'resetPassword') {
       return (
         <>
-         {/* Email Display (non-editable?) */}
+         {/* Display Email (non-editable) */}
          <View style={[styles.inputContainer, styles.disabledInputContainer]}>
             <TextInput
               style={[styles.input, styles.disabledInput]}
-              value={email}
-              editable={false} // Make email non-editable in step 2
+              value={email} // Show the email used in step 1
+              editable={false}
               placeholderTextColor={COLORS.placeholder}
             />
-             {/* Clear button shown - maybe allows changing email? Let's make it non-functional */}
-             <TouchableOpacity onPress={() => Alert.alert('Info', 'Email cannot be changed at this step.')}>
-                <Ionicons name="close-circle" size={20} color={COLORS.placeholder} style={styles.clearIcon}/>
-             </TouchableOpacity>
+             {/* Optional: Button to go back? Or rely on modal close */}
+             {/* <TouchableOpacity onPress={() => setStep('enterEmail')} disabled={isLoading}>
+                 <Ionicons name="arrow-back-circle-outline" size={24} color={COLORS.textSecondary} style={styles.clearIcon} />
+             </TouchableOpacity> */}
           </View>
-           <TouchableOpacity style={styles.checkboxContainer} onPress={() => Alert.alert('Info', 'Account type cannot be changed now.')}>
+           {/* Display Partner Status (non-editable) */}
+           <TouchableOpacity style={styles.checkboxContainer} disabled={true}>
              <MaterialCommunityIcons
                name={isPartner ? 'checkbox-marked' : 'checkbox-blank-outline'}
                size={24}
-               color={COLORS.placeholder} // Grey out checkbox
+               color={COLORS.placeholder}
              />
-             <Text style={[styles.checkboxLabel, styles.disabledText]}>Partner</Text>
+             <Text style={[styles.checkboxLabel, styles.disabledText]}>Partner account</Text>
            </TouchableOpacity>
-
-          {/* New Password */}
-           <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="New Password"
-              value={newPassword}
-              onChangeText={setNewPassword}
-              secureTextEntry={true} // Assuming password should be hidden
-              placeholderTextColor={COLORS.placeholder}
-            />
-          </View>
 
           {/* Enter OTP */}
            <View style={styles.inputContainer}>
@@ -166,28 +284,49 @@ export default function ForgotPasswordModal({
               placeholder="Enter Otp"
               value={otp}
               onChangeText={setOtp}
-              keyboardType="number-pad" // Suggest numeric keyboard
+              keyboardType="number-pad"
               placeholderTextColor={COLORS.placeholder}
+              editable={!isLoading}
+            />
+          </View>
+
+          {/* New Password */}
+           <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="New Password (min 8 chars)"
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry={true}
+              placeholderTextColor={COLORS.placeholder}
+               editable={!isLoading}
             />
           </View>
 
           <Text style={styles.infoText}>
-            Password reset link sent to email.
-            {/* Maybe change text to "Enter OTP sent to email." */}
+            Enter the OTP sent to your email and set a new password.
           </Text>
-          <TouchableOpacity style={styles.actionButton} onPress={handleResetPassword}>
-            <Text style={styles.actionButtonText}>Reset Password</Text>
+          <TouchableOpacity
+            style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+            onPress={handleResetPassword}
+            disabled={isLoading}
+          >
+             {isLoading ? (
+                <ActivityIndicator size="small" color={COLORS.buttonText} />
+             ) : (
+                <Text style={styles.actionButtonText}>Reset Password</Text>
+             )}
           </TouchableOpacity>
         </>
       );
     }
-    return null; // Should not happen
+    return null;
   };
 
-
+  // --- Modal JSX ---
   return (
     <Modal
-      animationType="fade" // Fade looks better for modals usually
+      animationType="fade"
       transparent={true}
       visible={visible}
       onRequestClose={onClose}
@@ -196,13 +335,13 @@ export default function ForgotPasswordModal({
          behavior={Platform.OS === "ios" ? "padding" : "height"}
          style={styles.modalBackdrop}
       >
-         <StatusBar barStyle="dark-content" />
-        {/* Use SafeAreaView potentially if content might go under status bar */}
+         {/* Ensure status bar content is visible */}
+         <StatusBar barStyle={Platform.OS === 'ios' ? 'dark-content' : 'light-content'} />
         <View style={styles.modalContent}>
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Forgot password?</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton} disabled={isLoading}>
               <Ionicons name="close" size={28} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -211,7 +350,6 @@ export default function ForgotPasswordModal({
           <View style={styles.contentArea}>
              {renderStepContent()}
           </View>
-
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -227,23 +365,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    width: '90%', // Modal width
+    width: '90%',
     maxWidth: 400,
-    maxHeight: '80%', // Avoid overly tall modals
     backgroundColor: COLORS.background,
     borderRadius: 10,
-    overflow: 'hidden',
-    paddingBottom: 20, // Padding at the bottom of modal content
+    overflow: 'hidden', // Keep content within rounded borders
+    paddingBottom: 20, // Padding at the bottom of modal content area
+    elevation: 5, // Android shadow
+     shadowColor: '#000', // iOS shadow
+     shadowOffset: { width: 0, height: 2 },
+     shadowOpacity: 0.25,
+     shadowRadius: 3.84,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'center', // Center title
+    justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 15,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderColor,
-    position: 'relative', // For absolute positioning of close button
+    position: 'relative',
   },
   title: {
     fontSize: 18,
@@ -255,14 +397,13 @@ const styles = StyleSheet.create({
     padding: 5,
     position: 'absolute',
     right: 10,
-    top: 10,
+    top: 10, // Adjust positioning as needed
   },
   contentArea: {
-      paddingHorizontal: 20,
-      paddingTop: 20,
+     paddingHorizontal: 20,
+      paddingTop: 20, // Space below header
   },
   subtitle: {
-      // Style for "Enter your email address" if needed
       fontSize: 16,
       color: COLORS.textPrimary,
       marginBottom: 15,
@@ -281,6 +422,7 @@ const styles = StyleSheet.create({
   },
   disabledInputContainer: { // Style to visually disable
       backgroundColor: '#F8F8F8',
+      opacity: 0.7,
   },
   input: {
     flex: 1,
@@ -289,7 +431,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
   disabledInput: {
-      color: COLORS.textSecondary, // Grey out text
+      color: COLORS.textSecondary,
   },
    clearIcon: {
      paddingLeft: 10,
@@ -307,20 +449,27 @@ const styles = StyleSheet.create({
   },
   disabledText: {
       color: COLORS.textSecondary,
+      opacity: 0.7,
   },
   infoText: {
       fontSize: 12,
-      color: COLORS.accent, // Use accent color for info text
+      color: COLORS.accent,
       textAlign: 'center',
       marginVertical: 10,
       paddingHorizontal: 10,
+      lineHeight: 16, // Improve readability
   },
   actionButton: {
     backgroundColor: COLORS.buttonBg,
     paddingVertical: 15,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 15, // Space above button
+    marginTop: 15,
+    minHeight: 50, // Ensure space for indicator
+    justifyContent: 'center',
+  },
+  buttonDisabled: {
+      backgroundColor: COLORS.buttonDisabledBg,
   },
   actionButtonText: {
     color: COLORS.buttonText,
