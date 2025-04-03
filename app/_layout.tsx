@@ -1,39 +1,45 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
+import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+  const [appIsReady, setAppIsReady] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+  useEffect(() => { /* ... existing prepare logic ... */
+     async function prepare() {
+       try {
+         await new Promise(resolve => setTimeout(resolve, 2000)); // Keep simulation
+       } catch (e: unknown) { console.warn(e); }
+       finally { setAppIsReady(true); }
+     }
+     prepare();
+  }, []);
 
-  if (!loaded) {
+  useEffect(() => { /* ... existing hideSplash logic ... */
+     const hideSplash = async () => {
+       if (appIsReady) { await SplashScreen.hideAsync(); }
+     };
+     hideSplash();
+  }, [appIsReady]);
+
+  if (!appIsReady) {
     return null;
   }
 
+  // Render the main Stack Navigator
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Stack>
+      {/* Main entry point is now the Tabs layout */}
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      
+      {/* Auth screens */}
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="register" options={{ headerShown: false }} />
+
+      {/* Optional: If app/index.tsx is needed as a separate screen, define it here */}
+      {/* <Stack.Screen name="index" options={{ title: 'Welcome' }} /> */}
+    </Stack>
   );
 }
