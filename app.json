@@ -18,14 +18,20 @@
       "backgroundColor": "#1A1A1A"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.sk5633.hantly"
+      "package": "com.sk5633.hantly",
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro",
