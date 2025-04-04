@@ -191,7 +191,6 @@ export default function HomeScreen() {
   // --- Main Return JSX ---
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      {/* Header */}
       <View style={styles.header}>
         <ThemedText style={styles.headerTitle}>Home</ThemedText>
         <TouchableOpacity onPress={handleLoginPress}>
@@ -201,30 +200,25 @@ export default function HomeScreen() {
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContentContainer}>
 
-        {/* Updated Image Banner */}
         <View style={styles.bannerContainer}>
           <Image
-             source={require('@/assets/images/banner.png')} // Path using alias
+             source={require('@/assets/images/banner.png')}
              style={styles.bannerImage}
              resizeMode='cover'
            />
         </View>
 
-        {/* Services Section */}
         <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Services</ThemedText>
             <TouchableOpacity onPress={handleUrgentJobPress}><ThemedText style={styles.urgentJobText}>Urgent Job 24/7</ThemedText></TouchableOpacity>
             <TouchableOpacity onPress={handleViewAllServicesPress}><ThemedText style={styles.viewAllText}>View All</ThemedText></TouchableOpacity>
         </View>
-        {renderListContent()} {/* Render FlatList, Loading, or Error */}
-
-         {/* Didn't Find Service Section */}
+        {renderListContent()}
          <View style={styles.notFoundSection}>
            <ThemedText style={styles.notFoundText}>Didn't find your Service?</ThemedText>
            <ThemedText style={styles.notFoundSubText}>Don't worry, You can post your Requirement</ThemedText>
          </View>
 
-        {/* Bottom Buttons */}
         <View style={styles.bottomButtonsContainer}>
           <TouchableOpacity style={styles.button} onPress={handleNewJobRequestPress}><ThemedText style={styles.buttonText}>New Job Request</ThemedText></TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={handleRegisterPress}><ThemedText style={styles.buttonText}>Register</ThemedText></TouchableOpacity>
@@ -232,8 +226,7 @@ export default function HomeScreen() {
 
       </ScrollView>
 
-      {/* Register Type Modal */}
-      <RegisterTypeModal
+\      <RegisterTypeModal
         visible={isRegisterModalVisible}
         onClose={() => setIsRegisterModalVisible(false)}
         onSelectPartner={handleSelectPartner}
