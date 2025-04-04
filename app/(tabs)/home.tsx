@@ -226,7 +226,7 @@ export default function HomeScreen() {
 
       </ScrollView>
 
-\      <RegisterTypeModal
+      <RegisterTypeModal
         visible={isRegisterModalVisible}
         onClose={() => setIsRegisterModalVisible(false)}
         onSelectPartner={handleSelectPartner}
