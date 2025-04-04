@@ -26,9 +26,7 @@ interface ServiceMaster { serviceId: number; serviceName: string; imagePath?: st
 interface ApiDataItem { id: string; name: string; }
 interface ApiResponse { statusCode: number; statusMessage: string; }
 // Type for validation errors from API
-interface ValidationErrors {
-    [key: string]: string[];
-}
+interface ValidationErrors { [key: string]: string[]; }
 interface ProblemDetails {
     type?: string;
     title?: string;
@@ -52,6 +50,7 @@ const COLORS = { // Use your actual color constants
 
 export default function RegisterPartnerScreen() {
   const router = useRouter();
+
   // --- State variables ---
   const [companyName, setCompanyName] = useState<string>('');
   const [regNumber, setRegNumber] = useState<string>('');
@@ -105,6 +104,7 @@ export default function RegisterPartnerScreen() {
         const uniqueMunicipalitiesMap = new Map<string, ApiDataItem>();
         allMunicipalities.forEach(m => { const idStr = m.municipalityId.toString(); if (!uniqueMunicipalitiesMap.has(idStr)) { uniqueMunicipalitiesMap.set(idStr, { id: idStr, name: m.municipalityName }); } });
         setMunicipalities(Array.from(uniqueMunicipalitiesMap.values()));
+        // Keep only selected municipalities that are still valid for the current counties
         setSelectedMunicipalityIds(prevIds => prevIds.filter(id => uniqueMunicipalitiesMap.has(id)));
     } catch (error: any) { console.error("Municipality fetch failed:", error); setMunicipalityError(`Failed municipalities: ${error.message}`); setMunicipalities([]); setSelectedMunicipalityIds([]); }
     finally { setIsLoadingMunicipalities(false); }
@@ -126,7 +126,7 @@ export default function RegisterPartnerScreen() {
         finally { setIsLoadingServices(false); }
     };
     fetchServices();
-}, []);
+  }, []);
 
   // --- Image Picker Logic ---
   const handlePickLogo = async () => {
@@ -157,71 +157,139 @@ export default function RegisterPartnerScreen() {
   };
 
   // --- Municipality Selector State Logic ---
-  const isMunicipalityDisabled = selectedCountyIds.length === 0 || isLoadingMunicipalities || municipalityError !== null;
-  const municipalityPlaceholder = selectedCountyIds.length === 0 ? 'Select County First' : isLoadingMunicipalities ? 'Loading Municipalities...' : municipalityError ? 'Error Loading' : 'Select Municipality';
+  const isMunicipalityDisabled = selectedCountyIds.length === 0 || isLoadingMunicipalities || municipalityError !== null || (!isLoadingMunicipalities && municipalities.length === 0 && !municipalityError);
+  const municipalityPlaceholder = selectedCountyIds.length === 0 ? 'Select County First' : isLoadingMunicipalities ? 'Loading Municipalities...' : municipalityError ? 'Error Loading' : municipalities.length === 0 ? 'No Municipalities Found' : 'Select Municipality';
 
 
-   // --- Partner Sign Up Handler with Refined Alert Logic ---
-// --- Partner Sign Up Handler with Refined Alert Logic ---
-const handleSignUp = async () => {
-  const formData = new FormData();
-  // ... (validation and formData setup remains the same) ...
+   // --- Partner Sign Up Handler ---
+   const handleSignUp = async () => {
+    // --- Validation ---
+    const requiredFields = [
+        { value: companyName, name: "Company Name" },
+        { value: companyLogo, name: "Company Logo" },
+        { value: description, name: "Company Description" },
+        { value: phone, name: "Phone Number" },
+        { value: email, name: "Email" },
+        { value: password, name: "Password" },
+    ];
+    const missingFields = requiredFields.filter(field => !field.value);
+    if (missingFields.length > 0) {
+        Alert.alert('Missing Information', `Please provide: ${missingFields.map(f => f.name).join(', ')}`);
+        return;
+    }
+    if (selectedCountyIds.length === 0) { Alert.alert('Missing Information', 'Please select at least one County.'); return; }
+    if (selectedMunicipalityIds.length === 0) { Alert.alert('Missing Information', 'Please select at least one Municipality.'); return; }
+    if (selectedServiceIds.length === 0) { Alert.alert('Missing Information', 'Please select at least one Service Category.'); return; }
+    if (password.length < 8) { Alert.alert('Password Too Short', 'Password must be at least 8 characters.'); return; }
+    // Email format validation (simple)
+    if (!/\S+@\S+\.\S+/.test(email)) { Alert.alert('Invalid Email', 'Please enter a valid email address.'); return; }
 
-  const url = `${BASE_URL}/api/Company/CompanySignUp`;
-  console.log(`--- Attempting Partner Sign Up ---`);
-  console.log(`URL: ${url}`);
+    // --- FormData Preparation ---
+    setIsSigningUp(true);
+    const formData = new FormData();
+    formData.append('companyName', companyName);
+    formData.append('registrationNumber', regNumber); // Include even if empty
+    formData.append('description', description);
+    formData.append('contactPerson', companyName); // Assuming contact person is company name for now
+    formData.append('mobileNumber', phone);
+    formData.append('emailId', email);
+    formData.append('password', password);
+    formData.append('active', 'true'); // Assuming always active on signup
 
-  try {
-     const response = await fetch(url, { method: 'POST', body: formData });
-     const responseText = await response.text();
-     console.log(`Response Status: ${response.status}, Text: ${responseText}`);
+    // Append logo if selected
+    if (companyLogo) {
+        const uriParts = companyLogo.uri.split('.');
+        const fileType = uriParts[uriParts.length - 1];
+        const fileName = companyLogo.fileName ?? `logo.${fileType}`; // Use original name or default
 
-     if (response.ok) {
-         // --- SUCCESS HANDLING (Remains the same) ---
-         let successMessage = 'Registration successful! Please log in.';
-         try { /* ... try parsing ApiResponse ... */ } catch (e) { /* ... */ }
-         Alert.alert('Success!', successMessage, [ /* ... */ ]);
+        // Prepare the file object for FormData
+        const logoFile = {
+            uri: companyLogo.uri,
+            name: fileName,
+            type: companyLogo.mimeType ?? `image/${fileType}`, // Use mimeType if available, else guess
+        };
+        formData.append('companyLogo', logoFile as any); // Append the file object
+    }
 
-     } else {
-         // --- FAILURE HANDLING ---
-         let errorTitle = 'Registration Failed';
-         let errorMessage = `An error occurred (Status: ${response.status}).`;
+    // Append arrays as separate entries (common practice for backend binders)
+    selectedCountyIds.forEach(id => formData.append('CountyId', id));
+    selectedMunicipalityIds.forEach(id => formData.append('MunicipalityId', id));
+    selectedServiceIds.forEach(id => formData.append('ServiceId', id));
 
-         try {
-             const errorData: ProblemDetails = JSON.parse(responseText);
-             console.log("Parsed Error Data:", errorData);
+    const url = `${BASE_URL}/api/Company/CompanySignUp`;
+    console.log(`--- Attempting Partner Sign Up ---`);
+    console.log(`URL: ${url}`);
+    // Logging FormData is tricky, log keys instead
+    console.log('FormData Keys:', [...(formData as any)._parts.map((part: any[]) => part[0])].join(', '));
 
-             if (errorData.errors) {
-                 // Format validation errors (Remains the same)
-                 errorTitle = errorData.title || 'Validation Errors';
-                 errorMessage = "Please correct the following:\n" +
-                     Object.entries(errorData.errors)
-                         .map(([field, messages]) => `- ${field}: ${(messages as string[]).join(', ')}`)
-                         .join('\n');
-             } else {
-                 // *** CORRECTED FALLBACK ORDER for other errors ***
-                 // Use detail, title, raw text, or default. Removed statusMessage.
-                 errorMessage = errorData.detail || errorData.title || responseText || errorMessage;
-                 // *** END CORRECTION ***
-                 if (errorData.title && errorData.title !== errorTitle) {
-                     errorTitle = errorData.title;
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            body: formData,
+            // Let browser/fetch set Content-Type for FormData
+        });
+
+        const responseText = await response.text();
+        console.log(`Response Status: ${response.status}, Text: ${responseText}`);
+
+        if (response.ok) {
+            // --- SUCCESS HANDLING ---
+            let successMessage = 'Registration successful! Please log in.'; // Default message
+            try {
+                // **Attempt to parse the JSON response**
+                const responseData: ApiResponse = JSON.parse(responseText);
+                // **Use the statusMessage from the response if available**
+                if (responseData?.statusMessage) {
+                    successMessage = responseData.statusMessage;
+                }
+            } catch (e) {
+                 // Log parsing error but proceed with default message or raw text if short
+                 console.warn("Could not parse success response as JSON:", e);
+                 if (responseText && responseText.length < 150 && !responseText.trim().startsWith('<')) {
+                    successMessage = responseText; // Use raw text if it's short and not HTML
                  }
-             }
-         } catch (e) {
-              console.warn("Could not parse error response as JSON:", e);
-              if (responseText && responseText.length < 150 && !responseText.trim().startsWith('<')) { errorMessage = responseText; }
-         }
-         Alert.alert(errorTitle, errorMessage); // Show formatted/parsed error
-     }
+            }
+            // **Show the user-friendly message**
+            Alert.alert('Success!', successMessage, [
+                { text: 'OK', onPress: () => router.replace('/login') } // Navigate to login on OK
+            ]);
+        } else {
+            // --- FAILURE HANDLING (Remains the same) ---
+            let errorTitle = 'Registration Failed';
+            let errorMessage = `An error occurred (Status: ${response.status}).`;
 
-  } catch (error: any) {
-     console.error("Partner Sign Up Error:", error);
-     Alert.alert('Error', `An unexpected network or setup error occurred: ${error.message}`);
-  } finally {
-     setIsSigningUp(false);
-  }
+            try {
+                const errorData: ProblemDetails = JSON.parse(responseText);
+                console.log("Parsed Error Data:", errorData);
+
+                if (errorData.errors) {
+                    errorTitle = errorData.title || 'Validation Errors';
+                    errorMessage = "Please correct the following:\n" +
+                        Object.entries(errorData.errors)
+                            .map(([field, messages]) => `- ${field}: ${(messages as string[]).join(', ')}`)
+                            .join('\n');
+                } else {
+                    errorMessage = errorData.detail || errorData.title || responseText || errorMessage;
+                    if (errorData.title && errorData.title !== errorTitle) {
+                        errorTitle = errorData.title;
+                    }
+                }
+            } catch (e) {
+                console.warn("Could not parse error response as JSON:", e);
+                if (responseText && responseText.length < 150 && !responseText.trim().startsWith('<')) {
+                    errorMessage = responseText;
+                }
+            }
+            Alert.alert(errorTitle, errorMessage); // Show formatted/parsed error
+        }
+
+    } catch (error: any) {
+        console.error("Partner Sign Up Error:", error);
+        Alert.alert('Error', `An unexpected network or setup error occurred: ${error.message}`);
+    } finally {
+        setIsSigningUp(false);
+    }
 };
-
 
   // --- JSX Structure ---
   return (
@@ -238,6 +306,7 @@ const handleSignUp = async () => {
         {/* Form Fields */}
         <View style={styles.inputContainer}><Ionicons name="business-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Company Name *" value={companyName} onChangeText={setCompanyName} placeholderTextColor={COLORS.placeholder} editable={!isSigningUp}/></View>
         <View style={styles.inputContainer}><Ionicons name="briefcase-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Registration Number" value={regNumber} onChangeText={setRegNumber} placeholderTextColor={COLORS.placeholder} editable={!isSigningUp}/></View>
+
         {/* Logo Picker */}
         <View style={styles.logoContainer}>
             <Image source={companyLogo?.uri ? { uri: companyLogo.uri } : require('@/assets/images/icon.png')} style={styles.logoPreview} />
@@ -245,24 +314,28 @@ const handleSignUp = async () => {
                 <Text style={styles.logoButtonText}>{companyLogo ? 'Change Logo *' : 'Select Logo *'}</Text>
             </TouchableOpacity>
         </View>
+
         <TextInput style={[styles.input, styles.textArea]} placeholder="Company Description *" value={description} onChangeText={setDescription} multiline numberOfLines={4} placeholderTextColor={COLORS.placeholder} editable={!isSigningUp}/>
 
         {/* Selectors */}
-        <TouchableOpacity style={[styles.selectorContainer, isSigningUp && styles.disabledSelector]} onPress={() => !isSigningUp && !isLoadingCounties && counties.length > 0 && setIsCountyModalVisible(true)} disabled={isLoadingCounties || countyError !== null || isSigningUp}>
-            <Text style={[styles.selectorText, selectedCountyIds.length === 0 && styles.placeholderText]}>{isLoadingCounties ? 'Loading Counties...' : getMultiDisplayText(selectedCountyIds, counties, 'Select County *')}</Text>
+        <TouchableOpacity style={[styles.selectorContainer, (isLoadingCounties || countyError !== null || isSigningUp) && styles.disabledSelector ]} onPress={() => !isSigningUp && !isLoadingCounties && counties.length > 0 && !countyError && setIsCountyModalVisible(true)} disabled={isLoadingCounties || countyError !== null || isSigningUp}>
+            <Text style={[styles.selectorText, selectedCountyIds.length === 0 && styles.placeholderText]}>{isLoadingCounties ? 'Loading Counties...' : countyError ? 'Error Loading Counties' : getMultiDisplayText(selectedCountyIds, counties, 'Select County *')}</Text>
             {isLoadingCounties ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
-         </TouchableOpacity>
-         {countyError && <Text style={styles.errorText}>{countyError}</Text>}
+        </TouchableOpacity>
+        {countyError && !isLoadingCounties && <Text style={styles.errorText}>{countyError}</Text>}
+
         <TouchableOpacity style={[styles.selectorContainer, (isMunicipalityDisabled || isSigningUp) && styles.disabledSelector]} onPress={() => !isSigningUp && !isMunicipalityDisabled && municipalities.length > 0 && setIsMunicipalityModalVisible(true)} disabled={isMunicipalityDisabled || isSigningUp}>
             <Text style={[styles.selectorText, selectedMunicipalityIds.length === 0 && styles.placeholderText]}>{getMultiDisplayText(selectedMunicipalityIds, municipalities, municipalityPlaceholder + ' *')}</Text>
             {isLoadingMunicipalities ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
-         {municipalityError && <Text style={styles.errorText}>{municipalityError}</Text>}
-        <TouchableOpacity style={[styles.selectorContainer, isSigningUp && styles.disabledSelector]} onPress={() => !isSigningUp && !isLoadingServices && services.length > 0 && setIsServiceModalVisible(true)} disabled={isLoadingServices || serviceError !== null || isSigningUp}>
-            <Text style={[styles.selectorText, selectedServiceIds.length === 0 && styles.placeholderText]}>{isLoadingServices ? 'Loading Services...' : getMultiDisplayText(selectedServiceIds, services, 'Choose Service Category *')}</Text>
+        {municipalityError && !isLoadingMunicipalities && <Text style={styles.errorText}>{municipalityError}</Text>}
+
+        <TouchableOpacity style={[styles.selectorContainer, (isLoadingServices || serviceError !== null || isSigningUp) && styles.disabledSelector]} onPress={() => !isSigningUp && !isLoadingServices && services.length > 0 && !serviceError && setIsServiceModalVisible(true)} disabled={isLoadingServices || serviceError !== null || isSigningUp}>
+            <Text style={[styles.selectorText, selectedServiceIds.length === 0 && styles.placeholderText]}>{isLoadingServices ? 'Loading Services...' : serviceError ? 'Error Loading Services' : getMultiDisplayText(selectedServiceIds, services, 'Choose Service Category *')}</Text>
             {isLoadingServices ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
-        {serviceError && <Text style={styles.errorText}>{serviceError}</Text>}
+        {serviceError && !isLoadingServices && <Text style={styles.errorText}>{serviceError}</Text>}
+
 
         {/* Phone, Email, Password */}
         <View style={styles.inputContainer}><Ionicons name="call-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Phone Number *" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholderTextColor={COLORS.placeholder} editable={!isSigningUp}/></View>
@@ -287,6 +360,7 @@ const handleSignUp = async () => {
        <SelectModal mode="multi" visible={isMunicipalityModalVisible} title="Select Municipality" data={municipalities} initialSelectedIds={selectedMunicipalityIds} onClose={() => setIsMunicipalityModalVisible(false)} onConfirmMulti={handleMunicipalityConfirm} />
        <SelectModal mode="multi" visible={isServiceModalVisible} title="Choose Service Category" data={services} initialSelectedIds={selectedServiceIds} onClose={() => setIsServiceModalVisible(false)} onConfirmMulti={handleServiceConfirm} />
 
+
     </SafeAreaView>
   );
 }
@@ -295,7 +369,7 @@ const handleSignUp = async () => {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10, paddingVertical: 12, backgroundColor: COLORS.headerBg },
-  backButton: { padding: 5, width: 34, alignItems: 'center' },
+  backButton: { padding: 5, width: 34, alignItems: 'center' }, // Ensure consistent width for alignment
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.headerText },
   container: { flexGrow: 1, paddingHorizontal: 25, paddingVertical: 20 },
   inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.borderColor, borderRadius: 8, paddingHorizontal: 10, height: 50, marginBottom: 15 },
@@ -307,7 +381,7 @@ const styles = StyleSheet.create({
   logoPreview: { width: 60, height: 60, borderRadius: 8, borderWidth: 1, borderColor: COLORS.borderColor, marginRight: 15, backgroundColor: COLORS.logoButtonBg },
   logoButton: { backgroundColor: COLORS.logoButtonBg, paddingVertical: 10, paddingHorizontal: 15, borderRadius: 8, borderWidth: 1, borderColor: COLORS.borderColor },
   logoButtonText: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '500' },
-  selectorContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.borderColor, borderRadius: 8, paddingHorizontal: 15, height: 50, marginBottom: 15 },
+  selectorContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.borderColor, borderRadius: 8, paddingHorizontal: 15, height: 50, marginBottom: 5 }, // Reduced marginBottom
   selectorText: { fontSize: 16, color: COLORS.textPrimary, flexShrink: 1, paddingRight: 10 },
   placeholderText: { color: COLORS.placeholder },
   disabledSelector: { backgroundColor: '#F0F0F0', opacity: 0.7 },
@@ -317,5 +391,12 @@ const styles = StyleSheet.create({
   bottomLinkContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 20 },
   bottomText: { fontSize: 14, color: COLORS.textSecondary },
   bottomLink: { fontSize: 14, color: COLORS.linkText, fontWeight: 'bold', marginLeft: 5 },
-  errorText: { color: COLORS.error, fontSize: 12, textAlign: 'center', marginTop: -10, marginBottom: 10},
+  errorText: { // Style for error messages below selectors
+      color: COLORS.error,
+      fontSize: 12,
+      marginTop: 0, // Keep close to the selector
+      marginBottom: 10, // Add space before the next element
+      alignSelf: 'flex-start',
+      marginLeft: 5,
+  },
 });
