@@ -5,48 +5,43 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image, // Import Image component
+  Image,
   TouchableOpacity,
   FlatList,
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router'; // Ensure this is imported
-import { ThemedText } from '@/components/ThemedText'; //
-import { Ionicons } from '@expo/vector-icons'; // [cite: 301]
-import RegisterTypeModal from '@/components/RegisterTypeModal'; //
-// Import the Register Type modal
+import { SafeAreaView } from 'react-native-safe-area-context'; // Ensure import
+import { Stack, useRouter } from 'expo-router'; // Import Stack
+import { ThemedText } from '@/components/ThemedText';
+import { Ionicons } from '@expo/vector-icons';
+import RegisterTypeModal from '@/components/RegisterTypeModal';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 // --- Define Types based on API Response ---
 interface Service {
-  serviceId: number; // [cite: 303]
-  serviceName: string; // [cite: 303]
-  imagePath: string; // [cite: 303]
-  imageContentType: string; // Include content type for checking [cite: 303]
+  serviceId: number;
+  serviceName: string;
+  imagePath: string;
+  imageContentType: string;
 }
-
-// Interface for the item passed to FlatList/ServiceItem
 interface ServiceListItem {
-    id: string; // [cite: 304]
-    name: string; // [cite: 304]
-    imageUri?: string; // Make optional // [cite: 304]
-    iconName?: string; // [cite: 305]
-    // Optional icon name for fallback // [cite: 305]
-    iconSet?: 'ion'; // [cite: 306]
-    // Optional icon set (add others if needed) // [cite: 306]
-    contentType?: string; // [cite: 307]
-    // Store content type to help decide rendering // [cite: 307]
+    id: string;
+    name: string;
+    imageUri?: string;
+    iconName?: string;
+    iconSet?: 'ion';
+    contentType?: string;
 }
 // -----------------------------------------
 
 
 // --- Base URL ---
-const BASE_URL = 'http://3.110.124.83:2030'; // [cite: 308]
+const BASE_URL = 'http://3.110.124.83:2030'; // Use updated URL
 // -----------------
 
 // --- Approximate Colors ---
-const COLORS = { // [cite: 309]
+const COLORS = {
   background: '#F8F8F8',
   textPrimary: '#333333',
   textSecondary: '#666666',
@@ -57,56 +52,29 @@ const COLORS = { // [cite: 309]
   cardBg: '#FFFFFF',
   iconColor: '#696969', // Color for fallback icon
   borderColor: '#E0E0E0',
-  bannerPlaceholderBg: '#E0E0E0', // Kept in case image fails to load
-  errorText: '#D9534F', // Added for error messages
+  bannerPlaceholderBg: '#E0E0E0',
+  errorText: '#D9534F',
 };
 // --- Service Item Component with Fallback ---
 interface ServiceItemProps {
-    item: ServiceListItem; // [cite: 310]
+    item: ServiceListItem;
 }
-const ServiceItem: React.FC<ServiceItemProps> = ({ item }) => { // [cite: 310]
-    const router = useRouter(); // [cite: 311]
-    const handleItemPress = () => { // [cite: 311]
-        Alert.alert("Service Pressed", item.name); // [cite: 311]
-        // Navigate to specific service category: // [cite: 312]
-        // router.push(`/services?category=${item.id}`); // [cite: 312]
-    } // [cite: 313]
+const ServiceItem: React.FC<ServiceItemProps> = ({ item }) => {
+    const router = useRouter();
+    const handleItemPress = () => {
+        Alert.alert("Service Pressed", item.name);
+        // Navigate to specific service category:
+        // router.push(`/services?category=${item.id}`);
+    }
 
-    // Decide whether to render Image or Icon
-    const renderContent = () => { // [cite: 313]
-        // Prioritize fallback icon if explicitly set (e.g., for Carpenter)
-        if (item.iconName && item.iconSet === 'ion') { // [cite: 313]
-            return (
-                <Ionicons
-                    name={item.iconName as any} // [cite: 314]
-                    size={60} // [cite: 314]
-                    color={COLORS.iconColor} // [cite: 314]
-                    style={styles.serviceItemIcon} // [cite: 314]
-                />
-            ); // [cite: 315]
-        } // [cite: 315]
-        // Otherwise, attempt to render the image if URI is present and looks valid
-        else if (item.imageUri && item.contentType?.startsWith('image/')) { // [cite: 315]
-             return (
-                 <Image
-                     source={{ uri: item.imageUri }} // [cite: 315]
-                     style={styles.serviceItemImage} // [cite: 316]
-                     resizeMode="contain" // [cite: 316]
-                     // onError={(e) => console.log(`Failed to load image: ${item.imageUri}`)} // Optional error handling // [cite: 316]
-                 />
-             ); // [cite: 317]
-        } // [cite: 317]
-        // Default fallback icon
-        else { // [cite: 317]
-             return (
-                 <Ionicons
-                     name="help-circle-outline" // [cite: 317]
-                     size={60} // [cite: 317]
-                     color={COLORS.textSecondary} // [cite: 318]
-                     style={styles.serviceItemIcon} // [cite: 318]
-                 />
-             ); // [cite: 319]
-        } // [cite: 319]
+    const renderContent = () => {
+        if (item.iconName && item.iconSet === 'ion') {
+            return <Ionicons name={item.iconName as any} size={60} color={COLORS.iconColor} style={styles.serviceItemIcon}/>;
+        } else if (item.imageUri && item.contentType?.startsWith('image/')) {
+             return <Image source={{ uri: item.imageUri }} style={styles.serviceItemImage} resizeMode="contain"/>;
+        } else {
+             return <Ionicons name="help-circle-outline" size={60} color={COLORS.textSecondary} style={styles.serviceItemIcon}/>;
+        }
     };
 
     return (
@@ -114,303 +82,212 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item }) => { // [cite: 310]
             {renderContent()}
             <ThemedText style={styles.serviceItemText}>{item.name}</ThemedText>
         </TouchableOpacity>
-    ); // [cite: 320]
+    );
 };
 
 
 // --- Main Home Screen Component ---
-export default function HomeScreen() { // [cite: 320]
-  const router = useRouter(); // [cite: 321] Initialize router
-  const [services, setServices] = useState<ServiceListItem[]>([]); // [cite: 321]
-  const [isLoading, setIsLoading] = useState<boolean>(true); // [cite: 321]
-  const [error, setError] = useState<string | null>(null); // [cite: 321]
-  // State for the Register Type modal // [cite: 322]
-  const [isRegisterModalVisible, setIsRegisterModalVisible] = useState<boolean>(false); // [cite: 322]
+export default function HomeScreen() {
+  const router = useRouter();
+  const { session } = useAuth(); // Get session state from context
+
+  const [services, setServices] = useState<ServiceListItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isRegisterModalVisible, setIsRegisterModalVisible] = useState<boolean>(false);
 
   // --- Fetch Services ---
-  useEffect(() => { // [cite: 323]
-    const fetchServices = async () => { // [cite: 323]
-      setIsLoading(true); setError(null); // [cite: 323]
-      const url = `${BASE_URL}/api/Service/GetServiceList`; // [cite: 323]
-      try { // [cite: 323]
-        const response = await fetch(url); // [cite: 323]
-        if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); } // [cite: 323]
-        const contentType = response.headers.get("content-type"); // [cite: 323]
-        if (contentType?.includes("application/json")) { // [cite: 323]
-            const data: Service[] = await response.json(); // [cite: 324]
-            // Map API data, applying fallback logic for Carpenter
-            const formattedData: ServiceListItem[] = data.map(service => { // [cite: 324]
-                const baseItem = { id: service.serviceId.toString(), name: service.serviceName, contentType: service.imageContentType }; // [cite: 324]
-                if (service.serviceId === 2 || service.serviceName === "Carpenter" || !service.imageContentType?.startsWith('image/')) { // [cite: 324]
-                    return { ...baseItem, iconName: 'hammer-outline', iconSet: 'ion' } as ServiceListItem; // [cite: 325]
-                } else { // [cite: 326]
-                    return { ...baseItem, imageUri: service.imagePath } as ServiceListItem; // [cite: 326]
-                } // [cite: 327]
-            }); // [cite: 327]
-            setServices(formattedData); // [cite: 327]
-        } else { throw new Error("Received non-JSON response"); } // [cite: 328]
-      } catch (err: any) { console.error("Failed to fetch services:", err); // [cite: 328]
-        setError(`Failed to load services: ${err.message}`); } // [cite: 329]
-      finally { setIsLoading(false); } // [cite: 329]
+  useEffect(() => {
+    const fetchServices = async () => {
+      setIsLoading(true); setError(null);
+      const url = `${BASE_URL}/api/Service/GetServiceList`;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+        const contentType = response.headers.get("content-type");
+        if (contentType?.includes("application/json")) {
+            const data: Service[] = await response.json();
+            const formattedData: ServiceListItem[] = data.map(service => {
+                const baseItem = { id: service.serviceId.toString(), name: service.serviceName, contentType: service.imageContentType };
+                // Corrected fallback logic (Example: Use icon if ID is 2 OR name is Carpenter OR no valid image content type)
+                if (service.serviceId === 2 || service.serviceName === "Carpenter" || !service.imageContentType?.startsWith('image/')) {
+                    return { ...baseItem, iconName: 'hammer-outline', iconSet: 'ion' } as ServiceListItem;
+                } else {
+                    return { ...baseItem, imageUri: service.imagePath } as ServiceListItem;
+                }
+            });
+            setServices(formattedData);
+        } else { throw new Error("Received non-JSON response"); }
+      } catch (err: any) { console.error("Failed to fetch services:", err);
+        setError(`Failed to load services: ${err.message}`); }
+      finally { setIsLoading(false); }
     };
-    fetchServices(); // [cite: 329]
-  }, []); // [cite: 330]
+    fetchServices();
+  }, []);
 
   // --- Event Handlers ---
-  const handleLoginPress = () => router.push('/login'); // [cite: 330]
+  // Removed handleLoginPress as button is now conditional
 
-  // *** Updated handler to navigate to create-job-card ***
-  const handleNewJobRequestPress = () => { // [cite: 331]
-      router.push('/create-job-card'); // Navigate to the new screen
+  const handleNewJobRequestPress = () => {
+      // Check if logged in before allowing job request? Optional.
+      if (!session) {
+          Alert.alert("Login Required", "Please log in to create a job request.", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Log In", onPress: () => router.push('/login') }
+          ]);
+      } else {
+        router.push('/create-job-card');
+      }
   };
-  // ****************************************************
-
-  const handleViewAllServicesPress = () => router.push('/categories'); // [cite: 331]
-  const handleUrgentJobPress = () => Alert.alert("Urgent Job", "Urgent Job 24/7 action placeholder"); // [cite: 332]
-  const handleRegisterPress = () => setIsRegisterModalVisible(true); // [cite: 332]
-  // Show modal // [cite: 333]
-  const handleSelectPartner = () => { setIsRegisterModalVisible(false); router.push('/register-partner'); }; // [cite: 333]
-  const handleSelectUser = () => { setIsRegisterModalVisible(false); // [cite: 333]
-    router.push('/register'); }; // [cite: 334]
+  const handleViewAllServicesPress = () => router.push('/categories');
+  const handleUrgentJobPress = () => Alert.alert("Urgent Job", "Urgent Job 24/7 action placeholder");
+  const handleRegisterPress = () => setIsRegisterModalVisible(true);
+  const handleSelectPartner = () => { setIsRegisterModalVisible(false); router.push('/register-partner'); };
+  const handleSelectUser = () => { setIsRegisterModalVisible(false); router.push('/register'); };
 
 
   // --- Render Content for FlatList ---
-  const renderListContent = () => { // [cite: 334]
-    if (isLoading) { // [cite: 334]
-      return <ActivityIndicator size="large" color={COLORS.accent} style={styles.loadingIndicator} />; // [cite: 334]
-    } // [cite: 335]
-    if (error) { // [cite: 335]
-      return <Text style={styles.errorText}>{error}</Text>; // [cite: 335]
-    } // [cite: 336]
-    if (services.length === 0) { // [cite: 336]
-        return <Text style={styles.noDataText}>No services available at the moment.</Text>; // [cite: 336]
-    } // [cite: 337]
+  const renderListContent = () => {
+    if (isLoading) {
+      return <ActivityIndicator size="large" color={COLORS.accent} style={styles.loadingIndicator} />;
+    }
+    if (error) {
+      return <Text style={styles.errorText}>{error}</Text>;
+    }
+    if (services.length === 0) {
+        return <Text style={styles.noDataText}>No services available at the moment.</Text>;
+    }
     return (
       <FlatList
-         data={services} // [cite: 337]
-         renderItem={({item}) => <ServiceItem item={item} />} // [cite: 337]
-         keyExtractor={(item) => item.id} // [cite: 337]
-         numColumns={2} // [cite: 337]
-         columnWrapperStyle={styles.serviceGridRow} // [cite: 337]
-         scrollEnabled={false} // Scrolling handled by outer ScrollView // [cite: 337]
-         contentContainerStyle={styles.servicesGridContainer} // [cite: 337]
-         extraData={services} // [cite: 337]
-     /> // [cite: 338]
-    ); // [cite: 338]
+         data={services}
+         renderItem={({item}) => <ServiceItem item={item} />}
+         keyExtractor={(item) => item.id}
+         numColumns={2}
+         columnWrapperStyle={styles.serviceGridRow}
+         scrollEnabled={false} // Scrolling handled by outer ScrollView
+         contentContainerStyle={styles.servicesGridContainer}
+         // extraData={services} // Not usually needed unless item identity changes without data ref changing
+     />
+    );
   }
 
   // --- Main Return JSX ---
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
-        <ThemedText style={styles.headerTitle}>Home</ThemedText>
-        <TouchableOpacity onPress={handleLoginPress}>
-            <ThemedText style={styles.loginText}>LOG IN</ThemedText>
-        </TouchableOpacity>
-      </View>
+       {/* Use Stack.Screen to configure header conditionally */}
+       <Stack.Screen
+            options={{
+                headerShown: true,
+                headerStyle: { backgroundColor: COLORS.background }, // Use consistent background
+                headerTitle: () => <ThemedText style={styles.headerTitle}>Home</ThemedText>,
+                headerTitleAlign: 'left', // Keep title left aligned
+                headerRight: () => (
+                    // Conditionally render Log In button
+                    !session ? (
+                        <TouchableOpacity onPress={() => router.push('/login')} style={{ marginRight: 15 }}>
+                            <ThemedText style={styles.loginText}>LOG IN</ThemedText>
+                        </TouchableOpacity>
+                    ) : null // Render nothing in the right header if logged in
+                ),
+                // Prevent back button if needed (usually not for tabs)
+                // headerLeft: () => null,
+            }}
+        />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContentContainer}>
 
         <View style={styles.bannerContainer}>
-           <Image // [cite: 339]
-             source={require('@/assets/images/banner.png')} // [cite: 339]
-             style={styles.bannerImage} // [cite: 339]
-             resizeMode='cover' // [cite: 339]
+           <Image
+             source={require('@/assets/images/banner.png')} // Ensure this asset exists
+             style={styles.bannerImage}
+             resizeMode='cover'
            />
         </View>
 
         <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Services</ThemedText>
-            <TouchableOpacity onPress={handleUrgentJobPress}><ThemedText style={styles.urgentJobText}>Urgent Job 24/7</ThemedText></TouchableOpacity> // [cite: 339]
-            <TouchableOpacity onPress={handleViewAllServicesPress}><ThemedText style={styles.viewAllText}>View All</ThemedText></TouchableOpacity> // [cite: 340]
+            <TouchableOpacity onPress={handleUrgentJobPress}><ThemedText style={styles.urgentJobText}>Urgent Job 24/7</ThemedText></TouchableOpacity>
+            <TouchableOpacity onPress={handleViewAllServicesPress}><ThemedText style={styles.viewAllText}>View All</ThemedText></TouchableOpacity>
         </View>
+
         {renderListContent()}
+
          <View style={styles.notFoundSection}>
            <ThemedText style={styles.notFoundText}>Didn't find your Service?</ThemedText>
            <ThemedText style={styles.notFoundSubText}>Don't worry, You can post your Requirement</ThemedText>
          </View>
 
         <View style={styles.bottomButtonsContainer}>
-          <TouchableOpacity style={styles.button} onPress={handleNewJobRequestPress}> {/* Ensure onPress calls the updated handler */}
+          <TouchableOpacity style={styles.button} onPress={handleNewJobRequestPress}>
              <ThemedText style={styles.buttonText}>New Job Request</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={handleRegisterPress}>
              <ThemedText style={styles.buttonText}>Register</ThemedText>
-          </TouchableOpacity> // [cite: 341]
+          </TouchableOpacity>
         </View>
 
       </ScrollView>
 
+      {/* Register Type Modal */}
       <RegisterTypeModal
-        visible={isRegisterModalVisible} // [cite: 341]
-        onClose={() => setIsRegisterModalVisible(false)} // [cite: 341]
-        onSelectPartner={handleSelectPartner} // [cite: 341]
-        onSelectUser={handleSelectUser} // [cite: 341]
+        visible={isRegisterModalVisible}
+        onClose={() => setIsRegisterModalVisible(false)}
+        onSelectPartner={handleSelectPartner}
+        onSelectUser={handleSelectUser}
       />
 
     </SafeAreaView>
-  ); // [cite: 342]
+  );
 }
 
 // --- Styles ---
-const styles = StyleSheet.create({ // [cite: 342]
-  safeArea: { // [cite: 342]
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: { // [cite: 342]
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderColor,
-  },
-  headerTitle: { // [cite: 342]
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-  },
-   loginText: { // [cite: 342]
-     fontSize: 14,
-     fontWeight: 'bold', // [cite: 343]
-     color: COLORS.accent,
-   }, // [cite: 343]
-  scrollView: { // [cite: 343]
-    flex: 1,
-  },
-  scrollContentContainer: { // [cite: 343]
-    paddingBottom: 20,
-  },
-  bannerContainer: { // [cite: 343]
-    height: 160, // Adjust height as needed
-    width: '100%',
-    marginBottom: 20,
-    backgroundColor: COLORS.bannerPlaceholderBg, // Background if image fails
-  },
-  bannerImage: { // [cite: 343]
-    width: '100%',
-    height: '100%',
-  },
-  sectionHeader: { // [cite: 343]
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 15, // [cite: 344]
-    // marginTop: 10, // Removed explicit top margin // [cite: 344]
-    marginBottom: 15, // [cite: 344]
-  },
-  sectionTitle: { // [cite: 344]
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-  },
-  urgentJobText: { // [cite: 344]
-      fontSize: 14,
-      fontWeight: 'bold',
-      color: COLORS.urgentText,
-  },
-   viewAllText: { // [cite: 344]
-     fontSize: 14,
-     color: COLORS.accent,
-     fontWeight: '500',
-   },
-   servicesGridContainer: { // [cite: 344]
-       paddingHorizontal: 15, // Padding for the grid items // [cite: 345]
-   }, // [cite: 345]
-  serviceGridRow: { // [cite: 345]
-    justifyContent: 'space-between',
-  },
-  serviceItem: { // [cite: 345]
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: COLORS.background, },
+  scrollView: { flex: 1, },
+  scrollContentContainer: { paddingBottom: 20, },
+  // Header Styles (Defined inline for Stack.Screen, or use constants)
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.textPrimary, marginLeft: 0 }, // Removed margin if headerTitleAlign: 'left'
+  loginText: { fontSize: 14, fontWeight: 'bold', color: COLORS.accent, },
+  // Banner
+  bannerContainer: { height: 160, width: '100%', marginBottom: 20, backgroundColor: COLORS.bannerPlaceholderBg, },
+  bannerImage: { width: '100%', height: '100%', },
+  // Section Header
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 15, marginBottom: 15, },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.textPrimary, },
+  urgentJobText: { fontSize: 14, fontWeight: 'bold', color: COLORS.urgentText, },
+  viewAllText: { fontSize: 14, color: COLORS.accent, fontWeight: '500', },
+  // Services Grid
+   servicesGridContainer: { paddingHorizontal: 10, }, // Adjusted padding
+  serviceGridRow: { justifyContent: 'space-around', }, // Use space-around maybe?
+  serviceItem: {
     backgroundColor: COLORS.cardBg,
     paddingVertical: 15,
     paddingHorizontal: 10,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    width: '48%',
+    width: '48%', // Keep as percentage for responsiveness
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 1.41,
     elevation: 2,
-    minHeight: 140, // [cite: 346]
+    minHeight: 140,
   },
-  serviceItemImage: { // [cite: 346]
-      width: 60,
-      height: 60,
-      marginBottom: 8,
-  },
-  serviceItemIcon: { // [cite: 346]
-      marginBottom: 8,
-  },
-  serviceItemText: { // [cite: 346]
-    fontSize: 14,
-    textAlign: 'center',
-    color: COLORS.textPrimary,
-    fontWeight: '500',
-    flexShrink: 1,
-    paddingHorizontal: 4,
-  },
-   notFoundSection: { // [cite: 346]
-     alignItems: 'center',
-     marginVertical: 25,
-     paddingHorizontal: 15,
-   }, // [cite: 347]
-   notFoundText: { // [cite: 347]
-     fontSize: 16,
-     fontWeight: 'bold',
-     color: COLORS.textPrimary,
-     textAlign: 'center',
-   },
-   notFoundSubText: { // [cite: 347]
-     fontSize: 14,
-     color: COLORS.textSecondary,
-     marginTop: 5,
-     textAlign: 'center',
-   },
-  bottomButtonsContainer: { // [cite: 347]
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 15,
-    paddingTop: 20,
-    paddingBottom: 10,
-  },
-  button: { // [cite: 347]
-     backgroundColor: COLORS.buttonBg, // [cite: 348]
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    flex: 1,
-    marginHorizontal: 5,
-    alignItems: 'center',
-  },
-  buttonText: { // [cite: 348]
-    color: COLORS.buttonText,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  loadingIndicator: { // [cite: 348]
-    marginTop: 50,
-    height: 100, // Give loading indicator space
-  },
-  errorText: { // [cite: 348]
-      color: COLORS.errorText,
-      textAlign: 'center',
-      marginTop: 20,
-      marginHorizontal: 15, // [cite: 349]
-      fontSize: 16,
-      height: 100, // Give error message space
-  }, // [cite: 349]
-   noDataText: { // [cite: 349]
-       color: COLORS.textSecondary,
-       textAlign: 'center',
-       marginTop: 20,
-       marginHorizontal: 15,
-       fontSize: 16,
-       height: 100, // Give no data message space
-   }
-}); // [cite: 349]
+  serviceItemImage: { width: 60, height: 60, marginBottom: 8, },
+  serviceItemIcon: { marginBottom: 8, },
+  serviceItemText: { fontSize: 14, textAlign: 'center', color: COLORS.textPrimary, fontWeight: '500', flexShrink: 1, paddingHorizontal: 4, },
+  // Not Found Section
+   notFoundSection: { alignItems: 'center', marginVertical: 25, paddingHorizontal: 15, },
+   notFoundText: { fontSize: 16, fontWeight: 'bold', color: COLORS.textPrimary, textAlign: 'center', },
+   notFoundSubText: { fontSize: 14, color: COLORS.textSecondary, marginTop: 5, textAlign: 'center', },
+  // Bottom Buttons
+  bottomButtonsContainer: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 15, paddingTop: 20, paddingBottom: 10, },
+  button: { backgroundColor: COLORS.buttonBg, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, marginHorizontal: 5, alignItems: 'center', },
+  buttonText: { color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold', },
+  // Loading/Error/No Data
+  loadingIndicator: { marginTop: 50, height: 100, },
+  errorText: { color: COLORS.errorText, textAlign: 'center', marginTop: 20, marginHorizontal: 15, fontSize: 16, height: 100, },
+   noDataText: { color: COLORS.textSecondary, textAlign: 'center', marginTop: 20, marginHorizontal: 15, fontSize: 16, height: 100, }
+});
