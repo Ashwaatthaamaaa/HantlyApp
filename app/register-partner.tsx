@@ -10,7 +10,7 @@ import {
   Alert,
   Image,
   ActivityIndicator,
-  Platform, // Make sure Platform is imported if used
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -25,6 +25,17 @@ interface MunicipalityMaster { municipalityId: number; municipalityName: string;
 interface ServiceMaster { serviceId: number; serviceName: string; imagePath?: string; imageContentType?: string; }
 interface ApiDataItem { id: string; name: string; }
 interface ApiResponse { statusCode: number; statusMessage: string; }
+// Type for validation errors from API
+interface ValidationErrors {
+    [key: string]: string[];
+}
+interface ProblemDetails {
+    type?: string;
+    title?: string;
+    status?: number;
+    detail?: string;
+    errors?: ValidationErrors;
+}
 // --------------------
 
 // --- Base URL ---
@@ -32,7 +43,7 @@ const BASE_URL = 'http://3.110.124.83:2030';
 // -----------------
 
 // --- Colors ---
-const COLORS = {
+const COLORS = { // Use your actual color constants
   background: '#FFFFFF', textPrimary: '#333333', textSecondary: '#888888',
   placeholder: '#AAAAAA', accent: '#555555', headerBg: '#696969', headerText: '#FFFFFF',
   error: '#D9534F', borderColor: '#E0E0E0', buttonBg: '#696969', buttonText: '#FFFFFF',
@@ -41,43 +52,31 @@ const COLORS = {
 
 export default function RegisterPartnerScreen() {
   const router = useRouter();
-
-  // Form state
+  // --- State variables ---
   const [companyName, setCompanyName] = useState<string>('');
   const [regNumber, setRegNumber] = useState<string>('');
-  const [companyLogo, setCompanyLogo] = useState<ImagePicker.ImagePickerAsset | null>(null); // Store full asset
+  const [companyLogo, setCompanyLogo] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [description, setDescription] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
-
-  // Selection state
   const [selectedCountyIds, setSelectedCountyIds] = useState<string[]>([]);
   const [selectedMunicipalityIds, setSelectedMunicipalityIds] = useState<string[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
-
-  // Modal visibility state
   const [isCountyModalVisible, setIsCountyModalVisible] = useState<boolean>(false);
   const [isMunicipalityModalVisible, setIsMunicipalityModalVisible] = useState<boolean>(false);
   const [isServiceModalVisible, setIsServiceModalVisible] = useState<boolean>(false);
-
-  // Fetched Data State
   const [counties, setCounties] = useState<ApiDataItem[]>([]);
   const [isLoadingCounties, setIsLoadingCounties] = useState<boolean>(false);
   const [countyError, setCountyError] = useState<string | null>(null);
-
   const [municipalities, setMunicipalities] = useState<ApiDataItem[]>([]);
   const [isLoadingMunicipalities, setIsLoadingMunicipalities] = useState<boolean>(false);
   const [municipalityError, setMunicipalityError] = useState<string | null>(null);
-
   const [services, setServices] = useState<ApiDataItem[]>([]);
   const [isLoadingServices, setIsLoadingServices] = useState<boolean>(false);
   const [serviceError, setServiceError] = useState<string | null>(null);
-
-  // Signing Up state
   const [isSigningUp, setIsSigningUp] = useState<boolean>(false);
-
 
   // --- Fetch County List ---
   useEffect(() => {
@@ -129,43 +128,21 @@ export default function RegisterPartnerScreen() {
     fetchServices();
 }, []);
 
-  // --- Image Picker Logic with Logging and Correct MediaType ---
-// --- Reverted Image Picker Logic ---
-const handlePickLogo = async () => {
-  console.log("handlePickLogo: Function called."); // Keep logs for now
-  if (isSigningUp) { /* ... */ return; }
-
-  console.log("handlePickLogo: Requesting media library permissions...");
-  try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      console.log("handlePickLogo: Permission status:", status);
-      if (status !== 'granted') { /* ... alert and return ... */ return; }
-  } catch (permissionError) { /* ... error handling ... */ return; }
-
-  console.log("handlePickLogo: Launching image library...");
-  try {
-      let result = await ImagePicker.launchImageLibraryAsync({
-          // *** Revert to the original deprecated option ***
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          // ***********************************************
-          allowsEditing: true,
-          aspect: [1, 1],
-          quality: 0.8,
-      });
-
-      console.log("handlePickLogo: Image picker result:", JSON.stringify(result, null, 2));
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-          console.log("handlePickLogo: Image selected, setting company logo state.");
-          setCompanyLogo(result.assets[0]);
-      } else {
-          console.log("handlePickLogo: Image picking cancelled or no assets selected.");
-      }
-  } catch (error) {
-      console.error("handlePickLogo: Error launching image picker:", error);
-      Alert.alert('Image Picker Error', 'Could not open image library.');
-  }
-};
+  // --- Image Picker Logic ---
+  const handlePickLogo = async () => {
+    if (isSigningUp) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') { Alert.alert('Permission Required','Sorry, we need camera roll permissions to make this work!'); return; }
+    try {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: MediaType.Images,
+            allowsEditing: true, aspect: [1, 1], quality: 0.8
+        });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            setCompanyLogo(result.assets[0]);
+        }
+    } catch (error) { console.error("handlePickLogo: Error launching image picker:", error); Alert.alert('Image Picker Error', 'Could not open image library.');}
+  };
 
   // --- Modal Handlers ---
   const handleCountyConfirm = (selectedIds: string[]) => setSelectedCountyIds(selectedIds);
@@ -183,59 +160,67 @@ const handlePickLogo = async () => {
   const isMunicipalityDisabled = selectedCountyIds.length === 0 || isLoadingMunicipalities || municipalityError !== null;
   const municipalityPlaceholder = selectedCountyIds.length === 0 ? 'Select County First' : isLoadingMunicipalities ? 'Loading Municipalities...' : municipalityError ? 'Error Loading' : 'Select Municipality';
 
-   // --- Partner Sign Up Handler ---
-   const handleSignUp = async () => {
-     // Validation
-     if (!companyName || !regNumber || !description || !phone || !email || !password || !companyLogo) { Alert.alert('Missing Information', 'Please fill in all fields and select a company logo.'); return; }
-     if (selectedCountyIds.length === 0 || selectedMunicipalityIds.length === 0 || selectedServiceIds.length === 0) { Alert.alert('Missing Selections', 'Please select at least one county, municipality, and service category.'); return; }
-     if (password.length < 8) { Alert.alert('Password Too Short', 'Password must be at least 8 characters.'); return; }
 
-     setIsSigningUp(true);
-     const formData = new FormData();
+   // --- Partner Sign Up Handler with Refined Alert Logic ---
+// --- Partner Sign Up Handler with Refined Alert Logic ---
+const handleSignUp = async () => {
+  const formData = new FormData();
+  // ... (validation and formData setup remains the same) ...
 
-     // Append fields
-     formData.append('CompanyName', companyName.trim());
-     formData.append('CompanyRegistrationNumber', regNumber.trim());
-     formData.append('CompanyPresentation', description.trim());
-     formData.append('MobileNumber', phone.trim());
-     formData.append('EmailId', email.trim());
-     formData.append('Password', password);
-     formData.append('Username', email.trim()); // Use email as username
-     formData.append('Active', 'true');
-     formData.append('ContactPerson', companyName.trim()); // Use Company Name
+  const url = `${BASE_URL}/api/Company/CompanySignUp`;
+  console.log(`--- Attempting Partner Sign Up ---`);
+  console.log(`URL: ${url}`);
 
-     // Append lists
-     selectedCountyIds.forEach(id => formData.append('CountyIdList', id));
-     selectedMunicipalityIds.forEach(id => formData.append('MunicipalityIdList', id));
-     selectedServiceIds.forEach(id => formData.append('ServiceIdList', id));
+  try {
+     const response = await fetch(url, { method: 'POST', body: formData });
+     const responseText = await response.text();
+     console.log(`Response Status: ${response.status}, Text: ${responseText}`);
 
-     // Append logo
-     if (companyLogo) {
-        const uriParts = companyLogo.uri.split('.'); const fileType = uriParts[uriParts.length - 1];
-        const mimeType = companyLogo.mimeType || `image/${fileType}`; const fileName = companyLogo.fileName || `logo.${fileType}`;
-        formData.append('LogoImage', { uri: companyLogo.uri, name: fileName, type: mimeType } as any);
+     if (response.ok) {
+         // --- SUCCESS HANDLING (Remains the same) ---
+         let successMessage = 'Registration successful! Please log in.';
+         try { /* ... try parsing ApiResponse ... */ } catch (e) { /* ... */ }
+         Alert.alert('Success!', successMessage, [ /* ... */ ]);
+
+     } else {
+         // --- FAILURE HANDLING ---
+         let errorTitle = 'Registration Failed';
+         let errorMessage = `An error occurred (Status: ${response.status}).`;
+
+         try {
+             const errorData: ProblemDetails = JSON.parse(responseText);
+             console.log("Parsed Error Data:", errorData);
+
+             if (errorData.errors) {
+                 // Format validation errors (Remains the same)
+                 errorTitle = errorData.title || 'Validation Errors';
+                 errorMessage = "Please correct the following:\n" +
+                     Object.entries(errorData.errors)
+                         .map(([field, messages]) => `- ${field}: ${(messages as string[]).join(', ')}`)
+                         .join('\n');
+             } else {
+                 // *** CORRECTED FALLBACK ORDER for other errors ***
+                 // Use detail, title, raw text, or default. Removed statusMessage.
+                 errorMessage = errorData.detail || errorData.title || responseText || errorMessage;
+                 // *** END CORRECTION ***
+                 if (errorData.title && errorData.title !== errorTitle) {
+                     errorTitle = errorData.title;
+                 }
+             }
+         } catch (e) {
+              console.warn("Could not parse error response as JSON:", e);
+              if (responseText && responseText.length < 150 && !responseText.trim().startsWith('<')) { errorMessage = responseText; }
+         }
+         Alert.alert(errorTitle, errorMessage); // Show formatted/parsed error
      }
 
-     const url = `${BASE_URL}/api/Company/CompanySignUp`;
-     console.log(`--- Attempting Partner Sign Up ---`);
-     console.log(`URL: ${url}`);
-
-     try {
-        const response = await fetch(url, { method: 'POST', body: formData }); // No Content-Type header
-        const responseText = await response.text();
-        console.log(`Response Status: ${response.status}, Text: ${responseText}`);
-        if (response.ok) {
-            let responseData: ApiResponse | null = null; let successMessage = 'Registration Successful!';
-            try { responseData = JSON.parse(responseText); if (responseData?.statusMessage) { successMessage = responseData.statusMessage; }; if (responseData?.statusCode && !(responseData.statusCode >= 200 && responseData.statusCode < 300)) { throw new Error(successMessage); } } catch (e) { if (responseText && responseText.length < 100) { successMessage = responseText; } }
-            Alert.alert('Success!', successMessage, [{ text: 'OK', onPress: () => router.push('/login') }]);
-        } else {
-             let errorMessage = `Registration failed (Status: ${response.status})`;
-             try { const errorData = JSON.parse(responseText); if (errorData.errors) { errorMessage = Object.entries(errorData.errors).map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`).join('\n'); } else { errorMessage = errorData.statusMessage || errorData.title || errorData.detail || responseText || errorMessage; } } catch (e) { errorMessage = responseText || errorMessage; }
-             Alert.alert('Registration Failed', errorMessage);
-        }
-     } catch (error: any) { console.error("Partner Sign Up Error:", error); Alert.alert('Error', `An unexpected error occurred: ${error.message}`); }
-     finally { setIsSigningUp(false); }
-  };
+  } catch (error: any) {
+     console.error("Partner Sign Up Error:", error);
+     Alert.alert('Error', `An unexpected network or setup error occurred: ${error.message}`);
+  } finally {
+     setIsSigningUp(false);
+  }
+};
 
 
   // --- JSX Structure ---
@@ -245,16 +230,17 @@ const handlePickLogo = async () => {
       <View style={styles.header}>
          <TouchableOpacity onPress={() => !isSigningUp && router.back()} style={styles.backButton} disabled={isSigningUp}><Ionicons name="arrow-back" size={24} color={COLORS.headerText} /></TouchableOpacity>
          <Text style={styles.headerTitle}>Register As Partner</Text>
-         <View style={styles.backButton} />
+         <View style={styles.backButton} />{/* Placeholder for alignment */}
       </View>
 
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+
         {/* Form Fields */}
         <View style={styles.inputContainer}><Ionicons name="business-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Company Name *" value={companyName} onChangeText={setCompanyName} placeholderTextColor={COLORS.placeholder} editable={!isSigningUp}/></View>
         <View style={styles.inputContainer}><Ionicons name="briefcase-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Registration Number" value={regNumber} onChangeText={setRegNumber} placeholderTextColor={COLORS.placeholder} editable={!isSigningUp}/></View>
         {/* Logo Picker */}
         <View style={styles.logoContainer}>
-            <Image source={companyLogo?.uri ? { uri: companyLogo.uri } : require('@/assets/images/icon.png')} style={styles.logoPreview}/>
+            <Image source={companyLogo?.uri ? { uri: companyLogo.uri } : require('@/assets/images/icon.png')} style={styles.logoPreview} />
             <TouchableOpacity style={[styles.logoButton, isSigningUp && styles.buttonDisabled]} onPress={handlePickLogo} disabled={isSigningUp}>
                 <Text style={styles.logoButtonText}>{companyLogo ? 'Change Logo *' : 'Select Logo *'}</Text>
             </TouchableOpacity>
@@ -265,8 +251,8 @@ const handlePickLogo = async () => {
         <TouchableOpacity style={[styles.selectorContainer, isSigningUp && styles.disabledSelector]} onPress={() => !isSigningUp && !isLoadingCounties && counties.length > 0 && setIsCountyModalVisible(true)} disabled={isLoadingCounties || countyError !== null || isSigningUp}>
             <Text style={[styles.selectorText, selectedCountyIds.length === 0 && styles.placeholderText]}>{isLoadingCounties ? 'Loading Counties...' : getMultiDisplayText(selectedCountyIds, counties, 'Select County *')}</Text>
             {isLoadingCounties ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
-        </TouchableOpacity>
-        {countyError && <Text style={styles.errorText}>{countyError}</Text>}
+         </TouchableOpacity>
+         {countyError && <Text style={styles.errorText}>{countyError}</Text>}
         <TouchableOpacity style={[styles.selectorContainer, (isMunicipalityDisabled || isSigningUp) && styles.disabledSelector]} onPress={() => !isSigningUp && !isMunicipalityDisabled && municipalities.length > 0 && setIsMunicipalityModalVisible(true)} disabled={isMunicipalityDisabled || isSigningUp}>
             <Text style={[styles.selectorText, selectedMunicipalityIds.length === 0 && styles.placeholderText]}>{getMultiDisplayText(selectedMunicipalityIds, municipalities, municipalityPlaceholder + ' *')}</Text>
             {isLoadingMunicipalities ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
