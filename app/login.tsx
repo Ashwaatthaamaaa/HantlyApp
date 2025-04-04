@@ -23,7 +23,7 @@ interface ApiResponse {
 // --------------------
 
 // --- Base URL ---
-const BASE_URL = 'http://3.110.124.83:2030';
+const BASE_URL = 'https://3.110.124.83';
 // -----------------
 
 // --- Colors ---

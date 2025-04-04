@@ -31,7 +31,9 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.sk5633.hantly",
-      "usesCleartextTraffic": true
+      "permissions": [
+        "android.permission.INTERNET"
+      ]
     },
     "web": {
       "bundler": "metro",
