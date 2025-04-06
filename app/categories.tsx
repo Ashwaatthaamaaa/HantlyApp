@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; // Keep Ionicons for fallback/header
 import { Stack, useRouter } from 'expo-router';
+import { BASE_URL } from '@/constants/Api';
 
 // --- Define Types based on API Response ---
 interface Service {
@@ -34,7 +35,6 @@ interface ServiceListItem {
 // -----------------------------------------
 
 // --- Base URL ---
-const BASE_URL = 'http://3.110.124.83:2030';
 // -----------------
 
 // --- Approximate Colors ---
