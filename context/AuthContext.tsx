@@ -2,9 +2,9 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { BASE_URL } from '@/constants/Api';
 
 // Use the updated BASE_URL
-const BASE_URL = 'http://3.110.124.83:2030';
 const SESSION_STORAGE_KEY = 'userSession';
 
 // --- Types ---
@@ -67,97 +67,113 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loadSession();
   }, []);
 
-// Updated signIn function for context/AuthContext.tsx
 
 const signIn = async (email: string, password: string, isPartner: boolean): Promise<boolean> => {
-    setIsLoading(true);
-    const trimmedEmail = email.trim();
-    const loginEndpoint = isPartner ? '/api/Company/CompanySignIn' : '/api/User/UserSignIn';
-    const loginUrl = `${BASE_URL}${loginEndpoint}`;
-    const loginRequestBody = { emailId: trimmedEmail, password: password, active: true };
+  setIsLoading(true);
+  const trimmedEmail = email.trim();
+  const loginEndpoint = isPartner ? '/api/Company/CompanySignIn' : '/api/User/UserSignIn';
+  const loginUrl = `${BASE_URL}${loginEndpoint}`;
+  const loginRequestBody = { emailId: trimmedEmail, password: password, active: true };
 
-    let retrievedId: number | null = null;
-    let retrievedName: string | null = null;
+  let retrievedId: number | null = null;
+  let retrievedName: string | null = null;
 
-    try {
-      // 1. Validate Credentials & Get ID from statusCode
+  try {
+      // 1. Attempt Login API Call
       console.log(`Attempting login to: ${loginUrl}`);
       const loginResponse = await fetch(loginUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(loginRequestBody),
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'accept': 'text/plain' },
+          body: JSON.stringify(loginRequestBody),
       });
+
       const loginResponseText = await loginResponse.text();
-      console.log(`Login Status: ${loginResponse.status}`);
+      console.log(`Login Raw Response Text: ${loginResponseText}`);
+      console.log(`Login Status Code: ${loginResponse.status}`);
+
       if (!loginResponse.ok) {
-         let errorMessage = `Login failed (Status: ${loginResponse.status})`;
-         try { const errorData = JSON.parse(loginResponseText); errorMessage = errorData?.statusMessage || errorData?.title || errorData?.detail || loginResponseText || errorMessage; } catch (e) { errorMessage = loginResponseText || errorMessage; }
-         throw new Error(errorMessage);
+          let httpErrorMessage = `Login request failed (HTTP Status: ${loginResponse.status})`;
+          try {
+              const errorData = JSON.parse(loginResponseText);
+              httpErrorMessage = errorData?.statusMessage || errorData?.title || errorData?.detail || loginResponseText || httpErrorMessage;
+          } catch (e) { httpErrorMessage = loginResponseText || httpErrorMessage; }
+           throw new Error(httpErrorMessage);
       }
 
-      // --- Parse response and get ID from statusCode ---
+      // 2. Parse the response and check the logical status via statusCode
       const loginResult = JSON.parse(loginResponseText);
-      if (typeof loginResult?.statusCode !== 'number') {
-          throw new Error("Login succeeded but response did not contain a valid statusCode (UserId/CompanyId).");
+
+      if (typeof loginResult?.statusCode !== 'number' || loginResult.statusCode <= 0) {
+          // Use API message or a default for logical failure
+          const failureMessage = loginResult?.statusMessage || "Invalid credentials or user not found.";
+          console.warn(`Login failed logically: statusCode=${loginResult?.statusCode}, message='${failureMessage}'`);
+          // Throw the specific failure message so the catch block can identify it
+          throw new Error(failureMessage);
       }
+
+      // --- If statusCode > 0, proceed as success ---
       retrievedId = loginResult.statusCode;
       console.log(`Login validation successful. Retrieved ID from statusCode: ${retrievedId}`);
-      // --- End ID extraction ---
 
-
-      // 2. Fetch User/Company Name using the detail API
+      // 3. Fetch User/Company Name using the detail API
       const detailEndpoint = isPartner ? '/api/Company/GetCompanyDetail' : '/api/User/GetUserDetail';
-      const detailUrl = `${BASE_URL}${detailEndpoint}?EmailId=${encodeURIComponent(trimmedEmail)}`; // Fetch details using email
+      const detailUrl = `${BASE_URL}${detailEndpoint}?EmailId=${encodeURIComponent(trimmedEmail)}`;
       console.log(`Workspaceing details (for name) from: ${detailUrl}`);
-      const detailResponse = await fetch(detailUrl);
-      if (!detailResponse.ok) {
-           const detailErrorText = await detailResponse.text();
-           // Log error but proceed, session can be created without name if needed, though name is preferred
-           console.error(`Failed to fetch details after login (Status: ${detailResponse.status}): ${detailErrorText}`);
-           // Throwing error here would prevent login if detail fetch fails, might not be desired
-           // throw new Error(`Failed to fetch details after login (Status: ${detailResponse.status}): ${detailErrorText}`);
-           retrievedName = ''; // Set name to empty if fetch fails but login succeeded
-      } else {
-          const detailData = await detailResponse.json();
-          console.log("Details received:", JSON.stringify(detailData, null, 2));
 
-          // Extract Name
-          if (isPartner) {
-               retrievedName = detailData?.contactPerson || detailData?.companyName || ''; // Fallback to empty string
+      try {
+          const detailResponse = await fetch(detailUrl);
+          if (!detailResponse.ok) {
+               const detailErrorText = await detailResponse.text();
+               console.error(`Failed to fetch details after login (Status: ${detailResponse.status}): ${detailErrorText}`);
+               retrievedName = '';
           } else {
-               retrievedName = detailData?.username || ''; // Use username (lowercase u), fallback to empty
+               const detailData = await detailResponse.json();
+               console.log("Details received:", JSON.stringify(detailData, null, 2));
+               if (isPartner) {
+                    retrievedName = detailData?.contactPerson || detailData?.companyName || '';
+               } else {
+                    retrievedName = detailData?.username || '';
+               }
+               console.log(`Retrieved name: ${retrievedName}`);
           }
-          console.log(`Retrieved name: ${retrievedName}`);
+      } catch (detailError: any) {
+           console.error("Error fetching user/company details after login:", detailError);
+           retrievedName = '';
       }
 
-      // 3. Create and Store Session (ID is mandatory, name is best-effort)
-      if (retrievedId === null || retrievedId <= 0) { // Double check ID is valid
-           throw new Error("Login succeeded but could not obtain a valid User/Company ID.");
-      }
-
+      // 4. Create and Store Session
       const newSession: Session = {
-        type: isPartner ? 'partner' : 'user',
-        email: trimmedEmail,
-        id: retrievedId, // Use ID from statusCode
-        name: retrievedName || 'Unknown', // Use retrieved name, fallback if fetch failed
+          type: isPartner ? 'partner' : 'user',
+          email: trimmedEmail,
+          id: retrievedId!, // Use non-null assertion based on previous logic
+          name: retrievedName || 'Unknown',
       };
 
       await SecureStore.setItemAsync(SESSION_STORAGE_KEY, JSON.stringify(newSession));
       setSession(newSession);
       console.log("Sign in successful, session stored:", JSON.stringify(newSession));
       setIsLoading(false);
-      return true; // Indicate success
+      return true;
 
-    } catch (error: any) {
+  } catch (error: any) {
       console.error("Sign in error:", error);
-      Alert.alert('Sign In Failed', error.message);
-      // Clear any potentially partially stored data if needed
+
+      // ** FIX START: Check for specific credential error message **
+      let alertMessage = error.message; // Default to the error message we caught
+      // Check if the error message indicates invalid credentials (customize based on actual API messages)
+      if (error.message?.toLowerCase().includes("invalid user") || error.message?.toLowerCase().includes("invalid credentials")) {
+          alertMessage = "Please check your email or password."; // Use user-friendly message
+      }
+      // ** FIX END **
+
+      Alert.alert('Sign In Failed', alertMessage); // Show the determined alert message
+
       await SecureStore.deleteItemAsync(SESSION_STORAGE_KEY);
       setSession(null);
       setIsLoading(false);
-      return false; // Indicate failure
-    }
-  }; // End of signIn function
+      return false;
+  }
+};
   // --- Sign Out Function ---
   const signOut = async () => {
     setIsLoading(true);
