@@ -13,18 +13,11 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'; //
 import { Link, useRouter } from 'expo-router'; // Import useRouter
-import ForgotPasswordModal from '@/components/ForgotPasswordModal'; //
+import ForgotPasswordModal from '@/components/ForgotPasswordModal';
+//
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
-// --- API Response Type (Keep if needed for other parts, not directly for signIn) ---
-// interface ApiResponse {
-//     statusCode: number;
-//     statusMessage: string;
-// }
-// --------------------
 
-// --- Base URL (Centralize or remove if only used in context/modals) ---
-// const BASE_URL = 'http://3.110.124.83:2030'; // Use updated URL
 
 // --- Colors ---
 const COLORS = { //
@@ -33,43 +26,58 @@ const COLORS = { //
   lightButtonBg: '#F0F0F0', borderColor: '#E0E0E0', buttonDisabledBg: '#AAAAAA',
   error: '#D9534F',
 };
-//
+
 export default function LoginScreen() { //
-  const router = useRouter(); // Initialize router
-  const { signIn, isLoading } = useAuth(); // Get signIn function and loading state
+  const router = useRouter();
+  const { signIn, isLoading } = useAuth();
 
-  const [email, setEmail] = useState<string>(''); //
-  const [password, setPassword] = useState<string>(''); //
-  const [isPartner, setIsPartner] = useState<boolean>(false); //
-  const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false); //
-  const [isForgotModalVisible, setIsForgotModalVisible] = useState<boolean>(false); //
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [isPartner, setIsPartner] = useState<boolean>(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
+  const [isForgotModalVisible, setIsForgotModalVisible] = useState<boolean>(false);
 
-  // --- Updated Login Handler ---
-  const handleLogin = async () => { //
-    const trimmedEmail = email.trim(); //
-    const trimmedPassword = password; //
+  // --- Updated Login Handler with Validation ---
+  const handleLogin = async () => {
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password; // Keep password as is for length check
 
-    if (!trimmedEmail || !trimmedPassword) { //
-      Alert.alert('Missing Information', 'Please enter both email and password.'); //
-      return; //
+    // ** FIX START: Added Client-Side Validation **
+    // 1. Basic Email Format Check
+    if (!/\S+@\S+\.\S+/.test(trimmedEmail)) {
+        Alert.alert('Invalid Email', 'Please enter a valid email address.');
+        return;
     }
 
-    // Call signIn from AuthContext
-    const success = await signIn(trimmedEmail, trimmedPassword, isPartner); //
+    // 2. Password Length Check
+    if (trimmedPassword.length < 8) {
+        Alert.alert('Password Too Short', 'Password must be at least 8 characters.');
+        return;
+    }
+    // ** FIX END **
 
-    if (success) { //
-      // --- Add explicit navigation here (Option C) ---
-      router.replace('/(tabs)/home'); // Navigate immediately on success
-      // ------------------------------------------
-      console.log("Sign in successful, navigation triggered."); //
-    } else { //
+    // Existing check (redundant now but harmless)
+    if (!trimmedEmail || !trimmedPassword) {
+      Alert.alert('Missing Information', 'Please enter both email and password.');
+      return;
+    }
+
+    // Call signIn from AuthContext (already handles API logic and alerts)
+    const success = await signIn(trimmedEmail, trimmedPassword, isPartner);
+
+    if (success) {
+      // Navigate immediately on success
+      router.replace('/(tabs)/home');
+      console.log("Sign in successful, navigation triggered.");
+    } else {
       // Error alert is shown inside the signIn function in the context
-      console.log("Sign in failed."); //
+      console.log("Sign in failed (handled by AuthContext).");
     }
   };
+
   // --- Other handlers ---
-  const handleForgotPassword = () => { if (!isLoading) setIsForgotModalVisible(true); }; //
-  const handleNavigateRegister = () => { if (!isLoading) router.push('/register'); }; //
+  const handleForgotPassword = () => { if (!isLoading) setIsForgotModalVisible(true); };
+  const handleNavigateRegister = () => { if (!isLoading) router.push('/register'); };
 
 
   // --- JSX ---
@@ -119,6 +127,7 @@ export default function LoginScreen() { //
         <TouchableOpacity style={styles.registerPartnerButton} onPress={() => !isLoading && router.push('/register-partner')} disabled={isLoading}>
             <Text style={styles.registerPartnerButtonText}>Register as Partner</Text>
         </TouchableOpacity>
+
       </ScrollView>
 
       {/* Forgot Password Modal */}
@@ -151,4 +160,3 @@ const styles = StyleSheet.create({
   registerPartnerButton: { backgroundColor: COLORS.lightButtonBg, paddingVertical: 16, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: COLORS.borderColor, marginBottom: 30 }, //
   registerPartnerButtonText: { color: COLORS.textPrimary, fontSize: 16, fontWeight: 'bold' }, //
 });
-//
