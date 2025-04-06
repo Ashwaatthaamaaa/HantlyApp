@@ -16,9 +16,8 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-
+import { BASE_URL } from '@/constants/Api';
 // --- Base URL ---
-const BASE_URL = 'http://3.110.124.83:2030';
 
 // --- Colors (Consistent with theme) ---
 const COLORS = {

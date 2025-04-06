@@ -18,9 +18,9 @@ import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import SelectModal from '@/components/MultiSelectModal'; // Import reusable select modal
+import { BASE_URL } from '@/constants/Api';
 
 // --- Base URL ---
-const BASE_URL = 'http://3.110.124.83:2030';
 
 // --- Types ---
 interface TicketImage {

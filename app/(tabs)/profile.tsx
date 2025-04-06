@@ -7,6 +7,7 @@ import ForgotPasswordModal from '@/components/ForgotPasswordModal';
 import LanguageSelectionModal from '@/components/LanguageSelectionModal';
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BASE_URL } from '@/constants/Api';
 
 // --- REMOVED Placeholder AuthService ---
 
@@ -37,7 +38,6 @@ interface PartnerProfile {
 
 
 // --- Base URL (Still needed for update API) ---
-const BASE_URL = 'http://3.110.124.83:2030';
 
 // --- Colors (Keep consistent) ---
 const COLORS = {

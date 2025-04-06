@@ -14,9 +14,9 @@ import {
   ActivityIndicator, // Added
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { BASE_URL } from '@/constants/Api';
 
 // --- Base URL ---
-const BASE_URL = 'http://3.110.124.83:2030';
 // -----------------
 
 // API Response Type (Generic Success/Error)

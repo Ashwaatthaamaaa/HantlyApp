@@ -19,10 +19,11 @@ interface CountyMaster { countyId: number; countyName: string; }
 interface MunicipalityMaster { municipalityId: number; municipalityName: string; countyId: number; countyName?: string; }
 interface ApiDataItem { id: string; name: string; }
 interface ApiResponse { statusCode: number; statusMessage: string; }
+
+import { BASE_URL } from '@/constants/Api';
 // --------------------
 
 // --- Base URL ---
-const BASE_URL = 'http://3.110.124.83:2030';
 // -----------------
 
 // --- Colors ---

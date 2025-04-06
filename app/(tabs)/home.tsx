@@ -12,11 +12,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context'; // Ensure import
-import { Stack, useRouter } from 'expo-router'; // Import Stack
+import { Stack, useRouter } from 'expo-router';
+// Import Stack
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import RegisterTypeModal from '@/components/RegisterTypeModal';
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { BASE_URL } from '@/constants/Api';
 
 // --- Define Types based on API Response ---
 interface Service {
@@ -37,7 +39,8 @@ interface ServiceListItem {
 
 
 // --- Base URL ---
-const BASE_URL = 'http://3.110.124.83:2030'; // Use updated URL
+// ** FIX START: Updated BASE_URL **
+// ** FIX END **
 // -----------------
 
 // --- Approximate Colors ---
@@ -55,6 +58,7 @@ const COLORS = {
   bannerPlaceholderBg: '#E0E0E0',
   errorText: '#D9534F',
 };
+
 // --- Service Item Component with Fallback ---
 interface ServiceItemProps {
     item: ServiceListItem;
@@ -71,6 +75,10 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item }) => {
         if (item.iconName && item.iconSet === 'ion') {
             return <Ionicons name={item.iconName as any} size={60} color={COLORS.iconColor} style={styles.serviceItemIcon}/>;
         } else if (item.imageUri && item.contentType?.startsWith('image/')) {
+             // NOTE: If imagePath from API is relative, prepend BASE_URL if needed
+             // const fullImageUri = item.imageUri.startsWith('http') ? item.imageUri : `${BASE_URL}${item.imageUri}`;
+             // return <Image source={{ uri: fullImageUri }} style={styles.serviceItemImage} resizeMode="contain"/>;
+             // Assuming imagePath is already a full URL or handled correctly by API response
              return <Image source={{ uri: item.imageUri }} style={styles.serviceItemImage} resizeMode="contain"/>;
         } else {
              return <Ionicons name="help-circle-outline" size={60} color={COLORS.textSecondary} style={styles.serviceItemIcon}/>;
@@ -100,27 +108,49 @@ export default function HomeScreen() {
   useEffect(() => {
     const fetchServices = async () => {
       setIsLoading(true); setError(null);
+      // ** NOTE: URL now uses the updated BASE_URL defined above **
       const url = `${BASE_URL}/api/Service/GetServiceList`;
+      console.log(`Workspaceing services from: ${url}`); // Log the URL being used
       try {
         const response = await fetch(url);
-        if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+        console.log(`Service fetch response status: ${response.status}`); // Log status
+
+        if (!response.ok) {
+            const errorText = await response.text(); // Try to get error text
+            console.error(`Service fetch failed (${response.status}): ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText || 'Failed to fetch'}`);
+        }
+
         const contentType = response.headers.get("content-type");
-        if (contentType?.includes("application/json")) {
-            const data: Service[] = await response.json();
-            const formattedData: ServiceListItem[] = data.map(service => {
-                const baseItem = { id: service.serviceId.toString(), name: service.serviceName, contentType: service.imageContentType };
-                // Corrected fallback logic (Example: Use icon if ID is 2 OR name is Carpenter OR no valid image content type)
-                if (service.serviceId === 2 || service.serviceName === "Carpenter" || !service.imageContentType?.startsWith('image/')) {
-                    return { ...baseItem, iconName: 'hammer-outline', iconSet: 'ion' } as ServiceListItem;
-                } else {
-                    return { ...baseItem, imageUri: service.imagePath } as ServiceListItem;
-                }
-            });
-            setServices(formattedData);
-        } else { throw new Error("Received non-JSON response"); }
-      } catch (err: any) { console.error("Failed to fetch services:", err);
-        setError(`Failed to load services: ${err.message}`); }
-      finally { setIsLoading(false); }
+        if (!contentType?.includes("application/json")) {
+            const responseText = await response.text();
+            console.error(`Received non-JSON response: ${responseText}`);
+            throw new Error("Received non-JSON response");
+        }
+
+        const data: Service[] = await response.json();
+        console.log(`Services data received:`, data); // Log received data
+
+        const formattedData: ServiceListItem[] = data.map(service => {
+            const baseItem = { id: service.serviceId.toString(), name: service.serviceName, contentType: service.imageContentType };
+            // Corrected fallback logic (Example: Use icon if ID is 2 OR name is Carpenter OR no valid image content type)
+            if (service.serviceId === 2 || service.serviceName === "Carpenter" || !service.imageContentType?.startsWith('image/')) {
+                return { ...baseItem, iconName: 'hammer-outline', iconSet: 'ion' } as ServiceListItem;
+            } else {
+                 // Assuming imagePath is a full URL now, adjust if needed
+                 // const imageUri = service.imagePath.startsWith('http') ? service.imagePath : `${BASE_URL}${service.imagePath}`;
+                 const imageUri = service.imagePath; // Use directly if API provides full URL
+                 return { ...baseItem, imageUri: imageUri } as ServiceListItem;
+            }
+        });
+        setServices(formattedData);
+
+      } catch (err: any) {
+          console.error("Failed to fetch services:", err);
+          setError(`Failed to load services: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchServices();
   }, []);
@@ -144,7 +174,6 @@ export default function HomeScreen() {
   const handleRegisterPress = () => setIsRegisterModalVisible(true);
   const handleSelectPartner = () => { setIsRegisterModalVisible(false); router.push('/register-partner'); };
   const handleSelectUser = () => { setIsRegisterModalVisible(false); router.push('/register'); };
-
 
   // --- Render Content for FlatList ---
   const renderListContent = () => {
@@ -187,7 +216,7 @@ export default function HomeScreen() {
                         <TouchableOpacity onPress={() => router.push('/login')} style={{ marginRight: 15 }}>
                             <ThemedText style={styles.loginText}>LOG IN</ThemedText>
                         </TouchableOpacity>
-                    ) : null // Render nothing in the right header if logged in
+                     ) : null // Render nothing in the right header if logged in
                 ),
                 // Prevent back button if needed (usually not for tabs)
                 // headerLeft: () => null,
@@ -224,7 +253,7 @@ export default function HomeScreen() {
           <TouchableOpacity style={styles.button} onPress={handleRegisterPress}>
              <ThemedText style={styles.buttonText}>Register</ThemedText>
           </TouchableOpacity>
-        </View>
+         </View>
 
       </ScrollView>
 

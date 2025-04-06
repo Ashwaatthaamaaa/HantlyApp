@@ -19,10 +19,10 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import ImageViewing from "react-native-image-viewing"; // Assuming installed
 import Modal from 'react-native-modal'; // Using react-native-modal for OTP input example
+import { BASE_URL } from '@/constants/Api';
 
 // --- Base URL ---
 // IMPORTANT: Replace with your actual API endpoint if different
-const BASE_URL = 'http://3.110.124.83:2030';
 
 // --- Types ---
 interface TicketImage {

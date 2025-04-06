@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SelectModal from '@/components/MultiSelectModal';
+import { BASE_URL } from '@/constants/Api';
 // Import ImagePicker
 import * as ImagePicker from 'expo-image-picker';
 
@@ -36,7 +37,6 @@ interface ProblemDetails {
 // --------------------
 
 // --- Base URL ---
-const BASE_URL = 'http://3.110.124.83:2030';
 // -----------------
 
 // --- Colors ---

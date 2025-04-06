@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import SelectModal from '@/components/MultiSelectModal';
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { BASE_URL } from '@/constants/Api';
 
 // --- Define Types ---
 interface ApiDataItem { id: string; name: string; }
@@ -30,7 +31,6 @@ interface PartnerProfileInfo { companyName?: string; contactPerson?: string; /* 
 
 
 // --- Base URL ---
-const BASE_URL = 'http://3.110.124.83:2030'; // Use updated URL
 // -----------------
 
 // --- Colors (Consistent with theme) ---
