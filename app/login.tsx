@@ -37,44 +37,43 @@ export default function LoginScreen() { //
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
   const [isForgotModalVisible, setIsForgotModalVisible] = useState<boolean>(false);
 
-  // --- Updated Login Handler with Validation ---
-  const handleLogin = async () => {
-    const trimmedEmail = email.trim();
-    const trimmedPassword = password; // Keep password as is for length check
+// --- Updated Login Handler with Validation ---
+const handleLogin = async () => {
+  const trimmedEmail = email.trim();
+  const trimmedPassword = password; // Keep password as is for length check
 
-    // ** FIX START: Added Client-Side Validation **
-    // 1. Basic Email Format Check
-    if (!/\S+@\S+\.\S+/.test(trimmedEmail)) {
-        Alert.alert('Invalid Email', 'Please enter a valid email address.');
-        return;
-    }
-
-    // 2. Password Length Check
-    if (trimmedPassword.length < 8) {
-        Alert.alert('Password Too Short', 'Password must be at least 8 characters.');
-        return;
-    }
-    // ** FIX END **
-
-    // Existing check (redundant now but harmless)
-    if (!trimmedEmail || !trimmedPassword) {
-      Alert.alert('Missing Information', 'Please enter both email and password.');
+  // ** FIX START: Added Client-Side Validation **
+  // 1. Basic Email Format Check
+  if (!/\S+@\S+\.\S+/.test(trimmedEmail)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
       return;
-    }
+  }
 
-    // Call signIn from AuthContext (already handles API logic and alerts)
-    const success = await signIn(trimmedEmail, trimmedPassword, isPartner);
+  // 2. Password Length Check
+  if (trimmedPassword.length < 8) {
+      Alert.alert('Password Too Short', 'Password must be at least 8 characters.');
+      return;
+  }
+  // ** FIX END **
 
-    if (success) {
-      // Navigate immediately on success
-      router.replace('/(tabs)/home');
-      console.log("Sign in successful, navigation triggered.");
-    } else {
-      // Error alert is shown inside the signIn function in the context
-      console.log("Sign in failed (handled by AuthContext).");
-    }
-  };
+  // Existing check (redundant now but harmless)
+  if (!trimmedEmail || !trimmedPassword) {
+    Alert.alert('Missing Information', 'Please enter both email and password.');
+    return;
+  }
 
+  // Call signIn from AuthContext (already handles API logic and alerts)
+  const success = await signIn(trimmedEmail, trimmedPassword, isPartner);
+
+  if (success) {
+    // Navigate immediately on success
+    router.replace('/(tabs)/home');
+    console.log("Sign in successful, navigation triggered.");
+  } else {
+    // Error alert is shown inside the signIn function in the context
+    console.log("Sign in failed (handled by AuthContext).");
+  }
+};
   // --- Other handlers ---
   const handleForgotPassword = () => { if (!isLoading) setIsForgotModalVisible(true); };
   const handleNavigateRegister = () => { if (!isLoading) router.push('/register'); };

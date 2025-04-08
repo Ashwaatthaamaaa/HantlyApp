@@ -1,15 +1,12 @@
-// File: app/(tabs)/profile.tsx
-import React, { useState, useEffect } from 'react'; // Removed useCallback as fetchData moved to context
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator, Alert, Switch } from 'react-native'; // Removed AppState for this example
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator, Alert, Switch } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ForgotPasswordModal from '@/components/ForgotPasswordModal';
 import LanguageSelectionModal from '@/components/LanguageSelectionModal';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BASE_URL } from '@/constants/Api';
-
-// --- REMOVED Placeholder AuthService ---
 
 // --- Types (Keep UserProfile, PartnerProfile if needed, or define inline) ---
 // These might need adjustment based on actual API response structure fetched AFTER login
@@ -68,16 +65,17 @@ export default function ProfileScreen() {
   useEffect(() => {
       const fetchProfileDetails = async () => {
           if (!session) {
-              // If session becomes null (e.g., due to logout elsewhere), redirect
-              // This might be redundant if _layout handles it, but safe fallback
-              // router.replace('/login');
+              // No need to fetch if no session
               setIsLoadingProfile(false); // Not loading if no session
               setProfileData(null); // Ensure no stale data
+              setError(null); // Clear any previous errors
               return;
           }
 
+          // Reset state for fetch only if session exists
           setIsLoadingProfile(true);
           setError(null);
+          setProfileData(null); // Clear previous profile data before fetching new
 
           // Determine endpoint based on session type
           const detailEndpoint = session.type === 'partner' ? '/api/Company/GetCompanyDetail' : '/api/User/GetUserDetail';
@@ -97,6 +95,7 @@ export default function ProfileScreen() {
           } catch (err: any) {
               console.error("Failed to load profile details:", err);
               setError(`Failed to load profile: ${err.message}`);
+              setProfileData(null); // Ensure profile data is null on error
           } finally {
               setIsLoadingProfile(false);
           }
@@ -116,7 +115,6 @@ export default function ProfileScreen() {
   };
 
   const handleResetPassword = () => setIsForgotModalVisible(true);
-
   // Use signOut from context
   const handleLogout = async () => {
     Alert.alert("Confirm Logout", "Are you sure you want to log out?",
@@ -130,10 +128,8 @@ export default function ProfileScreen() {
   const handleToggle24x7 = (currentValue: boolean | null) => {
       // Ensure session and companyId exist
       if (!session || session.type !== 'partner' || typeof session.id === 'undefined') return;
-
       const newValue = !currentValue;
       const message = `Change Status to Working 24x7 to ${newValue ? 'Yes' : 'No'}?`;
-
       Alert.alert("Confirm Availability", message,
           [{ text: "CANCEL", style: "cancel" },
               { text: "YES", onPress: async () => {
@@ -146,7 +142,7 @@ export default function ProfileScreen() {
                               const errorText = await response.text();
                               throw new Error(`Failed to update status (${response.status}): ${errorText}`);
                           }
-                           // Update local state on success
+                          // Update local state on success
                            setProfileData(prev => {
                                // Type guard to ensure prev is PartnerProfile
                                if (prev && 'is24X7' in prev) {
@@ -170,38 +166,65 @@ export default function ProfileScreen() {
 
   // --- Render Logic ---
 
-   // Handle Auth Loading state from context
+   // Handle Auth Loading state from context (initial load from storage)
    if (isAuthLoading) {
-       return <View style={styles.containerCentered}><ActivityIndicator size="large" color={COLORS.accent} /></View>;
+       return (
+          <SafeAreaView style={styles.safeArea}>
+             <Stack.Screen options={{ title: 'Profile' }} />
+             <View style={styles.containerCentered}><ActivityIndicator size="large" color={COLORS.accent} /></View>
+          </SafeAreaView>
+       );
    }
 
-   // Handle Profile Data Loading state
-   if (isLoadingProfile) {
-        return <View style={styles.containerCentered}><ActivityIndicator size="large" color={COLORS.accent} /></View>;
-   }
-
-  // Error State
-  if (error && !profileData) {
-    return <View style={styles.containerCentered}><Text style={styles.errorText}>{error}</Text></View>;
-  }
-
-  // If session is null now (e.g., logout finished), layout effect should redirect
-  // If profileData is null but session exists, show error or loading indicator
-   if (!session || !profileData) {
+   // --- Logged Out State ---
+   if (!session) {
        return (
           <SafeAreaView style={styles.safeArea}>
                <Stack.Screen options={{ title: 'Profile' }} />
                <View style={styles.containerCentered}>
-                  {error ? <Text style={styles.errorText}>{error}</Text> : <Text>Could not load profile data.</Text>}
-                  <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                      <Text style={styles.logoutButtonText}>Log Out</Text>
+                  <Ionicons name="person-circle-outline" size={60} color={COLORS.textSecondary} style={{ marginBottom: 20 }} />
+                  <Text style={styles.loggedOutMessage}>Log in or create an account to view your profile.</Text>
+                  <TouchableOpacity
+                      style={styles.loginButton} // Use a specific style for login button
+                      onPress={() => router.push('/login')} // Navigate to login screen
+                  >
+                      <Text style={styles.loginButtonText}>LOG IN</Text>
                    </TouchableOpacity>
               </View>
           </SafeAreaView>
        );
    }
 
-  // --- Render User or Partner Profile ---
+   // --- Logged In State ---
+
+   // Handle Profile Data Loading state (after session is confirmed)
+   if (isLoadingProfile) {
+        return (
+           <SafeAreaView style={styles.safeArea}>
+               <Stack.Screen options={{ title: 'Profile' }} />
+               <View style={styles.containerCentered}><ActivityIndicator size="large" color={COLORS.accent} /></View>
+           </SafeAreaView>
+        );
+   }
+
+  // Error State (when logged in but profile fetch failed)
+  if (error || !profileData) {
+    return (
+       <SafeAreaView style={styles.safeArea}>
+           <Stack.Screen options={{ title: 'Profile' }} />
+           <View style={styles.containerCentered}>
+               <Ionicons name="alert-circle-outline" size={40} color={COLORS.error} style={{ marginBottom: 15 }}/>
+               <Text style={styles.errorText}>{error || 'Could not load profile data.'}</Text>
+                {/* Still show logout button if profile fetch failed but session exists */}
+               <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                   <Text style={styles.logoutButtonText}>Log Out</Text>
+                </TouchableOpacity>
+           </View>
+       </SafeAreaView>
+    );
+  }
+
+  // --- Render User or Partner Profile Content ---
    const renderContent = () => {
        // Use session.type from context
        if (session.type === 'user') {
@@ -245,7 +268,7 @@ export default function ProfileScreen() {
                <>
                    {/* Partner Info Section */}
                    <View style={styles.userInfoSection}>
-                        {partner?.logoImagePath ? (
+                       {partner?.logoImagePath ? (
                            <Image source={{ uri: partner.logoImagePath }} style={styles.partnerLogo} resizeMode="contain" />
                        ) : (
                            <View style={[styles.profilePicPlaceholder, styles.partnerLogoPlaceholder]}><Ionicons name="business" size={30} color={COLORS.textSecondary} /></View>
@@ -304,6 +327,7 @@ export default function ProfileScreen() {
        }
    };
 
+  // --- Main Return for Logged In User ---
   return (
     <SafeAreaView style={styles.safeArea}>
        <Stack.Screen
@@ -314,7 +338,7 @@ export default function ProfileScreen() {
           headerTitleStyle: { fontWeight: 'bold' },
           headerTitleAlign: 'center',
           headerRight: () => (
-            <TouchableOpacity onPress={handleOpenLanguageModal} style={{ marginRight: 15 }} disabled={isUpdatingStatus}>
+             <TouchableOpacity onPress={handleOpenLanguageModal} style={{ marginRight: 15 }} disabled={isUpdatingStatus}>
               <Ionicons name="settings-outline" size={24} color={COLORS.iconColor} />
             </TouchableOpacity>
           ),
@@ -332,7 +356,7 @@ export default function ProfileScreen() {
              </TouchableOpacity>
 
              <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                <Text style={styles.logoutButtonText}>LogOut</Text>
+                <Text style={styles.logoutButtonText}>Log Out</Text>
              </TouchableOpacity>
 
              <Text style={styles.versionText}>v0.0.1</Text>
@@ -341,7 +365,7 @@ export default function ProfileScreen() {
 
       {/* Modals */}
       <ForgotPasswordModal
-        visible={isForgotModalVisible}
+         visible={isForgotModalVisible}
         onClose={() => setIsForgotModalVisible(false)}
       />
       <LanguageSelectionModal
@@ -353,12 +377,31 @@ export default function ProfileScreen() {
   );
 }
 
-// --- Styles (Keep existing styles) ---
+// --- Styles (Keep existing styles and add styles for logged out view) ---
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background, },
   scrollView: { flex: 1, },
   container: { flex: 1, paddingHorizontal: 20, paddingVertical: 20, },
   containerCentered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background, padding: 20, },
+  loggedOutMessage: { // Style for the new message
+      fontSize: 16,
+      color: COLORS.textSecondary,
+      textAlign: 'center',
+      marginBottom: 30, // Space before button
+      lineHeight: 24,
+  },
+  loginButton: { // Style for the new login button
+      backgroundColor: COLORS.buttonBg,
+      paddingVertical: 15,
+      paddingHorizontal: 50, // Make it wider
+      borderRadius: 8,
+      alignItems: 'center',
+  },
+  loginButtonText: { // Style for login button text
+      color: COLORS.buttonText,
+      fontSize: 16,
+      fontWeight: 'bold',
+  },
   userInfoSection: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 30, },
   profilePicPlaceholder: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.locationBg, justifyContent: 'center', alignItems: 'center', marginRight: 15, },
   partnerLogo: { width: 60, height: 60, borderRadius: 8, marginRight: 15, borderWidth: 1, borderColor: COLORS.borderColor },

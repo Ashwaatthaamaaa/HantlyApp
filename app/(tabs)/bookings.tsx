@@ -1,4 +1,3 @@
-// File: app/(tabs)/bookings.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -17,7 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import SelectModal from '@/components/MultiSelectModal'; // Import reusable select modal
+import SelectModal from '@/components/MultiSelectModal';
+// Import reusable select modal
 import { BASE_URL } from '@/constants/Api';
 
 // --- Base URL ---
@@ -28,12 +28,15 @@ interface TicketImage {
     imagePath?: string | null; imageContentType?: string | null;
 }
 interface Booking { // Used for both User and Partner lists for consistency
-  ticketId: number; reportingPerson?: string; reportingDescription?: string;
+  ticketId: number;
+  reportingPerson?: string; reportingDescription?: string;
   operationId?: number; status?: string; toCraftmanType?: string;
   address?: string; city?: string; pincode?: string; countyId?: number;
-  municipalityId?: number; createdOn: string; updatedOn?: string | null;
+  municipalityId?: number;
+  createdOn: string; updatedOn?: string | null;
   countyName?: string; municipalityName?: string; reviewStarRating?: number | null;
-  reviewComment?: string; companyComment?: string; closingOTP?: number | null;
+  reviewComment?: string; companyComment?: string;
+  closingOTP?: number | null;
   companyId?: number | null; companyName?: string;
   ticketImages?: TicketImage[] | null; ticketWorkImages?: TicketImage[] | null;
   // Add other fields returned by GetTicketsForCompany if needed
@@ -47,6 +50,8 @@ const COLORS = { /* ... Keep existing COLORS definition ... */
   background: '#F8F8F8', textPrimary: '#333333', textSecondary: '#555555',
   accent: '#696969', headerBg: '#FFFFFF', headerText: '#333333', error: '#D9534F',
   borderColor: '#E0E0E0', cardBg: '#FFFFFF', iconPlaceholder: '#CCCCCC',
+  buttonBg: '#696969', // Added for login button consistency
+  buttonText: '#FFFFFF',// Added for login button consistency
   statusCreated: '#007BFF', statusAccepted: '#28A745', statusInProgress: '#FFC107',
   statusCompleted: '#6C757D', statusDefault: '#6C757D',
   filterButtonBg: '#696969', // Example color for filter OK button
@@ -58,16 +63,16 @@ const formatDate = (dateString: string | null): string => { /* ... Keep existing
 const getStatusColor = (status?: string): string => { /* ... Keep existing getStatusColor ... */ const lowerStatus = status?.toLowerCase() || ''; if (lowerStatus === 'created') return COLORS.statusCreated; if (lowerStatus === 'accepted') return COLORS.statusAccepted; if (lowerStatus === 'inprogress' || lowerStatus === 'in progress') return COLORS.statusInProgress; if (lowerStatus === 'completed') return COLORS.statusCompleted; return COLORS.statusDefault; };
 
 // --- Booking Card Component (Used by both User & Partner) ---
-interface BookingCardProps { item: Booking; onPress: (ticketId: number) => void; }
-const BookingCard: React.FC<BookingCardProps> = React.memo(({ item, onPress }) => {
-  const router = useRouter(); // Need router here if onPress is defined inline
+interface BookingCardProps { item: Booking; } // Removed onPress prop
+const BookingCard: React.FC<BookingCardProps> = React.memo(({ item }) => { // Removed onPress from destructuring
+  const router = useRouter(); // Use router here for navigation
   const statusColor = getStatusColor(item.status);
   const imageUrl = item.ticketImages?.[0]?.imagePath;
   const description = item.reportingDescription; // Get description
   const serviceName = item.toCraftmanType;
 
   return (
-    // Using router.push directly here as requested in previous correction for simpler card component
+    // Using router.push directly here
     <TouchableOpacity style={styles.card} onPress={() => router.push(`/bookings/${item.ticketId}`)}>
       <View style={styles.cardImageContainer}>
           {imageUrl ? ( <Image source={{ uri: imageUrl }} style={styles.cardImage} resizeMode="cover" /> ) : ( <View style={styles.cardImagePlaceholder}><Ionicons name="image-outline" size={30} color={COLORS.iconPlaceholder} /></View> )}
@@ -100,7 +105,6 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilt
     const [municipalities, setMunicipalities] = useState<ApiDataItem[]>([]);
     const [isLoadingCounties, setIsLoadingCounties] = useState(false);
     const [isLoadingMunicipalities, setIsLoadingMunicipalities] = useState(false);
-
     const jobStatuses: ApiDataItem[] = [
         { id: 'Created', name: 'Created (New Requests)' },
         { id: 'Accepted', name: 'Accepted' },
@@ -154,7 +158,6 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilt
         }
     }, [visible, initialFilters]);
 
-
     const handleApply = () => {
         onApplyFilters({ status: tempStatus, countyId: tempCountyId, municipalityId: tempMunicipalityId });
         onClose();
@@ -184,7 +187,7 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilt
                     {/* Status Selector */}
                     <TouchableOpacity style={styles.filterSelector} onPress={() => setIsStatusModalVisible(true)}>
                         <Text style={!tempStatus ? styles.filterPlaceholder : styles.filterValue}>
-                            {getStatusName(tempStatus)}
+                           {getStatusName(tempStatus)}
                         </Text>
                         <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
                     </TouchableOpacity>
@@ -230,10 +233,10 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilt
 // --- Main Screen Component ---
 export default function BookingsScreen() {
   const router = useRouter();
-  const { session } = useAuth();
+  const { session, isLoading: isAuthLoading } = useAuth(); // Also get isAuthLoading
 
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(false); // Renamed to avoid clash with isAuthLoading
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -247,17 +250,29 @@ export default function BookingsScreen() {
 
   // --- Fetching Logic ---
   const fetchData = useCallback(async (showLoadingIndicator = true) => {
-    if (!session) { if (showLoadingIndicator) setIsLoading(false); setIsRefreshing(false); router.replace('/login'); return; }
+    // If session is still loading from storage, wait
+    if (isAuthLoading) return;
 
+    // If no session after loading, DO NOT fetch, let the render handle the logged-out state
+    if (!session) {
+        setBookings([]); // Ensure bookings are cleared
+        setError(null); // Clear errors
+        if (showLoadingIndicator) setIsLoadingData(false);
+        setIsRefreshing(false);
+        // REMOVED router.replace('/login');
+        return;
+    }
+
+    // Proceed with fetch only if session exists
     let url = '';
     let headers: HeadersInit = { 'accept': 'text/plain' }; // Add headers if needed
 
     // Determine API call based on user type
     if (session.type === 'user') {
-        if (!session.name) { /* Handle missing name */ setIsLoading(false); setIsRefreshing(false); return; }
+        if (!session.name) { /* Handle missing name */ setIsLoadingData(false); setIsRefreshing(false); return; }
         url = `${BASE_URL}/api/IssueTicket/GetTicketsByUser?Username=${encodeURIComponent(session.name)}`;
     } else { // Partner
-        if (!session.id) { /* Handle missing companyId */ setIsLoading(false); setIsRefreshing(false); return; }
+        if (!session.id) { /* Handle missing companyId */ setIsLoadingData(false); setIsRefreshing(false); return; }
         let params = new URLSearchParams({ CompanyId: session.id.toString() });
         if (activeFilters.status) params.append('Status', activeFilters.status);
         if (activeFilters.countyId) params.append('CountyId', activeFilters.countyId);
@@ -266,7 +281,7 @@ export default function BookingsScreen() {
     }
 
     console.log(`${session.type === 'user' ? 'User' : 'Partner'} Bookings: Fetching from ${url}`);
-    if (showLoadingIndicator) setIsLoading(true);
+    if (showLoadingIndicator) setIsLoadingData(true);
     setError(null);
 
     try {
@@ -276,30 +291,88 @@ export default function BookingsScreen() {
         data.sort((a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime());
         setBookings(data);
     } catch (err: any) {
-        console.error("Bookings: Fetch failed:", err); setError(`Failed to load: ${err.message}`); setBookings([]);
+        console.error("Bookings: Fetch failed:", err);
+        setError(`Failed to load: ${err.message}`); setBookings([]);
     } finally {
-        if (showLoadingIndicator) setIsLoading(false); setIsRefreshing(false);
+        if (showLoadingIndicator) setIsLoadingData(false); setIsRefreshing(false);
     }
-  }, [session, router, activeFilters]); // Depend on filters for partners
+  }, [session, isAuthLoading, activeFilters]); // Depend on session, auth loading, and filters
 
   // Use useFocusEffect for both user types
-  useFocusEffect(useCallback(() => { fetchData(bookings.length === 0); }, [fetchData, bookings.length]));
+  useFocusEffect(
+      useCallback(() => {
+          // Fetch only if session exists or auth loading is finished
+          if (!isAuthLoading) {
+              fetchData(bookings.length === 0);
+          }
+      }, [fetchData, isAuthLoading, bookings.length])
+  );
+
   // Refresh handler
-  const handleRefresh = useCallback(() => { setIsRefreshing(true); fetchData(false); }, [fetchData]);
+  const handleRefresh = useCallback(() => {
+      if (!isAuthLoading && session) { // Only refresh if logged in
+        setIsRefreshing(true);
+        fetchData(false);
+      } else {
+        setIsRefreshing(false); // Immediately stop refresh if logged out
+      }
+  }, [fetchData, isAuthLoading, session]);
+
   // Filter apply handler (for partner)
   const handleApplyFilters = (newFilters: { status: string | null; countyId: string | null; municipalityId: string | null }) => {
       setActiveFilters(newFilters);
       // Refetch triggered by change in activeFilters dependency in fetchData's useCallback
   };
 
-
   // --- Render Logic ---
+
+  // Handle Auth Loading state (Show global loading)
+  if (isAuthLoading) {
+      return (
+          <SafeAreaView style={styles.safeArea}>
+             <Stack.Screen options={{ title: 'Bookings' }} />
+             <View style={styles.centered}><ActivityIndicator size="large" color={COLORS.accent} /></View>
+          </SafeAreaView>
+       );
+  }
+
+  // --- Logged Out State ---
+  if (!session) {
+    return (
+       <SafeAreaView style={styles.safeArea}>
+            <Stack.Screen options={{ title: 'Bookings' }} />
+            <View style={styles.containerCentered}>
+               <Ionicons name="calendar-outline" size={60} color={COLORS.textSecondary} style={{ marginBottom: 20 }} />
+               <Text style={styles.loggedOutMessage}>Log in or create an account to view your profile.</Text>
+               <TouchableOpacity
+                   style={styles.loginButton}
+                   onPress={() => router.push('/login')}
+               >
+                   <Text style={styles.loginButtonText}>LOG IN</Text>
+                </TouchableOpacity>
+           </View>
+       </SafeAreaView>
+    );
+ }
+
+
+  // --- Logged In States (Loading, Error, Empty, Data) ---
   const renderListContent = () => {
-      if (isLoading && bookings.length === 0) { return <View style={styles.centered}><ActivityIndicator size="large" color={COLORS.accent} /></View>; }
-      if (error && bookings.length === 0) { return <View style={styles.centered}><Text style={styles.errorText}>{error}</Text></View>; }
-      if (!isLoading && bookings.length === 0) {
+      // Loading data state (after login)
+      if (isLoadingData && bookings.length === 0) {
+          return <View style={styles.centered}><ActivityIndicator size="large" color={COLORS.accent} /></View>;
+      }
+      // Error state (after login)
+      if (error && bookings.length === 0) {
+          return <View style={styles.centered}><Text style={styles.errorText}>{error}</Text></View>;
+      }
+      // Empty state (logged in, no errors, no bookings)
+      if (!isLoadingData && bookings.length === 0) {
           return (
-            <ScrollView contentContainerStyle={styles.centered} refreshControl={ <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={COLORS.accent}/> }>
+            <ScrollView
+                contentContainerStyle={styles.centered}
+                refreshControl={ <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={COLORS.accent}/> }
+            >
                 <Text style={styles.noDataText}>{session?.type === 'partner' ? 'No jobs match filters.' : 'You have no bookings yet.'}</Text>
                 {session?.type === 'user' && (
                     <TouchableOpacity style={styles.createButton} onPress={()=>router.push('/create-job-card')}>
@@ -309,10 +382,11 @@ export default function BookingsScreen() {
             </ScrollView>
           );
       }
+      // Data state (logged in, bookings available)
       return (
           <FlatList
               data={bookings}
-              renderItem={({ item }) => <BookingCard item={item} onPress={() => {}} />} // Navigation handled inside BookingCard now
+              renderItem={({ item }) => <BookingCard item={item} />} // Navigation handled inside BookingCard now
               keyExtractor={(item) => item.ticketId.toString()}
               contentContainerStyle={styles.listContainer}
               showsVerticalScrollIndicator={false}
@@ -321,7 +395,7 @@ export default function BookingsScreen() {
       );
   };
 
-  // Main Screen Return
+  // Main Screen Return (Logged In)
   return (
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen
@@ -358,7 +432,27 @@ export default function BookingsScreen() {
 // --- Styles ---
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background, },
-  centered: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20, },
+  centered: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20, }, // Used for Loading, Error, Empty states
+  containerCentered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background, padding: 20, }, // Specifically for logged-out view
+  loggedOutMessage: { // Style for the logged-out message
+      fontSize: 16,
+      color: COLORS.textSecondary,
+      textAlign: 'center',
+      marginBottom: 30, // Space before button
+      lineHeight: 24,
+  },
+  loginButton: { // Style for the logged-out login button
+      backgroundColor: COLORS.buttonBg,
+      paddingVertical: 15,
+      paddingHorizontal: 50, // Make it wider
+      borderRadius: 8,
+      alignItems: 'center',
+  },
+  loginButtonText: { // Style for logged-out login button text
+      color: COLORS.buttonText,
+      fontSize: 16,
+      fontWeight: 'bold',
+  },
   errorText: { color: COLORS.error, fontSize: 16, textAlign: 'center', },
   noDataText: { color: COLORS.textSecondary, fontSize: 16, textAlign: 'center', marginBottom: 20, },
   createButton: { backgroundColor: COLORS.accent, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, },

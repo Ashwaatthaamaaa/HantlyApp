@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'; // Example icon sets
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+// Example icon sets
 
 export default function TabLayout() {
   return (
@@ -14,7 +15,7 @@ export default function TabLayout() {
         name="home" // This refers to app/(tabs)/home.tsx
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => ( // Type added
             <Ionicons name="home-outline" size={size} color={color} />
           ),
           // Hide header if you want a custom one in home.tsx
@@ -25,7 +26,7 @@ export default function TabLayout() {
         name="bookings" // This refers to app/(tabs)/bookings.tsx
         options={{
           title: 'Bookings',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => ( // Type added
             <MaterialCommunityIcons name="calendar-check-outline" size={size} color={color} />
           ),
            headerTitleAlign: 'center', // Example header styling
@@ -35,7 +36,7 @@ export default function TabLayout() {
         name="profile" // This refers to app/(tabs)/profile.tsx
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => ( // Type added
             <Ionicons name="person-outline" size={size} color={color} />
           ),
            headerTitleAlign: 'center',

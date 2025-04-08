@@ -6,36 +6,29 @@ import { AuthProvider, useAuth } from '@/context/AuthContext'; // Import AuthPro
 
 SplashScreen.preventAutoHideAsync();
 
-// This component handles the redirection logic
+// This component now primarily handles hiding the splash screen
 const InitialLayout = () => {
-  const { session, isLoading } = useAuth();
-  const segments = useSegments(); // Needed to know current location
-  const router = useRouter(); // Needed for potential future redirects (e.g., post-login)
+  const { isLoading } = useAuth(); // Only need isLoading here
+  // const segments = useSegments(); // No longer needed for this simplified effect
+  // const router = useRouter(); // No longer needed for this simplified effect
 
   useEffect(() => {
-    if (!isLoading) { // Only run logic once session status is known
-        // --- Removed Redirect Logic ---
-        // We no longer automatically redirect to /login if !session.
-        // The app will now render the default route (likely '(tabs)/home')
-        // regardless of login state initially.
-
-        // --- Optional: Redirect *after* login ---
-        // You might want logic *elsewhere* (e.g., in the login screen itself)
-        // to redirect to home *after* a successful login.
-        // The profile screen already handles redirecting *away* if the session is lost.
-
-        // Hide splash screen
-        SplashScreen.hideAsync();
+    // Hide the splash screen once the auth state is loaded (isLoading is false)
+    if (!isLoading) {
+      SplashScreen.hideAsync();
+      console.log("Auth state loaded, hiding splash screen.");
     }
-  }, [session, isLoading, router]); // Dependencies
+    // We removed the dependency on `session` and `router` to prevent this effect
+    // from causing navigation side-effects when the session changes (e.g., on failed login).
+  }, [isLoading]); // Only depend on isLoading
 
-   // Show nothing while loading session status
+   // Show nothing while loading initial session status from storage
    if (isLoading) {
        return null; // Or a global loading indicator
    }
 
-  // Render the main Stack Navigator. Expo Router shows the appropriate initial route.
-  // Since we removed the redirect, it will default to rendering the '(tabs)' layout.
+  // Render the main Stack Navigator. Expo Router handles the initial route.
+  // Explicit navigation for login success/logout is handled elsewhere (login.tsx, useAuth hook)
   return (
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
