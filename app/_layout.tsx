@@ -1,5 +1,6 @@
 // File: app/_layout.tsx
 import React, { useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native'; // Import View and ActivityIndicator
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/context/AuthContext'; // Import AuthProvider and useAuth
@@ -24,8 +25,12 @@ const InitialLayout = () => {
 
    // Show nothing while loading initial session status from storage
    if (isLoading) {
-       return null; // Or a global loading indicator
-   }
+    return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={/* Choose an appropriate color e.g., COLORS.accent */ '#696969'} />
+        </View>
+    );
+}
 
   // Render the main Stack Navigator. Expo Router handles the initial route.
   // Explicit navigation for login success/logout is handled elsewhere (login.tsx, useAuth hook)
