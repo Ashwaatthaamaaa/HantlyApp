@@ -135,7 +135,7 @@ export default function HomeScreen() {
             const baseItem = { id: service.serviceId.toString(), name: service.serviceName, contentType: service.imageContentType };
             // Corrected fallback logic (Example: Use icon if ID is 2 OR name is Carpenter OR no valid image content type)
             if (service.serviceId === 2 || service.serviceName === "Carpenter" || !service.imageContentType?.startsWith('image/')) {
-                return { ...baseItem, iconName: 'hammer-outline', iconSet: 'ion' } as ServiceListItem;
+                 return { ...baseItem, iconName: 'hammer-outline', iconSet: 'ion' } as ServiceListItem;
             } else {
                  // Assuming imagePath is a full URL now, adjust if needed
                  // const imageUri = service.imagePath.startsWith('http') ? service.imagePath : `${BASE_URL}${service.imagePath}`;
@@ -166,7 +166,13 @@ export default function HomeScreen() {
               { text: "Log In", onPress: () => router.push('/login') }
           ]);
       } else {
-        router.push('/create-job-card');
+        // Only users should be able to press this, but double-check type just in case
+        if (session.type === 'user') {
+             router.push('/create-job-card');
+        } else {
+            // This case shouldn't happen if button is hidden, but good practice
+            console.warn("Partner attempted to press hidden New Job Request button.");
+        }
       }
   };
   const handleViewAllServicesPress = () => router.push('/categories');
@@ -216,14 +222,14 @@ export default function HomeScreen() {
                         <TouchableOpacity onPress={() => router.push('/login')} style={{ marginRight: 15 }}>
                             <ThemedText style={styles.loginText}>LOG IN</ThemedText>
                         </TouchableOpacity>
-                     ) : null // Render nothing in the right header if logged in
+                    ) : null // Render nothing in the right header if logged in
                 ),
                 // Prevent back button if needed (usually not for tabs)
                 // headerLeft: () => null,
             }}
         />
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContentContainer}>
+       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContentContainer}>
 
         <View style={styles.bannerContainer}>
            <Image
@@ -234,26 +240,38 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Services</ThemedText>
+             <ThemedText style={styles.sectionTitle}>Services</ThemedText>
             <TouchableOpacity onPress={handleUrgentJobPress}><ThemedText style={styles.urgentJobText}>Urgent Job 24/7</ThemedText></TouchableOpacity>
             <TouchableOpacity onPress={handleViewAllServicesPress}><ThemedText style={styles.viewAllText}>View All</ThemedText></TouchableOpacity>
         </View>
 
         {renderListContent()}
 
-         <View style={styles.notFoundSection}>
-           <ThemedText style={styles.notFoundText}>Didn't find your Service?</ThemedText>
-           <ThemedText style={styles.notFoundSubText}>Don't worry, You can post your Requirement</ThemedText>
-         </View>
+         {/* --- MODIFICATION START: Conditional Rendering for Not Found Section --- */}
+         {/* Only show this section if not logged in OR logged in as 'user' */}
+         {(!session || session?.type === 'user') && (
+           <View style={styles.notFoundSection}>
+             <ThemedText style={styles.notFoundText}>Didn't find your Service?</ThemedText>
+             <ThemedText style={styles.notFoundSubText}>Don't worry, You can post your Requirement</ThemedText>
+           </View>
+         )}
+         {/* --- MODIFICATION END --- */}
 
         <View style={styles.bottomButtonsContainer}>
-          <TouchableOpacity style={styles.button} onPress={handleNewJobRequestPress}>
-             <ThemedText style={styles.buttonText}>New Job Request</ThemedText>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={handleRegisterPress}>
-             <ThemedText style={styles.buttonText}>Register</ThemedText>
-          </TouchableOpacity>
-         </View>
+          {/* Only show "New Job Request" button if not logged in OR logged in as 'user' */}
+          {(!session || session?.type === 'user') && (
+            <TouchableOpacity style={styles.button} onPress={handleNewJobRequestPress}>
+               <ThemedText style={styles.buttonText}>New Job Request</ThemedText>
+            </TouchableOpacity>
+          )}
+
+          {/* Only show Register button if NOT logged in */}
+          {!session && (
+             <TouchableOpacity style={styles.button} onPress={handleRegisterPress}>
+                <ThemedText style={styles.buttonText}>Register</ThemedText>
+             </TouchableOpacity>
+          )}
+        </View>
 
       </ScrollView>
 
@@ -312,7 +330,7 @@ const styles = StyleSheet.create({
    notFoundText: { fontSize: 16, fontWeight: 'bold', color: COLORS.textPrimary, textAlign: 'center', },
    notFoundSubText: { fontSize: 14, color: COLORS.textSecondary, marginTop: 5, textAlign: 'center', },
   // Bottom Buttons
-  bottomButtonsContainer: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 15, paddingTop: 20, paddingBottom: 10, },
+  bottomButtonsContainer: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 15, paddingTop: 20, paddingBottom: 10, minHeight: 70 /* Add minHeight to prevent layout shift*/ },
   button: { backgroundColor: COLORS.buttonBg, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, marginHorizontal: 5, alignItems: 'center', },
   buttonText: { color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold', },
   // Loading/Error/No Data
