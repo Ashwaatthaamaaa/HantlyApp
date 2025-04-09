@@ -16,7 +16,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 // --- MODIFICATION START: Import useHeaderHeight ---
-import { useHeaderHeight } from '@react-navigation/elements'; // Import hook for header height
+import { useHeaderHeight } from '@react-navigation/elements';
+// Import hook for header height
 // --- MODIFICATION END ---
 import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -83,6 +84,7 @@ export default function ChatScreen() {
   const headerHeight = useHeaderHeight();
   // --- MODIFICATION END ---
 
+  // Determine the Company ID relevant for API calls (either the partner's ID or the ID of the partner the user is talking to)
   const companyIdForApi = session?.type === 'partner' ? session.id : (otherPartyTypeParam === 'partner' ? otherPartyId : undefined);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -95,74 +97,217 @@ export default function ChatScreen() {
 
   // --- Fetch Messages ---
   const fetchMessages = useCallback(async (isInitialLoad = false) => {
-    // ... (fetchMessages logic remains the same) ...
-    if (!ticketId || !companyIdForApi) { setError("Missing required IDs for chat."); setIsLoading(false); return; }
+    // Enhanced Logging Added
+    if (!ticketId || !companyIdForApi) {
+      const errorMsg = `Missing required IDs for chat. TicketID: ${ticketId}, CompanyID (for API): ${companyIdForApi}`;
+      console.error(errorMsg);
+      setError(errorMsg);
+      setIsLoading(false);
+      return;
+    }
     if (isInitialLoad) { setIsLoading(true); setError(null); }
-    console.log(`Workspaceing chat messages for Ticket ${ticketId}, Company ${companyIdForApi}`);
+
     const url = `${BASE_URL}/api/IssueTicketChat/GetChatMessages?TicketId=${ticketId}&CompanyId=${companyIdForApi}`;
-    try { const response = await fetch(url, { headers: { 'accept': 'application/json' } }); if (!response.ok) { const errorText = await response.text(); throw new Error(`Failed to fetch messages (${response.status}): ${errorText}`); } const data: ChatMessage[] = await response.json(); data.sort((a, b) => new Date(b.chatDateTime).getTime() - new Date(a.chatDateTime).getTime()); setMessages(prevMessages => { if (JSON.stringify(prevMessages) !== JSON.stringify(data)) { console.log(`Workspaceed ${data.length} messages. Updating state.`); return data; } console.log(`Workspaceed ${data.length} messages. No change.`); return prevMessages; }); if (isInitialLoad && data.length > 0) { /* setError(null); */ } }
-    catch (err: any) { console.error("Error fetching chat messages:", err); setError(prev => prev ? `${prev}\n${err.message}` : err.message); }
-    finally { if (isInitialLoad) setIsLoading(false); }
-  }, [ticketId, companyIdForApi]);
+    // Log every fetch attempt
+    console.log(`Workspaceing chat messages. URL: ${url}`);
+    try {
+      const response = await fetch(url, { headers: { 'accept': 'application/json' } });
+      const responseText = await response.text(); // Read text first for better error logging
+      console.log(`Workspace Response Status: ${response.status}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch messages (${response.status}): ${responseText}`);
+      }
+      const data: ChatMessage[] = JSON.parse(responseText); // Parse JSON now
+      console.log(`Workspaceed ${data.length} messages.`); // Log count received
+
+      data.sort((a, b) => new Date(b.chatDateTime).getTime() - new Date(a.chatDateTime).getTime());
+      setMessages(prevMessages => {
+        // Simple length check first for performance
+        if (prevMessages.length === data.length && JSON.stringify(prevMessages) === JSON.stringify(data)) {
+            console.log(`Messages data unchanged.`);
+            return prevMessages; // No change
+        }
+        console.log(`Messages data changed. Updating state.`);
+        return data; // Update state
+      });
+
+      // Clear error only if fetch is successful
+      if (isInitialLoad) setError(null);
+
+    } catch (err: any) {
+      console.error("Error fetching chat messages:", err);
+      setError(prev => prev ? `${prev}\nFetch Error: ${err.message}` : `Workspace Error: ${err.message}`); // Append errors
+    } finally {
+      if (isInitialLoad) setIsLoading(false);
+    }
+  }, [ticketId, companyIdForApi]); // Keep dependencies minimal
 
    // --- Polling Logic ---
-   const startPolling = useCallback(() => { /* ... remains same ... */ if (intervalRef.current) { clearInterval(intervalRef.current); } console.log(`Starting polling interval (${POLLING_INTERVAL}ms)`); fetchMessages(false); intervalRef.current = setInterval(() => { console.log("Polling for new messages..."); fetchMessages(false); }, POLLING_INTERVAL); }, [fetchMessages]);
-   const stopPolling = useCallback(() => { /* ... remains same ... */ if (intervalRef.current) { console.log("Stopping polling interval."); clearInterval(intervalRef.current); intervalRef.current = null; } }, []);
+   const startPolling = useCallback(() => {
+        if (intervalRef.current) {
+            console.log("Polling already active. Clearing existing interval before starting new one.");
+            clearInterval(intervalRef.current);
+        }
+        console.log(`Starting polling interval (${POLLING_INTERVAL}ms)`);
+        fetchMessages(false); // Fetch immediately when starting
+        intervalRef.current = setInterval(() => {
+            console.log("Polling for new messages...");
+            fetchMessages(false);
+        }, POLLING_INTERVAL);
+   }, [fetchMessages]); // Depends on fetchMessages
+
+    const stopPolling = useCallback(() => {
+        if (intervalRef.current) {
+            console.log("Stopping polling interval.");
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+    }, []); // No dependencies
 
    // --- Effects for Focus and App State ---
-    useFocusEffect( useCallback(() => { console.log("Chat screen focused. Fetching messages and starting polling."); fetchMessages(true); startPolling(); return () => { console.log("Chat screen blurred. Stopping polling."); stopPolling(); }; }, [fetchMessages, startPolling, stopPolling]) );
-    useEffect(() => { const subscription = AppState.addEventListener('change', nextAppState => { if (nextAppState === 'active') { console.log('App has come to the foreground, restarting polling.'); startPolling(); } else if (intervalRef.current) { console.log('App has gone to the background, stopping polling.'); stopPolling(); } }); return () => { subscription.remove(); stopPolling(); }; }, [startPolling, stopPolling]);
+    useFocusEffect(
+        useCallback(() => {
+            console.log("Chat screen focused. Fetching messages and starting polling.");
+            fetchMessages(true); // Initial fetch
+            startPolling();
+            return () => {
+                console.log("Chat screen blurred. Stopping polling.");
+                stopPolling();
+            };
+        }, [fetchMessages, startPolling, stopPolling]) // Dependencies for the effect callback
+    );
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', nextAppState => {
+        if (nextAppState === 'active') {
+            console.log('App has come to the foreground, restarting polling.');
+            startPolling();
+        } else if (nextAppState.match(/inactive|background/)) {
+            console.log('App has gone to the background/inactive, stopping polling.');
+            stopPolling();
+        }
+        });
+
+        return () => {
+        console.log("Removing AppState listener and stopping polling on unmount.");
+        subscription.remove();
+        stopPolling(); // Ensure polling stops when component unmounts
+        };
+    }, [startPolling, stopPolling]); // Dependencies for the effect setup
 
   // --- Send Message ---
   const handleSendMessage = useCallback(async () => {
     const messageText = newMessage.trim();
     if (!messageText || ticketId === undefined || !session) return;
 
+    // Ensure companyIdForApi is defined before proceeding
+    if (companyIdForApi === undefined) {
+        console.error("Cannot send message: companyIdForApi is undefined.");
+        Alert.alert("Error", "Cannot determine the recipient partner ID.");
+        return;
+    }
+
+
     setIsSending(true);
     const url = `${BASE_URL}/api/IssueTicketChat/NewTicketChat`;
+
+    // **MODIFIED: Set senderInfo based on session type, including companyId for users**
     const baseBody: Pick<ChatMessage, 'ticketId' | 'message'> = { ticketId: ticketId, message: messageText };
     let senderInfo: Partial<ChatMessage> = {};
-    if(session.type === 'user') { senderInfo = { userId: session.id, userName: session.name }; }
-    else { senderInfo = { companyId: session.id, companyUserName: session.name }; }
+    if(session.type === 'user') {
+        // User is sending: include actual userId, userName, AND the companyId they are talking to
+        senderInfo = { userId: session.id, userName: session.name, companyId: companyIdForApi };
+    } else { // Partner is sending
+        // Partner is sending: include companyId, companyUserName, and set userId to 0
+        senderInfo = { companyId: session.id, companyUserName: session.name, userId: 0 };
+    }
     const requestBody = { ...baseBody, ...senderInfo };
+    // **END MODIFICATION**
 
     const optimisticMessage: ChatMessage = {
-         chatId: Math.random(), chatDateTime: new Date().toISOString(), message: messageText, ticketId: ticketId,
-         userId: session?.type === 'user' ? session.id : null, userName: session?.type === 'user' ? session.name : null,
-         companyId: session?.type === 'partner' ? session.id : null, companyUserName: session?.type === 'partner' ? session.name : null,
+         chatId: Math.random(), // Temporary ID for key
+         chatDateTime: new Date().toISOString(),
+         message: messageText,
+         ticketId: ticketId,
+         // Set sender info for optimistic update based on session
+         userId: session?.type === 'user' ? session.id : 0, // Use 0 if partner
+         userName: session?.type === 'user' ? session.name : null,
+         companyId: session?.type === 'partner' ? session.id : companyIdForApi, // Use partner's ID or the one user is chatting with
+         companyUserName: session?.type === 'partner' ? session.name : null,
     };
 
     setMessages(prev => [optimisticMessage, ...prev]);
     setNewMessage('');
 
-    try {
-      console.log("Sending message:", requestBody);
-      const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'accept': 'application/json' }, body: JSON.stringify(requestBody) });
-      const responseData = await response.json();
-      if (!response.ok || responseData.statusCode <= 0) { throw new Error(responseData.statusMessage || `Failed to send message (${response.status})`); }
-      console.log("Message sent successfully:", responseData.statusMessage);
+    // Log the request body
+    console.log("Sending message. URL:", url);
+    console.log("Request Body:", JSON.stringify(requestBody));
 
-      // --- MODIFICATION START: Remove immediate refetch ---
-      // Let the polling handle the update to avoid optimistic message disappearing
-      // stopPolling();
-      // await fetchMessages(false); // DO NOT refetch immediately
-      // startPolling();
-      // --- MODIFICATION END ---
+    try {
+      const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'accept': 'application/json' }, // Expect JSON response
+          body: JSON.stringify(requestBody)
+      });
+      const responseText = await response.text(); // Get text first for debugging
+      console.log(`Send Response Status: ${response.status}`);
+      console.log(`Send Response Text: ${responseText}`);
+
+      let responseData: any = {};
+      try {
+          responseData = JSON.parse(responseText); // Try parsing JSON
+      } catch (e) {
+          console.warn("Could not parse send response as JSON");
+          if (!response.ok) {
+              throw new Error(responseText || `Failed to send message (${response.status})`);
+          }
+          responseData = { statusMessage: responseText }; // Assume plain text success if status ok
+      }
+
+      if (!response.ok || (responseData.hasOwnProperty('statusCode') && responseData.statusCode <= 0) ) {
+         const errorMessage = responseData.statusMessage || responseData.title || responseData.detail || `Failed to send message (${response.status})`;
+         throw new Error(errorMessage);
+      }
+
+      console.log("Message sent successfully:", responseData.statusMessage || "Success");
+
+      // Let polling handle updates, do not refetch immediately
 
     } catch (err: any) {
       console.error("Error sending message:", err);
       Alert.alert("Error", `Could not send message: ${err.message}`);
-      setMessages(prev => prev.filter(msg => msg.chatId !== optimisticMessage.chatId)); // Remove optimistic message on failure
+      // Remove optimistic message on failure
+      setMessages(prev => prev.filter(msg => msg.chatId !== optimisticMessage.chatId));
     } finally {
       setIsSending(false);
     }
-  // Keep fetchMessages in dependencies for potential refetch on error? No, rely on poll.
-  // Remove start/stopPolling from deps as they cause infinite loops if fetchMessages is included.
-  // }, [newMessage, ticketId, session, fetchMessages, startPolling, stopPolling]);
-  }, [newMessage, ticketId, session, fetchMessages]); // Simplified dependencies
+  }, [newMessage, ticketId, session, companyIdForApi]); // Dependencies
+
 
   // --- Render Message Bubble ---
-  const renderMessageBubble = ({ item }: { item: ChatMessage }) => { /* ... remains same ... */ const isMyMessage = (session?.type === 'user' && item.userId === session.id) || (session?.type === 'partner' && item.companyId === session.id); return ( <View style={[styles.messageRow, isMyMessage ? styles.myMessageRow : styles.theirMessageRow]}><View style={[styles.messageBubble, isMyMessage ? styles.myMessageBubble : styles.theirMessageBubble]}><Text style={styles.messageText}>{item.message}</Text><Text style={styles.messageTime}>{formatTime(item.chatDateTime)}</Text></View></View> ); };
+  const renderMessageBubble = ({ item }: { item: ChatMessage }) => {
+    // **MODIFIED: Differentiation logic based on userId convention**
+    let isMyMessage = false;
+    if (session?.type === 'user') {
+      // If the current user is a 'user', their messages match their session.id
+      isMyMessage = !!item.userId && item.userId === session.id;
+    } else if (session?.type === 'partner') {
+      // If the current user is a 'partner', their messages have userId: 0 (or null/undefined)
+      // AND ensure the companyId matches the current partner's session id
+      isMyMessage = (!item.userId || item.userId === 0) && item.companyId === session.id;
+    }
+    // **END MODIFICATION**
+
+    return (
+      <View style={[styles.messageRow, isMyMessage ? styles.myMessageRow : styles.theirMessageRow]}>
+        <View style={[styles.messageBubble, isMyMessage ? styles.myMessageBubble : styles.theirMessageBubble]}>
+          <Text style={styles.messageText}>{item.message}</Text>
+          <Text style={styles.messageTime}>{formatTime(item.chatDateTime)}</Text>
+        </View>
+      </View>
+    );
+  };
 
   // --- Render ---
   return (
@@ -171,9 +316,7 @@ export default function ChatScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoiding}
-        // --- MODIFICATION START: Use headerHeight for offset ---
         keyboardVerticalOffset={(headerHeight ?? 60) + (Platform.select({ ios: 10, android: 0 }) ?? 0)}
-        // --- MODIFICATION END ---
       >
         {isLoading && messages.length === 0 && <ActivityIndicator size="large" color={COLORS.accent} style={styles.loadingIndicator}/>}
         {error && <Text style={styles.errorText}>{error}</Text>}
@@ -185,7 +328,7 @@ export default function ChatScreen() {
           keyExtractor={(item) => item.chatId.toString()}
           style={styles.messageList}
           contentContainerStyle={styles.messageListContent}
-          inverted
+          inverted // Show latest messages at the bottom
         />
 
         {/* Input Area */}
@@ -213,24 +356,23 @@ export default function ChatScreen() {
 
 // --- Styles ---
 const styles = StyleSheet.create({
-  // ... (Styles remain the same) ...
   safeArea: { flex: 1, backgroundColor: COLORS.background },
   keyboardAvoiding: { flex: 1 },
   loadingIndicator: { flex: 1, justifyContent: 'center', alignItems: 'center'},
   errorText: { color: COLORS.error, textAlign: 'center', padding: 10 },
   messageList: { flex: 1, paddingHorizontal: 10, },
-  messageListContent: { paddingTop: 10, },
+  messageListContent: { paddingTop: 10, }, // Add padding to top to space from header
   messageRow: { flexDirection: 'row', marginVertical: 5, },
   myMessageRow: { justifyContent: 'flex-end', },
   theirMessageRow: { justifyContent: 'flex-start', },
   messageBubble: { maxWidth: '75%', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 15, },
   myMessageBubble: { backgroundColor: COLORS.myMessageBubble, borderBottomRightRadius: 5, },
   theirMessageBubble: { backgroundColor: COLORS.theirMessageBubble, borderBottomLeftRadius: 5, },
-  senderName: { fontSize: 12, fontWeight: 'bold', color: COLORS.accent, marginBottom: 3, },
   messageText: { fontSize: 15, color: COLORS.textPrimary, },
   messageTime: { fontSize: 10, color: COLORS.textSecondary, alignSelf: 'flex-end', marginTop: 4, marginLeft: 8, },
   inputArea: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: COLORS.borderColor, backgroundColor: COLORS.background, },
-  textInput: { flex: 1, backgroundColor: COLORS.inputBackground, borderRadius: 20, paddingHorizontal: 15, paddingVertical: Platform.OS === 'ios' ? 10 : 8, maxHeight: 100, fontSize: 16, marginRight: 10, },
+  textInput: { flex: 1, backgroundColor: COLORS.inputBackground, borderRadius: 20, paddingHorizontal: 15, paddingVertical: Platform.OS === 'ios' ? 10 : 8, maxHeight: 100, // Limit height for multiline
+      fontSize: 16, marginRight: 10, },
   sendButton: { backgroundColor: COLORS.sendButton, borderRadius: 20, width: 40, height: 40, justifyContent: 'center', alignItems: 'center', },
   sendButtonDisabled: { backgroundColor: COLORS.sendButtonDisabled, },
 });
