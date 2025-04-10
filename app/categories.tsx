@@ -1,3 +1,4 @@
+// File: app/categories.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -7,12 +8,13 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  Alert,
-  ActivityIndicator, // Added
-  Image, // Added
+  Alert, // Import Alert
+  ActivityIndicator,
+  Image,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Keep Ionicons for fallback/header
-import { Stack, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, useRouter } from 'expo-router'; // Import useRouter
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 import { BASE_URL } from '@/constants/Api';
 
 // --- Define Types based on API Response ---
@@ -40,49 +42,59 @@ interface ServiceListItem {
 // --- Approximate Colors ---
 const COLORS = {
   background: '#F8F8F8',
-  headerBg: '#696969', // Keep existing header style or adjust
+  headerBg: '#696969',
   headerText: '#FFFFFF',
   cardBg: '#FFFFFF',
   textPrimary: '#333333',
-  textSecondary: '#888888', // For placeholder icon
-  iconColor: '#696969', // Fallback icon color
+  textSecondary: '#888888',
+  iconColor: '#696969',
   borderColor: '#E0E0E0',
   errorText: '#D9534F',
-  accent: '#007AFF', // Optional: For interaction highlights
+  accent: '#007AFF',
+};
+
+// --- Helper Function for Login/Register Prompt ---
+const showLoginRegisterAlert = (router: any) => { // Use ReturnType<typeof useRouter> if possible
+    Alert.alert(
+        "Login Required",
+        "Please log in or register to proceed.",
+        [
+            { text: "Cancel", style: "cancel" },
+            { text: "Log In", onPress: () => router.push('/login') },
+            { text: "Register", onPress: () => router.push('/register') }
+        ]
+    );
 };
 
 // --- Updated List Item Component ---
 interface ListItemComponentProps {
   item: ServiceListItem;
-  onPress: (item: ServiceListItem) => void;
+  onPress: (item: ServiceListItem) => void; // Keep the onPress prop
 }
 
 const ListItemComponent: React.FC<ListItemComponentProps> = ({ item, onPress }) => {
 
     // Decide whether to render Image or Icon
     const renderVisual = () => {
-        // Prioritize fallback icon if explicitly set (e.g., for Carpenter)
         if (item.iconName && item.iconSet === 'ion') {
             return (
                 <Ionicons
-                    name={item.iconName as any}
-                    size={30} // Size for list item
-                    color={COLORS.iconColor}
-                    style={styles.itemVisual} // Use a shared style for visual elements
+                  name={item.iconName as any}
+                  size={30}
+                  color={COLORS.iconColor}
+                  style={styles.itemVisual}
                 />
             );
         }
-        // Attempt to render the image if URI is present and content type is valid
         else if (item.imageUri && item.contentType?.startsWith('image/')) {
              return (
                  <Image
                      source={{ uri: item.imageUri }}
-                     style={[styles.itemVisual, styles.itemImage]} // Apply base and specific image style
+                     style={[styles.itemVisual, styles.itemImage]}
                      resizeMode="contain"
                  />
              );
         }
-        // Default fallback icon
         else {
              return (
                  <Ionicons
@@ -96,10 +108,10 @@ const ListItemComponent: React.FC<ListItemComponentProps> = ({ item, onPress }) 
     };
 
   return (
+    // Call the passed onPress function when the item is pressed
     <TouchableOpacity style={styles.itemContainer} onPress={() => onPress(item)}>
       {renderVisual()}
       <Text style={styles.itemText}>{item.name}</Text>
-       {/* Optional: Add chevron or indicator for pressable action */}
        <Ionicons name="chevron-forward-outline" size={20} color={COLORS.textSecondary} />
     </TouchableOpacity>
   );
@@ -107,7 +119,8 @@ const ListItemComponent: React.FC<ListItemComponentProps> = ({ item, onPress }) 
 
 // --- Main Screen Component ---
 export default function CategoriesScreen() {
-  const router = useRouter();
+  const router = useRouter(); // Get router instance
+  const { session } = useAuth(); // Get session state
 
   // State for API data, loading, and errors
   const [services, setServices] = useState<ServiceListItem[]>([]);
@@ -129,7 +142,6 @@ export default function CategoriesScreen() {
         const contentType = response.headers.get("content-type");
         if (contentType?.includes("application/json")) {
             const data: Service[] = await response.json();
-            // Map API data, applying fallback logic
             const formattedData: ServiceListItem[] = data.map(service => {
                 const baseItem = {
                     id: service.serviceId.toString(),
@@ -157,10 +169,17 @@ export default function CategoriesScreen() {
   }, []);
 
 
+  // Updated handler for service press (includes login check)
   const handleServicePress = (service: ServiceListItem) => {
-    // Placeholder action - Navigate to details or specific service screen
-    Alert.alert('Service Pressed', `Maps to details for ${service.name}`);
-    // Example navigation: router.push(`/service-details?serviceId=${service.id}`);
+    if (!session) {
+        // Use the helper function for the alert
+        showLoginRegisterAlert(router);
+    } else {
+        // Logged-in user behavior (currently an alert)
+        Alert.alert('Service Pressed', `Maps to details for ${service.name}`);
+        // Example navigation for logged-in user:
+        // router.push(`/service-details?serviceId=${service.id}`);
+    }
   };
 
   // --- Render List or Loading/Error State ---
@@ -177,6 +196,7 @@ export default function CategoriesScreen() {
      return (
        <FlatList
          data={services}
+         // Pass the updated handleServicePress to the component
          renderItem={({ item }) => <ListItemComponent item={item} onPress={handleServicePress} />}
          keyExtractor={(item) => item.id}
          contentContainerStyle={styles.listContainer}
@@ -192,12 +212,13 @@ export default function CategoriesScreen() {
        {/* Configure header using Stack.Screen options */}
        <Stack.Screen
          options={{
-           title: 'All Services', // Changed title
+           title: 'All Services',
            headerStyle: { backgroundColor: COLORS.headerBg },
            headerTintColor: COLORS.headerText,
            headerTitleStyle: { fontWeight: 'bold' },
            headerTitleAlign: 'center',
-           // Back button is handled by Stack Navigator automatically
+           // FIX: Add headerBackTitle to prevent "(tabs)" issue on iOS
+           headerBackTitle: '',
          }}
        />
 
@@ -215,7 +236,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   listContainer: {
-    paddingHorizontal: 0, // List items will have their own padding
+    paddingHorizontal: 0,
     paddingTop: 10,
     paddingBottom: 10,
   },
@@ -223,26 +244,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.cardBg,
-    paddingVertical: 12, // Adjust vertical padding
-    paddingHorizontal: 15, // Adjust horizontal padding
-    // Use borderBottom for separation instead of marginBottom
+    paddingVertical: 12,
+    paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderColor,
-    // Remove card-like shadow/elevation for a list appearance
   },
   itemVisual: {
-    width: 40, // Consistent width for icon/image container
-    height: 40, // Consistent height
-    marginRight: 15, // Space between visual and text
-    alignItems: 'center', // Center icon if it's smaller
-    justifyContent: 'center', // Center icon
+    width: 40,
+    height: 40,
+    marginRight: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   itemImage: {
-    // Specific styles for image if needed (like borderRadius)
-    // borderRadius: 4,
+    // borderRadius: 4, // Optional image border radius
   },
   itemText: {
-    flex: 1, // Allow text to take remaining space
+    flex: 1,
     fontSize: 16,
     color: COLORS.textPrimary,
     fontWeight: '500',
