@@ -8,11 +8,11 @@ import {
   Image,
   TouchableOpacity,
   FlatList,
-  Alert,
+  Alert, // Import Alert
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context'; // Ensure import
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router'; // Import useRouter
 // Import Stack
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
@@ -39,8 +39,6 @@ interface ServiceListItem {
 
 
 // --- Base URL ---
-// ** FIX START: Updated BASE_URL **
-// ** FIX END **
 // -----------------
 
 // --- Approximate Colors ---
@@ -59,25 +57,44 @@ const COLORS = {
   errorText: '#D9534F',
 };
 
+// --- Helper Function for Login/Register Prompt ---
+const showLoginRegisterAlert = (router: any) => { // Use ReturnType<typeof useRouter> if possible
+    Alert.alert(
+        "Login Required",
+        "Please log in or register to proceed.",
+        [
+            { text: "Cancel", style: "cancel" },
+            { text: "Log In", onPress: () => router.push('/login') },
+            { text: "Register", onPress: () => router.push('/register') } // Assuming /register is the main registration entry
+        ]
+    );
+};
+
+
 // --- Service Item Component with Fallback ---
 interface ServiceItemProps {
     item: ServiceListItem;
+    session: ReturnType<typeof useAuth>['session']; // Pass session down
+    router: ReturnType<typeof useRouter>; // Pass router down
 }
-const ServiceItem: React.FC<ServiceItemProps> = ({ item }) => {
-    const router = useRouter();
+// Keep the session check here
+const ServiceItem: React.FC<ServiceItemProps> = ({ item, session, router }) => { // Accept session and router
+
     const handleItemPress = () => {
-        Alert.alert("Service Pressed", item.name);
-        // Navigate to specific service category:
-        // router.push(`/services?category=${item.id}`);
+        if (!session) {
+            showLoginRegisterAlert(router); // Show alert if not logged in
+        } else {
+            // Logged-in user behavior (currently an alert)
+            Alert.alert("Service Pressed", item.name);
+            // Potential future navigation for logged-in users:
+            // router.push(`/service-details/${item.id}`);
+        }
     }
 
     const renderContent = () => {
         if (item.iconName && item.iconSet === 'ion') {
             return <Ionicons name={item.iconName as any} size={60} color={COLORS.iconColor} style={styles.serviceItemIcon}/>;
         } else if (item.imageUri && item.contentType?.startsWith('image/')) {
-             // NOTE: If imagePath from API is relative, prepend BASE_URL if needed
-             // const fullImageUri = item.imageUri.startsWith('http') ? item.imageUri : `${BASE_URL}${item.imageUri}`;
-             // return <Image source={{ uri: fullImageUri }} style={styles.serviceItemImage} resizeMode="contain"/>;
              // Assuming imagePath is already a full URL or handled correctly by API response
              return <Image source={{ uri: item.imageUri }} style={styles.serviceItemImage} resizeMode="contain"/>;
         } else {
@@ -96,7 +113,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item }) => {
 
 // --- Main Home Screen Component ---
 export default function HomeScreen() {
-  const router = useRouter();
+  const router = useRouter(); // Get router instance
   const { session } = useAuth(); // Get session state from context
 
   const [services, setServices] = useState<ServiceListItem[]>([]);
@@ -108,15 +125,14 @@ export default function HomeScreen() {
   useEffect(() => {
     const fetchServices = async () => {
       setIsLoading(true); setError(null);
-      // ** NOTE: URL now uses the updated BASE_URL defined above **
       const url = `${BASE_URL}/api/Service/GetServiceList`;
-      console.log(`Workspaceing services from: ${url}`); // Log the URL being used
+      console.log(`Workspaceing services from: ${url}`);
       try {
         const response = await fetch(url);
-        console.log(`Service fetch response status: ${response.status}`); // Log status
+        console.log(`Service fetch response status: ${response.status}`);
 
         if (!response.ok) {
-            const errorText = await response.text(); // Try to get error text
+            const errorText = await response.text();
             console.error(`Service fetch failed (${response.status}): ${errorText}`);
             throw new Error(`HTTP error! status: ${response.status} - ${errorText || 'Failed to fetch'}`);
         }
@@ -129,17 +145,14 @@ export default function HomeScreen() {
         }
 
         const data: Service[] = await response.json();
-        console.log(`Services data received:`, data); // Log received data
+        console.log(`Services data received:`, data);
 
         const formattedData: ServiceListItem[] = data.map(service => {
             const baseItem = { id: service.serviceId.toString(), name: service.serviceName, contentType: service.imageContentType };
-            // Corrected fallback logic (Example: Use icon if ID is 2 OR name is Carpenter OR no valid image content type)
             if (service.serviceId === 2 || service.serviceName === "Carpenter" || !service.imageContentType?.startsWith('image/')) {
-                 return { ...baseItem, iconName: 'hammer-outline', iconSet: 'ion' } as ServiceListItem;
+               return { ...baseItem, iconName: 'hammer-outline', iconSet: 'ion' } as ServiceListItem;
             } else {
-                 // Assuming imagePath is a full URL now, adjust if needed
-                 // const imageUri = service.imagePath.startsWith('http') ? service.imagePath : `${BASE_URL}${service.imagePath}`;
-                 const imageUri = service.imagePath; // Use directly if API provides full URL
+              const imageUri = service.imagePath; // Use directly if API provides full URL
                  return { ...baseItem, imageUri: imageUri } as ServiceListItem;
             }
         });
@@ -156,26 +169,26 @@ export default function HomeScreen() {
   }, []);
 
   // --- Event Handlers ---
-  // Removed handleLoginPress as button is now conditional
-
   const handleNewJobRequestPress = () => {
-      // Check if logged in before allowing job request? Optional.
+      // Keep session check here as per original logic (only users can create jobs)
       if (!session) {
-          Alert.alert("Login Required", "Please log in to create a job request.", [
-              { text: "Cancel", style: "cancel" },
-              { text: "Log In", onPress: () => router.push('/login') }
-          ]);
+          showLoginRegisterAlert(router);
       } else {
-        // Only users should be able to press this, but double-check type just in case
         if (session.type === 'user') {
              router.push('/create-job-card');
         } else {
-            // This case shouldn't happen if button is hidden, but good practice
-            console.warn("Partner attempted to press hidden New Job Request button.");
+            // Partners cannot create job requests from this button
+             Alert.alert("Action Not Allowed", "Partners cannot create job requests.");
+            console.warn("Partner attempted to press New Job Request button.");
         }
       }
   };
-  const handleViewAllServicesPress = () => router.push('/categories');
+
+  // Reverted handler for View All - always navigates
+  const handleViewAllServicesPress = () => {
+      router.push('/categories'); // No login check here
+  };
+
   const handleUrgentJobPress = () => Alert.alert("Urgent Job", "Urgent Job 24/7 action placeholder");
   const handleRegisterPress = () => setIsRegisterModalVisible(true);
   const handleSelectPartner = () => { setIsRegisterModalVisible(false); router.push('/register-partner'); };
@@ -195,13 +208,13 @@ export default function HomeScreen() {
     return (
       <FlatList
          data={services}
-         renderItem={({item}) => <ServiceItem item={item} />}
+         // Pass session and router to ServiceItem (still needed for its internal check)
+         renderItem={({item}) => <ServiceItem item={item} session={session} router={router} />}
          keyExtractor={(item) => item.id}
          numColumns={2}
          columnWrapperStyle={styles.serviceGridRow}
          scrollEnabled={false} // Scrolling handled by outer ScrollView
          contentContainerStyle={styles.servicesGridContainer}
-         // extraData={services} // Not usually needed unless item identity changes without data ref changing
      />
     );
   }
@@ -209,23 +222,20 @@ export default function HomeScreen() {
   // --- Main Return JSX ---
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-       {/* Use Stack.Screen to configure header conditionally */}
        <Stack.Screen
             options={{
                 headerShown: true,
-                headerStyle: { backgroundColor: COLORS.background }, // Use consistent background
+                headerStyle: { backgroundColor: COLORS.background },
                 headerTitle: () => <ThemedText style={styles.headerTitle}>Home</ThemedText>,
-                headerTitleAlign: 'left', // Keep title left aligned
+                headerTitleAlign: 'left',
                 headerRight: () => (
-                    // Conditionally render Log In button
-                    !session ? (
+                    !session ?
+                    (
                         <TouchableOpacity onPress={() => router.push('/login')} style={{ marginRight: 15 }}>
                             <ThemedText style={styles.loginText}>LOG IN</ThemedText>
                         </TouchableOpacity>
-                    ) : null // Render nothing in the right header if logged in
+                     ) : null
                 ),
-                // Prevent back button if needed (usually not for tabs)
-                // headerLeft: () => null,
             }}
         />
 
@@ -242,30 +252,26 @@ export default function HomeScreen() {
         <View style={styles.sectionHeader}>
              <ThemedText style={styles.sectionTitle}>Services</ThemedText>
             <TouchableOpacity onPress={handleUrgentJobPress}><ThemedText style={styles.urgentJobText}>Urgent Job 24/7</ThemedText></TouchableOpacity>
+            {/* Use reverted handler for View All */}
             <TouchableOpacity onPress={handleViewAllServicesPress}><ThemedText style={styles.viewAllText}>View All</ThemedText></TouchableOpacity>
         </View>
 
         {renderListContent()}
 
-         {/* --- MODIFICATION START: Conditional Rendering for Not Found Section --- */}
-         {/* Only show this section if not logged in OR logged in as 'user' */}
          {(!session || session?.type === 'user') && (
            <View style={styles.notFoundSection}>
              <ThemedText style={styles.notFoundText}>Didn't find your Service?</ThemedText>
              <ThemedText style={styles.notFoundSubText}>Don't worry, You can post your Requirement</ThemedText>
            </View>
          )}
-         {/* --- MODIFICATION END --- */}
 
         <View style={styles.bottomButtonsContainer}>
-          {/* Only show "New Job Request" button if not logged in OR logged in as 'user' */}
           {(!session || session?.type === 'user') && (
             <TouchableOpacity style={styles.button} onPress={handleNewJobRequestPress}>
                <ThemedText style={styles.buttonText}>New Job Request</ThemedText>
             </TouchableOpacity>
           )}
 
-          {/* Only show Register button if NOT logged in */}
           {!session && (
              <TouchableOpacity style={styles.button} onPress={handleRegisterPress}>
                 <ThemedText style={styles.buttonText}>Register</ThemedText>
@@ -288,24 +294,21 @@ export default function HomeScreen() {
 }
 
 // --- Styles ---
+// Styles remain the same as the previous version
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background, },
   scrollView: { flex: 1, },
   scrollContentContainer: { paddingBottom: 20, },
-  // Header Styles (Defined inline for Stack.Screen, or use constants)
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.textPrimary, marginLeft: 0 }, // Removed margin if headerTitleAlign: 'left'
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.textPrimary, marginLeft: 0 },
   loginText: { fontSize: 14, fontWeight: 'bold', color: COLORS.accent, },
-  // Banner
   bannerContainer: { height: 160, width: '100%', marginBottom: 20, backgroundColor: COLORS.bannerPlaceholderBg, },
   bannerImage: { width: '100%', height: '100%', },
-  // Section Header
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 15, marginBottom: 15, },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.textPrimary, },
   urgentJobText: { fontSize: 14, fontWeight: 'bold', color: COLORS.urgentText, },
   viewAllText: { fontSize: 14, color: COLORS.accent, fontWeight: '500', },
-  // Services Grid
-   servicesGridContainer: { paddingHorizontal: 10, }, // Adjusted padding
-  serviceGridRow: { justifyContent: 'space-around', }, // Use space-around maybe?
+   servicesGridContainer: { paddingHorizontal: 10, },
+  serviceGridRow: { justifyContent: 'space-around', },
   serviceItem: {
     backgroundColor: COLORS.cardBg,
     paddingVertical: 15,
@@ -313,7 +316,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    width: '48%', // Keep as percentage for responsiveness
+    width: '48%',
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -325,15 +328,12 @@ const styles = StyleSheet.create({
   serviceItemImage: { width: 60, height: 60, marginBottom: 8, },
   serviceItemIcon: { marginBottom: 8, },
   serviceItemText: { fontSize: 14, textAlign: 'center', color: COLORS.textPrimary, fontWeight: '500', flexShrink: 1, paddingHorizontal: 4, },
-  // Not Found Section
    notFoundSection: { alignItems: 'center', marginVertical: 25, paddingHorizontal: 15, },
    notFoundText: { fontSize: 16, fontWeight: 'bold', color: COLORS.textPrimary, textAlign: 'center', },
    notFoundSubText: { fontSize: 14, color: COLORS.textSecondary, marginTop: 5, textAlign: 'center', },
-  // Bottom Buttons
-  bottomButtonsContainer: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 15, paddingTop: 20, paddingBottom: 10, minHeight: 70 /* Add minHeight to prevent layout shift*/ },
+  bottomButtonsContainer: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 15, paddingTop: 20, paddingBottom: 10, minHeight: 70 },
   button: { backgroundColor: COLORS.buttonBg, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, flex: 1, marginHorizontal: 5, alignItems: 'center', },
   buttonText: { color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold', },
-  // Loading/Error/No Data
   loadingIndicator: { marginTop: 50, height: 100, },
   errorText: { color: COLORS.errorText, textAlign: 'center', marginTop: 20, marginHorizontal: 15, fontSize: 16, height: 100, },
    noDataText: { color: COLORS.textSecondary, textAlign: 'center', marginTop: 20, marginHorizontal: 15, fontSize: 16, height: 100, }
