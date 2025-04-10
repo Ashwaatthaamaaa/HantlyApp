@@ -169,16 +169,19 @@ export default function CategoriesScreen() {
   }, []);
 
 
-  // Updated handler for service press (includes login check)
+  // Updated handler for service press
   const handleServicePress = (service: ServiceListItem) => {
     if (!session) {
-        // Use the helper function for the alert
         showLoginRegisterAlert(router);
+    } else if (session.type === 'user') {
+         // Logged-in user: Navigate to create-job-card with preselected service
+         router.push({
+             pathname: '/create-job-card',
+             params: { preselectedServiceId: service.id, preselectedServiceName: service.name }
+         });
     } else {
-        // Logged-in user behavior (currently an alert)
-        Alert.alert('Service Pressed', `Maps to details for ${service.name}`);
-        // Example navigation for logged-in user:
-        // router.push(`/service-details?serviceId=${service.id}`);
+        // Partner: Show alert (partners cannot create job requests from here)
+        Alert.alert("Action Not Allowed", "Only users can create job requests from services.");
     }
   };
 
@@ -196,7 +199,6 @@ export default function CategoriesScreen() {
      return (
        <FlatList
          data={services}
-         // Pass the updated handleServicePress to the component
          renderItem={({ item }) => <ListItemComponent item={item} onPress={handleServicePress} />}
          keyExtractor={(item) => item.id}
          contentContainerStyle={styles.listContainer}
@@ -209,7 +211,6 @@ export default function CategoriesScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.headerBg}/>
-       {/* Configure header using Stack.Screen options */}
        <Stack.Screen
          options={{
            title: 'All Services',
@@ -217,12 +218,10 @@ export default function CategoriesScreen() {
            headerTintColor: COLORS.headerText,
            headerTitleStyle: { fontWeight: 'bold' },
            headerTitleAlign: 'center',
-           // FIX: Add headerBackTitle to prevent "(tabs)" issue on iOS
            headerBackTitle: '',
          }}
        />
 
-       {/* Render the list, loading indicator, or error message */}
        {renderListContent()}
 
     </SafeAreaView>
@@ -230,6 +229,7 @@ export default function CategoriesScreen() {
 }
 
 // --- Styles ---
+// Styles remain the same
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   itemImage: {
-    // borderRadius: 4, // Optional image border radius
+    // borderRadius: 4,
   },
   itemText: {
     flex: 1,
