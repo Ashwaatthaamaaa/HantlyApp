@@ -1,5 +1,6 @@
+// File: app/(tabs)/profile.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator, Alert, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator, Alert } from 'react-native'; // Removed Switch as it's no longer used
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ForgotPasswordModal from '@/components/ForgotPasswordModal';
@@ -9,14 +10,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BASE_URL } from '@/constants/Api';
 
 // --- Types (Keep UserProfile, PartnerProfile if needed, or define inline) ---
-// These might need adjustment based on actual API response structure fetched AFTER login
 interface UserProfile {
   userId: number;
   userName: string;
   emailId: string;
   mobileNumber: string;
-  countyName: string;
-  municipalityName: string;
+  countyName: string; // Assuming single for User based on current UI
+  municipalityName: string; // Assuming single for User based on current UI
+}
+
+// Define CountyMaster and MunicipalityMaster types based on API response
+interface CountyMaster {
+    countyId: number;
+    countyName: string | null;
+}
+
+interface MunicipalityMaster {
+    municipalityId: number;
+    municipalityName: string | null;
+    countyId?: number; // Optional county info often included
+    countyName?: string | null;
 }
 
 interface PartnerProfile {
@@ -25,12 +38,12 @@ interface PartnerProfile {
     emailId: string;
     companyRegistrationNumber: string;
     logoImagePath: string | null;
-    is24X7: boolean | null;
     companyPresentation: string | null;
-    serviceList: { serviceName: string }[]; // Assuming this structure is fetched post-login
+    serviceList: { serviceName: string }[];
     mobileNumber: string;
-    countyList: { countyName: string }[];
-    municipalityList: { municipalityName: string }[];
+    countyList: CountyMaster[] | null; // Use the defined type
+    municipalityList: MunicipalityMaster[] | null; // Use the defined type
+    // Add other fields if needed
 }
 
 
@@ -42,203 +55,80 @@ const COLORS = {
   accent: '#696969', headerBg: '#FFFFFF', headerText: '#333333',
   error: '#D9534F', borderColor: '#E0E0E0', buttonBg: '#696969',
   buttonText: '#FFFFFF', locationBg: '#F0F0F0', iconColor: '#555555',
-  versionText: '#AAAAAA', switchThumb: '#FFFFFF', switchTrackTrue: '#696969',
-  switchTrackFalse: '#CCCCCC',
+  versionText: '#AAAAAA',
+  // Removed switch colors
 };
 
 export default function ProfileScreen() {
   const router = useRouter();
-  // Use Auth Context
   const { session, signOut, isLoading: isAuthLoading } = useAuth();
-
-  // State specific to this screen
   const [profileData, setProfileData] = useState<UserProfile | PartnerProfile | null>(null);
-  const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true); // Loading for profile fetch
+  const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState<boolean>(false); // For 24x7 toggle
+  // Removed isUpdatingStatus state
 
   // Modals visibility
   const [isForgotModalVisible, setIsForgotModalVisible] = useState<boolean>(false);
   const [isLanguageModalVisible, setIsLanguageModalVisible] = useState<boolean>(false);
 
-  // --- Fetch Profile Data using Session info ---
+  // --- Fetch Profile Data ---
   useEffect(() => {
       const fetchProfileDetails = async () => {
           if (!session) {
-              // No need to fetch if no session
-              setIsLoadingProfile(false); // Not loading if no session
-              setProfileData(null); // Ensure no stale data
-              setError(null); // Clear any previous errors
+              setIsLoadingProfile(false); setProfileData(null); setError(null);
               return;
           }
-
-          // Reset state for fetch only if session exists
-          setIsLoadingProfile(true);
-          setError(null);
-          setProfileData(null); // Clear previous profile data before fetching new
-
-          // Determine endpoint based on session type
+          setIsLoadingProfile(true); setError(null); setProfileData(null);
           const detailEndpoint = session.type === 'partner' ? '/api/Company/GetCompanyDetail' : '/api/User/GetUserDetail';
           const detailUrl = `${BASE_URL}${detailEndpoint}?EmailId=${encodeURIComponent(session.email)}`;
-
           try {
               console.log(`Workspaceing profile details from: ${detailUrl}`);
               const response = await fetch(detailUrl);
               if (!response.ok) {
                   const errorText = await response.text();
-                  throw new Error(`Failed to fetch profile details (${response.status}): ${errorText}`);
+                  throw new Error(`Failed profile details (${response.status}): ${errorText}`);
               }
               const data = await response.json();
               console.log("Profile details received:", data);
-              setProfileData(data); // Assuming API response matches UserProfile/PartnerProfile types
-
+              setProfileData(data);
           } catch (err: any) {
-              console.error("Failed to load profile details:", err);
-              setError(`Failed to load profile: ${err.message}`);
-              setProfileData(null); // Ensure profile data is null on error
+              console.error("Failed profile details:", err);
+              setError(`Failed profile: ${err.message}`);
+              setProfileData(null);
           } finally {
               setIsLoadingProfile(false);
           }
       };
-
       fetchProfileDetails();
+  }, [session]);
 
-      // Rerun if the session email changes (e.g., user logs out and back in as someone else)
-  }, [session]); // Depend on the session object from context
-
-
-  // --- Handlers (Keep existing handlers) ---
+  // --- Handlers ---
   const handleOpenLanguageModal = () => setIsLanguageModalVisible(true);
-  const handleSelectLanguage = (language: 'en' | 'sv') => {
-    Alert.alert("Language Change", `Selected: ${language === 'en' ? 'English' : 'Swedish'}. (Implementation needed)`);
-    // TODO: Implement actual language change logic
-  };
-
+  const handleSelectLanguage = (language: 'en' | 'sv') => { Alert.alert("Language Change", `Selected: ${language === 'en' ? 'English' : 'Swedish'}. (Impl needed)`); };
   const handleResetPassword = () => setIsForgotModalVisible(true);
-  // Use signOut from context
-  const handleLogout = async () => {
-    Alert.alert("Confirm Logout", "Are you sure you want to log out?",
-        [{ text: "Cancel", style: "cancel" },
-            { text: "Log Out", style: "destructive", onPress: () => signOut() } // Call signOut from context
-        ]
-    );
-  };
-
-  // Keep Partner Specific: Toggle 24x7 Status handler
-  const handleToggle24x7 = (currentValue: boolean | null) => {
-      // Ensure session and companyId exist
-      if (!session || session.type !== 'partner' || typeof session.id === 'undefined') return;
-      const newValue = !currentValue;
-      const message = `Change Status to Working 24x7 to ${newValue ? 'Yes' : 'No'}?`;
-      Alert.alert("Confirm Availability", message,
-          [{ text: "CANCEL", style: "cancel" },
-              { text: "YES", onPress: async () => {
-                      setIsUpdatingStatus(true);
-                      // Use session.id which holds the companyId for partners
-                      const url = `${BASE_URL}/api/Company/UpdateCompanyIs24X7?companyId=${session.id}&is24X7=${newValue}`;
-                      try {
-                          const response = await fetch(url, { method: 'POST' });
-                           if (!response.ok) {
-                              const errorText = await response.text();
-                              throw new Error(`Failed to update status (${response.status}): ${errorText}`);
-                          }
-                          // Update local state on success
-                           setProfileData(prev => {
-                               // Type guard to ensure prev is PartnerProfile
-                               if (prev && 'is24X7' in prev) {
-                                   return { ...prev, is24X7: newValue };
-                               }
-                               return prev;
-                           });
-                           Alert.alert("Status Updated", `Availability set to ${newValue ? '24x7' : 'Regular Hours'}.`);
-                      } catch (err: any) {
-                           console.error("Failed to update 24x7 status:", err);
-                           Alert.alert("Error", `Could not update status: ${err.message}`);
-                      } finally {
-                           setIsUpdatingStatus(false);
-                      }
-                  }
-              }
-          ]
-      );
-  };
+  const handleLogout = async () => { Alert.alert("Confirm Logout", "Are you sure?", [{ text: "Cancel", style: "cancel" }, { text: "Log Out", style: "destructive", onPress: signOut }]); };
+  // Removed handleToggle24x7
 
 
   // --- Render Logic ---
-
-   // Handle Auth Loading state from context (initial load from storage)
-   if (isAuthLoading) {
-       return (
-          <SafeAreaView style={styles.safeArea}>
-             <Stack.Screen options={{ title: 'Profile' }} />
-             <View style={styles.containerCentered}><ActivityIndicator size="large" color={COLORS.accent} /></View>
-          </SafeAreaView>
-       );
-   }
-
-   // --- Logged Out State ---
-   if (!session) {
-       return (
-          <SafeAreaView style={styles.safeArea}>
-               <Stack.Screen options={{ title: 'Profile' }} />
-               <View style={styles.containerCentered}>
-                  <Ionicons name="person-circle-outline" size={60} color={COLORS.textSecondary} style={{ marginBottom: 20 }} />
-                  <Text style={styles.loggedOutMessage}>Log in or create an account to view your profile.</Text>
-                  <TouchableOpacity
-                      style={styles.loginButton} // Use a specific style for login button
-                      onPress={() => router.push('/login')} // Navigate to login screen
-                  >
-                      <Text style={styles.loginButtonText}>LOG IN</Text>
-                   </TouchableOpacity>
-              </View>
-          </SafeAreaView>
-       );
-   }
-
-   // --- Logged In State ---
-
-   // Handle Profile Data Loading state (after session is confirmed)
-   if (isLoadingProfile) {
-        return (
-           <SafeAreaView style={styles.safeArea}>
-               <Stack.Screen options={{ title: 'Profile' }} />
-               <View style={styles.containerCentered}><ActivityIndicator size="large" color={COLORS.accent} /></View>
-           </SafeAreaView>
-        );
-   }
-
-  // Error State (when logged in but profile fetch failed)
-  if (error || !profileData) {
-    return (
-       <SafeAreaView style={styles.safeArea}>
-           <Stack.Screen options={{ title: 'Profile' }} />
-           <View style={styles.containerCentered}>
-               <Ionicons name="alert-circle-outline" size={40} color={COLORS.error} style={{ marginBottom: 15 }}/>
-               <Text style={styles.errorText}>{error || 'Could not load profile data.'}</Text>
-                {/* Still show logout button if profile fetch failed but session exists */}
-               <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                   <Text style={styles.logoutButtonText}>Log Out</Text>
-                </TouchableOpacity>
-           </View>
-       </SafeAreaView>
-    );
-  }
+   if (isAuthLoading) { /* ... loading indicator ... */ return ( <SafeAreaView style={styles.safeArea}><Stack.Screen options={{ title: 'Profile' }} /><View style={styles.containerCentered}><ActivityIndicator size="large" color={COLORS.accent} /></View></SafeAreaView> ); }
+   if (!session) { /* ... logged out view ... */ return ( <SafeAreaView style={styles.safeArea}><Stack.Screen options={{ title: 'Profile' }} /><View style={styles.containerCentered}><Ionicons name="person-circle-outline" size={60} color={COLORS.textSecondary} style={{ marginBottom: 20 }} /><Text style={styles.loggedOutMessage}>Log in or create an account to view your profile.</Text><TouchableOpacity style={styles.loginButton} onPress={() => router.push('/login')}><Text style={styles.loginButtonText}>LOG IN</Text></TouchableOpacity></View></SafeAreaView> ); }
+   if (isLoadingProfile) { /* ... loading indicator ... */ return ( <SafeAreaView style={styles.safeArea}><Stack.Screen options={{ title: 'Profile' }} /><View style={styles.containerCentered}><ActivityIndicator size="large" color={COLORS.accent} /></View></SafeAreaView> ); }
+   if (error || !profileData) { /* ... error view ... */ return ( <SafeAreaView style={styles.safeArea}><Stack.Screen options={{ title: 'Profile' }} /><View style={styles.containerCentered}><Ionicons name="alert-circle-outline" size={40} color={COLORS.error} style={{ marginBottom: 15 }}/><Text style={styles.errorText}>{error || 'Could not load profile data.'}</Text><TouchableOpacity style={styles.logoutButton} onPress={handleLogout}><Text style={styles.logoutButtonText}>Log Out</Text></TouchableOpacity></View></SafeAreaView> ); }
 
   // --- Render User or Partner Profile Content ---
    const renderContent = () => {
-       // Use session.type from context
        if (session.type === 'user') {
-           const user = profileData as UserProfile; // Cast based on type check
-           // ... (Keep User UI rendering from previous version) ...
+           const user = profileData as UserProfile;
+           // User profile rendering remains the same (assumes single county/muni)
            return (
                <>
                  {/* User Info Section */}
                  <View style={styles.userInfoSection}>
                      <View style={styles.profilePicPlaceholder}><Ionicons name="person" size={40} color={COLORS.textSecondary} /></View>
                      <View style={styles.userDetails}>
-                         {/* Use optional chaining or provide defaults */}
                          <Text style={styles.userName}>{user?.userName ?? 'N/A'}</Text>
-                         <Text style={styles.userEmail}>{user?.emailId ?? session.email}</Text> {/* Fallback to session email */}
+                         <Text style={styles.userEmail}>{user?.emailId ?? session.email}</Text>
                      </View>
                  </View>
                  {/* Phone Number */}
@@ -246,24 +136,42 @@ export default function ProfileScreen() {
                     <MaterialCommunityIcons name="phone-outline" size={24} color={COLORS.iconColor} style={styles.infoIcon} />
                     <Text style={styles.infoText}>{user?.mobileNumber ?? 'N/A'}</Text>
                  </View>
-                  {/* County Section */}
+                  {/* County Section (User - assumes single) */}
                   <View style={[styles.infoRow, styles.locationSection]}>
                      <View style={styles.locationLabelContainer}><Text style={styles.locationLabel}>County</Text></View>
                      <Text style={styles.locationValue}>{user?.countyName ?? 'N/A'}</Text>
                   </View>
-                  {/* Municipality Section */}
+                  {/* Municipality Section (User - assumes single) */}
                    <View style={[styles.infoRow, styles.locationSection, { borderBottomWidth: 0 }]}>
                      <View style={styles.locationLabelContainer}><Text style={styles.locationLabel}>Municipality</Text></View>
                      <Text style={styles.locationValue}>{user?.municipalityName ?? 'N/A'}</Text>
                   </View>
                </>
            );
-       } else { // Implies session.type === 'partner'
-           const partner = profileData as PartnerProfile; // Cast based on type check
+       } else { // Partner profile
+           const partner = profileData as PartnerProfile;
            const serviceNames = partner?.serviceList?.map(s => s.serviceName).join(', ') || 'N/A';
-           const countyNames = partner?.countyList?.map(c => c.countyName).join(', ') || 'N/A';
-           const municipalityNames = partner?.municipalityList?.map(m => m.municipalityName).join(', ') || 'N/A';
-           // ... (Keep Partner UI rendering from previous version) ...
+
+           // --- FIX: De-duplicate County List ---
+           const uniqueCounties = new Map<number, string | null>();
+           partner?.countyList?.forEach(county => {
+               if (county && !uniqueCounties.has(county.countyId)) {
+                   uniqueCounties.set(county.countyId, county.countyName);
+               }
+           });
+           const countyNames = Array.from(uniqueCounties.values()).filter(name => !!name).join(', ') || 'N/A';
+           // -------------------------------------
+
+            // --- FIX: De-duplicate Municipality List ---
+           const uniqueMunicipalities = new Map<number, string | null>();
+           partner?.municipalityList?.forEach(muni => {
+               if (muni && !uniqueMunicipalities.has(muni.municipalityId)) {
+                   uniqueMunicipalities.set(muni.municipalityId, muni.municipalityName);
+               }
+           });
+           const municipalityNames = Array.from(uniqueMunicipalities.values()).filter(name => !!name).join(', ') || 'N/A';
+           // -----------------------------------------
+
             return (
                <>
                    {/* Partner Info Section */}
@@ -278,19 +186,7 @@ export default function ProfileScreen() {
                            <Text style={styles.userEmail}>{partner?.emailId ?? session.email}</Text>
                            <Text style={styles.regNumber}>Reg. No. {partner?.companyRegistrationNumber ?? 'N/A'}</Text>
                        </View>
-                       {/* 24x7 Toggle Area */}
-                       <View style={styles.statusToggle}>
-                           <Switch
-                               trackColor={{ false: COLORS.switchTrackFalse, true: COLORS.switchTrackTrue }}
-                               thumbColor={COLORS.switchThumb}
-                               ios_backgroundColor={COLORS.switchTrackFalse}
-                               onValueChange={() => handleToggle24x7(partner?.is24X7 ?? false)}
-                               value={!!partner?.is24X7}
-                               disabled={isUpdatingStatus}
-                           />
-                           <Text style={styles.statusText}> 24x7</Text>
-                            {isUpdatingStatus && <ActivityIndicator size="small" color={COLORS.accent} style={{marginLeft: 5}}/>}
-                       </View>
+                       {/* REMOVED 24x7 Toggle */}
                    </View>
 
                    {/* About Section */}
@@ -311,15 +207,15 @@ export default function ProfileScreen() {
                       <Text style={styles.infoText}>{partner?.mobileNumber ?? 'N/A'}</Text>
                    </View>
 
-                    {/* County Section */}
+                    {/* County Section - Uses de-duplicated names */}
                     <View style={[styles.infoRow, styles.locationSection]}>
                         <View style={styles.locationLabelContainer}><Text style={styles.locationLabel}>County</Text></View>
                         <Text style={styles.locationValue}>{countyNames}</Text>
                     </View>
 
-                    {/* Municipality Section */}
+                    {/* Municipality Section - Uses de-duplicated names */}
                     <View style={[styles.infoRow, styles.locationSection, { borderBottomWidth: 0 }]}>
-                        <View style={styles.locationLabelContainer}><Text style={styles.locationLabel}>Municipality</Text></View>
+                         <View style={styles.locationLabelContainer}><Text style={styles.locationLabel}>Municipality</Text></View>
                         <Text style={styles.locationValue}>{municipalityNames}</Text>
                     </View>
                </>
@@ -338,7 +234,7 @@ export default function ProfileScreen() {
           headerTitleStyle: { fontWeight: 'bold' },
           headerTitleAlign: 'center',
           headerRight: () => (
-             <TouchableOpacity onPress={handleOpenLanguageModal} style={{ marginRight: 15 }} disabled={isUpdatingStatus}>
+             <TouchableOpacity onPress={handleOpenLanguageModal} style={{ marginRight: 15 }} >
               <Ionicons name="settings-outline" size={24} color={COLORS.iconColor} />
             </TouchableOpacity>
           ),
@@ -363,7 +259,7 @@ export default function ProfileScreen() {
          </View>
       </ScrollView>
 
-      {/* Modals */}
+       {/* Modals */}
       <ForgotPasswordModal
          visible={isForgotModalVisible}
         onClose={() => setIsForgotModalVisible(false)}
@@ -377,46 +273,30 @@ export default function ProfileScreen() {
   );
 }
 
-// --- Styles (Keep existing styles and add styles for logged out view) ---
+// --- Styles ---
+// Styles remain largely the same, removed styles related to the switch
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background, },
   scrollView: { flex: 1, },
   container: { flex: 1, paddingHorizontal: 20, paddingVertical: 20, },
   containerCentered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background, padding: 20, },
-  loggedOutMessage: { // Style for the new message
-      fontSize: 16,
-      color: COLORS.textSecondary,
-      textAlign: 'center',
-      marginBottom: 30, // Space before button
-      lineHeight: 24,
-  },
-  loginButton: { // Style for the new login button
-      backgroundColor: COLORS.buttonBg,
-      paddingVertical: 15,
-      paddingHorizontal: 50, // Make it wider
-      borderRadius: 8,
-      alignItems: 'center',
-  },
-  loginButtonText: { // Style for login button text
-      color: COLORS.buttonText,
-      fontSize: 16,
-      fontWeight: 'bold',
-  },
+  loggedOutMessage: { fontSize: 16, color: COLORS.textSecondary, textAlign: 'center', marginBottom: 30, lineHeight: 24, },
+  loginButton: { backgroundColor: COLORS.buttonBg, paddingVertical: 15, paddingHorizontal: 50, borderRadius: 8, alignItems: 'center', },
+  loginButtonText: { color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold', },
   userInfoSection: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 30, },
   profilePicPlaceholder: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.locationBg, justifyContent: 'center', alignItems: 'center', marginRight: 15, },
   partnerLogo: { width: 60, height: 60, borderRadius: 8, marginRight: 15, borderWidth: 1, borderColor: COLORS.borderColor },
-  partnerLogoPlaceholder:{ borderRadius: 8 },
-  userDetails: { flex: 1, },
+  partnerLogoPlaceholder:{ borderRadius: 8, width: 60, height: 60, backgroundColor: COLORS.locationBg, justifyContent: 'center', alignItems: 'center', marginRight: 15},
+  userDetails: { flex: 1, justifyContent: 'center' },
   userName: { fontSize: 18, fontWeight: 'bold', color: COLORS.textPrimary, marginBottom: 4, },
   userEmail: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 4, },
   regNumber: { fontSize: 12, color: COLORS.textSecondary },
-  statusToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginLeft: 10, paddingTop: 4, },
-  statusText: { fontSize: 12, color: COLORS.textSecondary, marginLeft: 2 },
   infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor, },
   locationSection: { backgroundColor: COLORS.locationBg, paddingHorizontal: 15, marginHorizontal: -15, alignItems: 'flex-start', paddingVertical: 10, },
-  locationLabelContainer: { width: 120, marginRight: 10, paddingTop: 2, },
+  locationLabelContainer: { width: 120, // Adjust width as needed
+    marginRight: 10, paddingTop: 2, },
   locationLabel: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '500', },
-  locationValue: { fontSize: 16, color: COLORS.textPrimary, flex: 1, lineHeight: 22, },
+  locationValue: { fontSize: 16, color: COLORS.textPrimary, flex: 1, lineHeight: 22, }, // Allow wrapping
   infoIcon: { marginRight: 15, },
   infoText: { fontSize: 16, color: COLORS.textPrimary, flex: 1, },
   actionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor, marginTop: 20, },
