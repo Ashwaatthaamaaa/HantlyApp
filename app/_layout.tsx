@@ -45,10 +45,10 @@ const InitialLayout = () => {
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="register" options={{ headerShown: false }} />
         <Stack.Screen name="register-partner" options={{ headerShown: false }} />
-        {/* FIX: Removed headerShown: false from create-job-card */}
         <Stack.Screen name="create-job-card" />
-        {/* FIX: Removed headerShown: false from categories */}
         <Stack.Screen name="categories" />
+        {/* ADDED: Register the new urgent job list screen */}
+        <Stack.Screen name="urgentJobList" />
          {/* Add other screens outside the main tabs here if needed */}
          {/* <Stack.Screen name="+not-found" /> */}
       </Stack>
