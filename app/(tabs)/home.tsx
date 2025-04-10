@@ -77,17 +77,20 @@ interface ServiceItemProps {
     session: ReturnType<typeof useAuth>['session']; // Pass session down
     router: ReturnType<typeof useRouter>; // Pass router down
 }
-// Keep the session check here
 const ServiceItem: React.FC<ServiceItemProps> = ({ item, session, router }) => { // Accept session and router
 
     const handleItemPress = () => {
         if (!session) {
             showLoginRegisterAlert(router); // Show alert if not logged in
+        } else if (session.type === 'user') {
+            // Logged-in user: Navigate to create-job-card with preselected service
+            router.push({
+                pathname: '/create-job-card',
+                params: { preselectedServiceId: item.id, preselectedServiceName: item.name }
+            });
         } else {
-            // Logged-in user behavior (currently an alert)
-            Alert.alert("Service Pressed", item.name);
-            // Potential future navigation for logged-in users:
-            // router.push(`/service-details/${item.id}`);
+            // Partner: Show alert (partners cannot create job requests from here)
+            Alert.alert("Action Not Allowed", "Only users can create job requests from services.");
         }
     }
 
@@ -95,7 +98,6 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, session, router }) => {
         if (item.iconName && item.iconSet === 'ion') {
             return <Ionicons name={item.iconName as any} size={60} color={COLORS.iconColor} style={styles.serviceItemIcon}/>;
         } else if (item.imageUri && item.contentType?.startsWith('image/')) {
-             // Assuming imagePath is already a full URL or handled correctly by API response
              return <Image source={{ uri: item.imageUri }} style={styles.serviceItemImage} resizeMode="contain"/>;
         } else {
              return <Ionicons name="help-circle-outline" size={60} color={COLORS.textSecondary} style={styles.serviceItemIcon}/>;
@@ -113,8 +115,8 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, session, router }) => {
 
 // --- Main Home Screen Component ---
 export default function HomeScreen() {
-  const router = useRouter(); // Get router instance
-  const { session } = useAuth(); // Get session state from context
+  const router = useRouter();
+  const { session } = useAuth();
 
   const [services, setServices] = useState<ServiceListItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -152,7 +154,7 @@ export default function HomeScreen() {
             if (service.serviceId === 2 || service.serviceName === "Carpenter" || !service.imageContentType?.startsWith('image/')) {
                return { ...baseItem, iconName: 'hammer-outline', iconSet: 'ion' } as ServiceListItem;
             } else {
-              const imageUri = service.imagePath; // Use directly if API provides full URL
+              const imageUri = service.imagePath;
                  return { ...baseItem, imageUri: imageUri } as ServiceListItem;
             }
         });
@@ -170,26 +172,34 @@ export default function HomeScreen() {
 
   // --- Event Handlers ---
   const handleNewJobRequestPress = () => {
-      // Keep session check here as per original logic (only users can create jobs)
       if (!session) {
           showLoginRegisterAlert(router);
       } else {
         if (session.type === 'user') {
-             router.push('/create-job-card');
+             router.push('/create-job-card'); // Navigate without preselection
         } else {
-            // Partners cannot create job requests from this button
              Alert.alert("Action Not Allowed", "Partners cannot create job requests.");
             console.warn("Partner attempted to press New Job Request button.");
         }
       }
   };
 
-  // Reverted handler for View All - always navigates
+  // View All - always navigates
   const handleViewAllServicesPress = () => {
-      router.push('/categories'); // No login check here
+      router.push('/categories');
   };
 
-  const handleUrgentJobPress = () => Alert.alert("Urgent Job", "Urgent Job 24/7 action placeholder");
+  // Urgent Job - navigates for users
+  const handleUrgentJobPress = () => {
+      if (!session) {
+          showLoginRegisterAlert(router);
+      } else if (session.type !== 'user') {
+          Alert.alert("Feature Not Available", "This feature is only available for users.");
+      } else {
+          router.push('/urgentJobList');
+      }
+  };
+
   const handleRegisterPress = () => setIsRegisterModalVisible(true);
   const handleSelectPartner = () => { setIsRegisterModalVisible(false); router.push('/register-partner'); };
   const handleSelectUser = () => { setIsRegisterModalVisible(false); router.push('/register'); };
@@ -208,12 +218,11 @@ export default function HomeScreen() {
     return (
       <FlatList
          data={services}
-         // Pass session and router to ServiceItem (still needed for its internal check)
          renderItem={({item}) => <ServiceItem item={item} session={session} router={router} />}
          keyExtractor={(item) => item.id}
          numColumns={2}
          columnWrapperStyle={styles.serviceGridRow}
-         scrollEnabled={false} // Scrolling handled by outer ScrollView
+         scrollEnabled={false}
          contentContainerStyle={styles.servicesGridContainer}
      />
     );
@@ -243,7 +252,7 @@ export default function HomeScreen() {
 
         <View style={styles.bannerContainer}>
            <Image
-             source={require('@/assets/images/banner.png')} // Ensure this asset exists
+             source={require('@/assets/images/banner.png')}
              style={styles.bannerImage}
              resizeMode='cover'
            />
@@ -251,9 +260,12 @@ export default function HomeScreen() {
 
         <View style={styles.sectionHeader}>
              <ThemedText style={styles.sectionTitle}>Services</ThemedText>
-            <TouchableOpacity onPress={handleUrgentJobPress}><ThemedText style={styles.urgentJobText}>Urgent Job 24/7</ThemedText></TouchableOpacity>
-            {/* Use reverted handler for View All */}
-            <TouchableOpacity onPress={handleViewAllServicesPress}><ThemedText style={styles.viewAllText}>View All</ThemedText></TouchableOpacity>
+             <TouchableOpacity onPress={handleUrgentJobPress}>
+                <ThemedText style={styles.urgentJobText}>Urgent Job 24/7</ThemedText>
+             </TouchableOpacity>
+             <TouchableOpacity onPress={handleViewAllServicesPress}>
+                 <ThemedText style={styles.viewAllText}>View All</ThemedText>
+             </TouchableOpacity>
         </View>
 
         {renderListContent()}
@@ -294,7 +306,7 @@ export default function HomeScreen() {
 }
 
 // --- Styles ---
-// Styles remain the same as the previous version
+// Styles remain the same
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background, },
   scrollView: { flex: 1, },
@@ -305,8 +317,8 @@ const styles = StyleSheet.create({
   bannerImage: { width: '100%', height: '100%', },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 15, marginBottom: 15, },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.textPrimary, },
-  urgentJobText: { fontSize: 14, fontWeight: 'bold', color: COLORS.urgentText, },
-  viewAllText: { fontSize: 14, color: COLORS.accent, fontWeight: '500', },
+  urgentJobText: { fontSize: 14, fontWeight: 'bold', color: COLORS.urgentText, paddingVertical: 5 },
+  viewAllText: { fontSize: 14, color: COLORS.accent, fontWeight: '500', paddingVertical: 5 },
    servicesGridContainer: { paddingHorizontal: 10, },
   serviceGridRow: { justifyContent: 'space-around', },
   serviceItem: {
