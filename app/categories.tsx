@@ -8,31 +8,30 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  Alert, // Import Alert
+  Alert,
   ActivityIndicator,
-  Image,
+  Image, // Keep Image import
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router'; // Import useRouter
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { Ionicons } from '@expo/vector-icons'; // Keep Ionicons for header/chevrons
+import { Stack, useRouter } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
 import { BASE_URL } from '@/constants/Api';
 
 // --- Define Types based on API Response ---
 interface Service {
   serviceId: number;
   serviceName: string;
-  imagePath: string;
-  imageContentType: string;
+  imagePath: string | null; // Allow null
+  imageContentType: string | null; // Allow null
 }
 
-// Interface for the item passed to FlatList/ListItemComponent
 interface ServiceListItem {
     id: string;
     name: string;
-    imageUri?: string;
-    iconName?: string;
+    imageUri?: string | null; // Allow null
+    iconName?: string; // Keep for type consistency
     iconSet?: 'ion';
-    contentType?: string;
+    contentType?: string | null; // Allow null
 }
 // -----------------------------------------
 
@@ -47,46 +46,26 @@ const COLORS = {
   cardBg: '#FFFFFF',
   textPrimary: '#333333',
   textSecondary: '#888888',
-  iconColor: '#696969',
+  // iconColor no longer needed for default service icons
   borderColor: '#E0E0E0',
   errorText: '#D9534F',
   accent: '#007AFF',
 };
 
 // --- Helper Function for Login/Register Prompt ---
-const showLoginRegisterAlert = (router: any) => { // Use ReturnType<typeof useRouter> if possible
-    Alert.alert(
-        "Login Required",
-        "Please log in or register to proceed.",
-        [
-            { text: "Cancel", style: "cancel" },
-            { text: "Log In", onPress: () => router.push('/login') },
-            { text: "Register", onPress: () => router.push('/register') }
-        ]
-    );
-};
+const showLoginRegisterAlert = (router: any) => { /* ... remains same ... */ Alert.alert( "Login Required", "Please log in or register to proceed.", [ { text: "Cancel", style: "cancel" }, { text: "Log In", onPress: () => router.push('/login') }, { text: "Register", onPress: () => router.push('/register') } ] ); };
 
-// --- Updated List Item Component ---
+// --- List Item Component with Fallback Removed ---
 interface ListItemComponentProps {
   item: ServiceListItem;
-  onPress: (item: ServiceListItem) => void; // Keep the onPress prop
+  onPress: (item: ServiceListItem) => void;
 }
 
 const ListItemComponent: React.FC<ListItemComponentProps> = ({ item, onPress }) => {
 
-    // Decide whether to render Image or Icon
+    // Updated renderVisual to only show API image or nothing
     const renderVisual = () => {
-        if (item.iconName && item.iconSet === 'ion') {
-            return (
-                <Ionicons
-                  name={item.iconName as any}
-                  size={30}
-                  color={COLORS.iconColor}
-                  style={styles.itemVisual}
-                />
-            );
-        }
-        else if (item.imageUri && item.contentType?.startsWith('image/')) {
+        if (item.imageUri && item.contentType?.startsWith('image/')) {
              return (
                  <Image
                      source={{ uri: item.imageUri }}
@@ -95,20 +74,12 @@ const ListItemComponent: React.FC<ListItemComponentProps> = ({ item, onPress }) 
                  />
              );
         }
-        else {
-             return (
-                 <Ionicons
-                     name="help-circle-outline"
-                     size={30}
-                     color={COLORS.textSecondary}
-                     style={styles.itemVisual}
-                 />
-             );
-        }
+        // Otherwise, render an empty view to maintain layout
+        return <View style={styles.itemVisualPlaceholder} />;
+        // Alternatively: return null;
     };
 
   return (
-    // Call the passed onPress function when the item is pressed
     <TouchableOpacity style={styles.itemContainer} onPress={() => onPress(item)}>
       {renderVisual()}
       <Text style={styles.itemText}>{item.name}</Text>
@@ -119,10 +90,8 @@ const ListItemComponent: React.FC<ListItemComponentProps> = ({ item, onPress }) 
 
 // --- Main Screen Component ---
 export default function CategoriesScreen() {
-  const router = useRouter(); // Get router instance
-  const { session } = useAuth(); // Get session state
-
-  // State for API data, loading, and errors
+  const router = useRouter();
+  const { session } = useAuth();
   const [services, setServices] = useState<ServiceListItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,83 +99,42 @@ export default function CategoriesScreen() {
   // --- Fetch Services ---
   useEffect(() => {
     const fetchServices = async () => {
-      setIsLoading(true);
-      setError(null);
+      setIsLoading(true); setError(null);
       const url = `${BASE_URL}/api/Service/GetServiceList`;
-      console.log(`Workspaceing services from: ${url}`);
       try {
         const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) { const errorText = await response.text(); throw new Error(`HTTP error! status: ${response.status} - ${errorText}`); }
         const contentType = response.headers.get("content-type");
         if (contentType?.includes("application/json")) {
             const data: Service[] = await response.json();
-            const formattedData: ServiceListItem[] = data.map(service => {
-                const baseItem = {
-                    id: service.serviceId.toString(),
-                    name: service.serviceName,
-                    contentType: service.imageContentType,
-                };
-                if (service.serviceId === 2 || service.serviceName === "Carpenter" || !service.imageContentType?.startsWith('image/')) {
-                    return { ...baseItem, iconName: 'hammer-outline', iconSet: 'ion' } as ServiceListItem;
-                } else {
-                    return { ...baseItem, imageUri: service.imagePath } as ServiceListItem;
-                }
-            });
+            // Updated mapping - removed fallback icon logic
+            const formattedData: ServiceListItem[] = data.map(service => ({
+                id: service.serviceId.toString(),
+                name: service.serviceName,
+                contentType: service.imageContentType,
+                imageUri: service.imagePath, // Pass imagePath directly
+            }));
             setServices(formattedData);
-        } else {
-            throw new Error("Received non-JSON response");
-        }
-      } catch (err: any) {
-        console.error("Failed to fetch services:", err);
-        setError(`Failed to load services: ${err.message}`);
-      } finally {
-        setIsLoading(false);
-      }
+        } else { throw new Error("Received non-JSON response"); }
+      } catch (err: any) { setError(`Failed to load services: ${err.message}`); }
+      finally { setIsLoading(false); }
     };
     fetchServices();
   }, []);
 
-
-  // Updated handler for service press
+  // Updated handler for service press (remains same logic as before)
   const handleServicePress = (service: ServiceListItem) => {
     if (!session) {
         showLoginRegisterAlert(router);
     } else if (session.type === 'user') {
-         // Logged-in user: Navigate to create-job-card with preselected service
-         router.push({
-             pathname: '/create-job-card',
-             params: { preselectedServiceId: service.id, preselectedServiceName: service.name }
-         });
+         router.push({ pathname: '/create-job-card', params: { preselectedServiceId: service.id, preselectedServiceName: service.name } });
     } else {
-        // Partner: Show alert (partners cannot create job requests from here)
         Alert.alert("Action Not Allowed", "Only users can create job requests from services.");
     }
   };
 
-  // --- Render List or Loading/Error State ---
-   const renderListContent = () => {
-     if (isLoading) {
-       return <ActivityIndicator size="large" color={COLORS.headerBg} style={styles.loadingIndicator} />;
-     }
-     if (error) {
-       return <Text style={styles.errorText}>{error}</Text>;
-     }
-     if (services.length === 0) {
-         return <Text style={styles.noDataText}>No services available.</Text>;
-     }
-     return (
-       <FlatList
-         data={services}
-         renderItem={({ item }) => <ListItemComponent item={item} onPress={handleServicePress} />}
-         keyExtractor={(item) => item.id}
-         contentContainerStyle={styles.listContainer}
-         showsVerticalScrollIndicator={false}
-       />
-     );
-   };
-
+  // --- Render List or Loading/Error State (remains same) ---
+   const renderListContent = () => { if (isLoading) { return <ActivityIndicator size="large" color={COLORS.headerBg} style={styles.loadingIndicator} />; } if (error) { return <Text style={styles.errorText}>{error}</Text>; } if (services.length === 0) { return <Text style={styles.noDataText}>No services available.</Text>; } return ( <FlatList data={services} renderItem={({ item }) => <ListItemComponent item={item} onPress={handleServicePress} />} keyExtractor={(item) => item.id} contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false} /> ); };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -221,65 +149,25 @@ export default function CategoriesScreen() {
            headerBackTitle: '',
          }}
        />
-
        {renderListContent()}
-
     </SafeAreaView>
   );
 }
 
 // --- Styles ---
-// Styles remain the same
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  listContainer: {
-    paddingHorizontal: 0,
-    paddingTop: 10,
-    paddingBottom: 10,
-  },
-  itemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardBg,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderColor,
-  },
-  itemVisual: {
-    width: 40,
-    height: 40,
-    marginRight: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  itemImage: {
+  safeArea: { flex: 1, backgroundColor: COLORS.background, },
+  listContainer: { paddingHorizontal: 0, paddingTop: 10, paddingBottom: 10, },
+  itemContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.cardBg, paddingVertical: 12, paddingHorizontal: 15, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor, },
+  itemVisual: { // Style for the actual image
+    width: 40, height: 40, marginRight: 15, alignItems: 'center', justifyContent: 'center', },
+  itemVisualPlaceholder: { // Style for the empty space if no image
+      width: 40, height: 40, marginRight: 15, },
+  itemImage: { // Specific image styling if needed (like border radius)
     // borderRadius: 4,
   },
-  itemText: {
-    flex: 1,
-    fontSize: 16,
-    color: COLORS.textPrimary,
-    fontWeight: '500',
-  },
-  loadingIndicator: {
-      marginTop: 50,
-  },
-  errorText: {
-      color: COLORS.errorText,
-      textAlign: 'center',
-      marginTop: 30,
-      paddingHorizontal: 20,
-      fontSize: 16,
-  },
-   noDataText: {
-       color: COLORS.textSecondary,
-       textAlign: 'center',
-       marginTop: 30,
-       paddingHorizontal: 20,
-       fontSize: 16,
-   }
+  itemText: { flex: 1, fontSize: 16, color: COLORS.textPrimary, fontWeight: '500', },
+  loadingIndicator: { marginTop: 50, },
+  errorText: { color: COLORS.errorText, textAlign: 'center', marginTop: 30, paddingHorizontal: 20, fontSize: 16, },
+   noDataText: { color: COLORS.textSecondary, textAlign: 'center', marginTop: 30, paddingHorizontal: 20, fontSize: 16, }
 });
