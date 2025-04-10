@@ -20,13 +20,17 @@ import * as Clipboard from 'expo-clipboard';
 import ImageViewing from "react-native-image-viewing";
 import Modal from 'react-native-modal';
 import { BASE_URL } from '@/constants/Api';
-import { useHeaderHeight } from '@react-navigation/elements'; // Keep import
+import { useHeaderHeight } from '@react-navigation/elements';
+// Keep import
 
 // --- Types ---
 interface TicketImage { imageId?: number; ticketId?: number; imageName?: string | null; imagePath?: string | null; imageContentType?: string | null; }
 interface BookingDetail {
     ticketId: number; reportingPerson?: string; reportingDescription?: string; operationId?: number; status?: string;
-    toCraftmanType?: string; address?: string; city?: string; pincode?: string; countyId?: number; municipalityId?: number; createdOn: string; updatedOn?: string | null; countyName?: string; municipalityName?: string; reviewStarRating?: number | null; reviewComment?: string; companyComment?: string; closingOTP?: number | null; companyId?: number | null; companyEmailId?: string; companyName?: string; companyMobileNumber?: string; userId?: number | null; userEmailId?: string; userName?: string; userMobileNumber?: string; ticketImages?: TicketImage[] | null; ticketWorkImages?: TicketImage[] | null;
+    toCraftmanType?: string; address?: string; city?: string; pincode?: string; countyId?: number; municipalityId?: number; createdOn: string; updatedOn?: string | null; countyName?: string;
+    municipalityName?: string; reviewStarRating?: number | null; reviewComment?: string; companyComment?: string; closingOTP?: number | null; companyId?: number | null; companyEmailId?: string;
+    companyName?: string; companyMobileNumber?: string; userId?: number | null; userEmailId?: string; userName?: string; userMobileNumber?: string; ticketImages?: TicketImage[] | null;
+    ticketWorkImages?: TicketImage[] | null;
     // companyLogoPath field does not exist here
 }
 
@@ -34,7 +38,7 @@ interface BookingDetail {
 const COLORS = { /* ... colors ... */ background: '#FFFFFF', textPrimary: '#333333', textSecondary: '#555555', accent: '#696969', headerBg: '#FFFFFF', headerText: '#333333', error: '#D9534F', borderColor: '#E0E0E0', cardBg: '#F8F8F8', buttonBg: '#696969', buttonText: '#FFFFFF', iconPlaceholder: '#CCCCCC', labelColor: '#666666', statusCreated: '#007BFF', statusAccepted: '#28A745', statusInProgress: '#FFC107', statusCompleted: '#6C757D', statusDefault: '#6C757D', modalInputBg: '#FFFFFF', actionRowDisabled: '#EFEFEF', };
 
 // --- Helper Functions ---
-const formatDate = (dateString: string | null | undefined): string => { /* ... */ if (!dateString) return 'N/A'; try { return new Date(dateString).toLocaleDateString('sv-SE'); } catch (e) { return 'Invalid Date'; } };
+const formatDate = (dateString: string | null | undefined): string => { /* ... */ if (!dateString) return 'N/A'; try { const date = new Date(dateString); return date.toLocaleDateString('sv-SE'); } catch (error) { return 'Invalid Date'; } };
 const formatTime = (dateString: string | null | undefined): string => { /* ... */ if (!dateString) return 'N/A'; try { return new Date(dateString).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return 'Invalid Time'; } };
 const getStatusColor = (status?: string): string => { /* ... */ const lowerCaseStatus = status?.toLowerCase() || ''; if (lowerCaseStatus === 'created') return COLORS.statusCreated; if (lowerCaseStatus === 'accepted') return COLORS.statusAccepted; if (lowerCaseStatus === 'inprogress' || lowerCaseStatus === 'in progress') return COLORS.statusInProgress; if (lowerCaseStatus === 'completed') return COLORS.statusCompleted; return COLORS.statusDefault; };
 
@@ -59,6 +63,7 @@ export default function BookingDetailScreen() {
   // Fetch Booking Details
   const fetchBookingDetails = useCallback(async () => { /* ... same ... */ if (!ticketId || isNaN(ticketId)) { setError("Invalid Ticket ID."); setIsLoading(false); return; } if (!session) { Alert.alert("Session Expired", "Please log in again.", [{ text: "OK", onPress: () => router.replace('/login') }]); return; } setIsLoading(true); setError(null); const url = `${BASE_URL}/api/IssueTicket/GetTicket?TicketId=${ticketId}`; console.log("Fetching details from:", url); try { const response = await fetch(url); if (!response.ok) { const errorText = await response.text(); console.error(`HTTP error ${response.status}: ${errorText}`); throw new Error(`Failed to fetch details (Status: ${response.status}). ${errorText || 'Server error'}`); } const data: BookingDetail = await response.json(); setBookingData(data); } catch (err: any) { console.error("Error fetching booking details:", err); setError(`Failed to load booking details: ${err.message}`); setBookingData(null); } finally { setIsLoading(false); } }, [ticketId, session, router]);
   useFocusEffect( useCallback(() => { fetchBookingDetails(); }, [fetchBookingDetails]) );
+
   const updateStatus = async (newStatus: "Accepted" | "Inprogress" | "Completed", otp: number | null = 0): Promise<boolean> => { /* ... same ... */ if (!session || session.type !== 'partner' || !session.id || !ticketId) { Alert.alert("Error", "Cannot update status."); return false; } if (isSubmittingStatus) return false; setIsSubmittingStatus(true); const url = `${BASE_URL}/api/IssueTicket/UpdateTicketStatus`; const body = JSON.stringify({ ticketId: ticketId, status: newStatus, closingOTP: otp, companyId: session.id }); console.log(`Updating status API Call: URL=${url}, Body=${body}`); try { const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'accept': 'text/plain' }, body: body }); const responseText = await response.text(); console.log(`Update Status Response (${newStatus}): Status=${response.status}, Body=${responseText}`); if (!response.ok) { let errorMessage = `Failed (Status: ${response.status})`; try { const errorData = JSON.parse(responseText); errorMessage = errorData?.statusMessage || errorData?.title || errorData?.detail || errorData?.message || responseText || errorMessage; } catch (e) { errorMessage = responseText || errorMessage; } throw new Error(errorMessage); } let successMessage = "Status updated successfully"; try { const result = JSON.parse(responseText); successMessage = result?.statusMessage || successMessage; } catch(e) { /* Ignore */ } Alert.alert("Success", successMessage); await fetchBookingDetails(); return true; } catch (err: any) { console.error(`Failed to update status to ${newStatus}:`, err); Alert.alert("Error updating status", err.message || "An unexpected error occurred."); return false; } finally { setIsSubmittingStatus(false); if (newStatus === "Completed") { setOtpModalVisible(false); setEnteredOtp(''); } } };
 
   // --- Action Handlers ---
@@ -70,26 +75,21 @@ export default function BookingDetailScreen() {
   const handleCallProvider = () => { /* ... same ... */ const phoneNumber = bookingData?.companyMobileNumber; if (phoneNumber) { const url = `tel:${phoneNumber}`; Linking.canOpenURL(url) .then(supported => { if (supported) Linking.openURL(url); else Alert.alert('Cannot Make Call', `Device does not support calling ${phoneNumber}.`); }).catch(err => console.error('Error opening phone dialer:', err)); } else Alert.alert('Cannot Call', 'Provider phone number not available.'); };
   const handleCopyOtp = async () => { /* ... same ... */ const otp = bookingData?.closingOTP; if (otp) { try { await Clipboard.setStringAsync(otp.toString()); Alert.alert("OTP Copied"); } catch (e) { Alert.alert("Error", "Could not copy OTP."); } } else { Alert.alert("No OTP", "OTP not available."); } };
   const openImageViewer = (images: TicketImage[] | null | undefined, index: number) => { /* ... same ... */ const validImages = images?.map(img => ({ uri: img.imagePath || '' })).filter(img => !!img.uri) || []; if (validImages.length > 0) { setImagesForViewer(validImages); setCurrentImageIndex(index); setImageViewerVisible(true); } else { Alert.alert("No Images"); } };
-
   // Handle navigation for User 'CHAT WITH POTENTIAL PARTNERS' button
   const handleChatWithPotentialPartners = () => { /* ... same ... */ if (!bookingData || !ticketId || !session || session.type !== 'user') return; const serviceType = bookingData.toCraftmanType; const countyId = bookingData.countyId; const municipalityId = bookingData.municipalityId; if (countyId === undefined || municipalityId === undefined || !serviceType) { Alert.alert("Missing Information", "Cannot search for partners."); return; } console.log(`Navigating to find partners for ticket ${ticketId}`); router.push({ pathname: "/findPartners/[ticketId]", params: { ticketId: ticketId.toString(), serviceType: serviceType, countyId: countyId.toString(), municipalityId: municipalityId.toString(), } }); };
 
   // Handle Chat with Assigned Partner/User
   const handleChatPress = () => { /* ... same ... */ if (!bookingData || !session || !ticketId) { Alert.alert("Cannot Chat", "Required information missing."); return; } let otherPartyId: number | undefined; let otherPartyName: string | undefined; let otherPartyType: 'user' | 'partner' | undefined; if (session.type === 'partner') { otherPartyId = bookingData.userId ?? undefined; otherPartyName = bookingData.userName || bookingData.userEmailId || 'Customer'; otherPartyType = 'user'; } else { otherPartyId = bookingData.companyId ?? undefined; otherPartyName = bookingData.companyName || bookingData.companyEmailId || 'Partner'; otherPartyType = 'partner'; } if (otherPartyId === undefined) { Alert.alert("Cannot Chat", "Could not identify the other participant."); return; } console.log(`Navigating to chat for ticket ${ticketId}, other party: ${otherPartyName} (ID: ${otherPartyId}, Type: ${otherPartyType})`); router.push({ pathname: "/chat/[ticketId]", params: { ticketId: ticketId.toString(), otherPartyId: otherPartyId.toString(), otherPartyName: otherPartyName, otherPartyType: otherPartyType, } }); };
 
-
   // --- Render Logic ---
   if (isLoading) { return ( <SafeAreaView style={styles.centered}><ActivityIndicator size="large" color={COLORS.accent} /><Text style={{ marginTop: 10, color: COLORS.textSecondary }}>Loading...</Text></SafeAreaView> ); }
   if (error) { return ( <SafeAreaView style={styles.centered}><Ionicons name="alert-circle-outline" size={40} color={COLORS.error} /><Text style={styles.errorText}>{error}</Text><TouchableOpacity onPress={fetchBookingDetails} style={styles.retryButton}><Text style={styles.retryButtonText}>Retry</Text></TouchableOpacity></SafeAreaView> ); }
-  // --- MODIFICATION START: Add null check before derived state ---
-  // If bookingData is null after loading/error checks, show error or loading (shouldn't happen often, but safer)
+  // Add null check before derived state
   if (!bookingData) { return ( <SafeAreaView style={styles.centered}><Ionicons name="information-circle-outline" size={40} color={COLORS.textSecondary} /><Text style={{ marginTop: 10, color: COLORS.textSecondary, textAlign: 'center' }}>Booking details not found or empty for Ticket ID {ticketIdParam}.</Text><TouchableOpacity onPress={() => router.back()} style={styles.retryButton}><Text style={styles.retryButtonText}>Go Back</Text></TouchableOpacity></SafeAreaView> ); }
-  // --- MODIFICATION END ---
-
 
    // --- Derived State (Now safe to access bookingData) ---
   const isPartner = session?.type === 'partner';
-  const status = bookingData.status?.toLowerCase() || 'unknown'; // Optional chaining was already here
+  const status = bookingData.status?.toLowerCase() || 'unknown';
   const cardImageUrl = bookingData.ticketImages?.[0]?.imagePath;
   const isCreated = status === 'created';
   const isInProgress = status === 'inprogress' || status === 'in progress';
@@ -100,26 +100,33 @@ export default function BookingDetailScreen() {
   const showCompleteButton = isPartner && isInProgress;
   const partnerCanUpdateProof = isPartner && isInProgress;
 
-  const serviceProofImages = bookingData.ticketWorkImages || []; // Safe: defaults to empty array if null
+  const serviceProofImages = bookingData.ticketWorkImages || [];
   const serviceProofImagesExist = serviceProofImages.length > 0;
-  const serviceProofCommentExists = !!bookingData.companyComment?.trim(); // Safe: checks truthiness
+  const serviceProofCommentExists = !!bookingData.companyComment?.trim();
   const showServiceProofSection = serviceProofImagesExist || serviceProofCommentExists;
 
-  // --- MODIFICATION START: Add !!bookingData check ---
-  // Keep existing logic but ensure bookingData is checked before accessing properties
+  // Add !!bookingData check (though already checked above, good practice)
   const userCanSeeOtp = !!bookingData && !isPartner && isInProgress && serviceProofImagesExist && bookingData.closingOTP != null;
   const userCanSeeProviderInfo = !!bookingData && !isPartner && (status === 'accepted' || isInProgress || isCompleted);
   const userCanChatWithAssigned = !!bookingData && !isPartner && !!bookingData.companyId && !isCreated;
   const partnerCanChatWithAssigned = !!bookingData && isPartner && !!bookingData.userId;
-  // --- MODIFICATION END ---
 
-  // These were already safe as they only depend on isPartner or status derived with optional chaining
   const userCanChatWithPotential = !isPartner && isCreated;
   const showCustomerInfo = isPartner;
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: bookingData.toCraftmanType || 'Booking Details', headerStyle: { backgroundColor: COLORS.headerBg }, headerTintColor: COLORS.headerText, headerTitleStyle: { fontWeight: 'bold' }, }} />
+      {/* Apply header options here */}
+      <Stack.Screen
+        options={{
+          title: bookingData.toCraftmanType || 'Booking Details',
+          headerStyle: { backgroundColor: COLORS.headerBg },
+          headerTintColor: COLORS.headerText,
+          headerTitleStyle: { fontWeight: 'bold' },
+          // --- FIX: Added headerBackTitleVisible ---
+          headerBackTitle: '',          // -----------------------------------------
+        }}
+      />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
@@ -162,7 +169,7 @@ export default function BookingDetailScreen() {
 
 // --- Styles ---
 const styles = StyleSheet.create({
-  // ... (Keep existing styles) ...
+    // ... (Keep existing styles) ...
     safeArea: { flex: 1, backgroundColor: COLORS.background, },
     scrollView: { flex: 1, },
     container: { flexGrow: 1, padding: 20, paddingBottom: 40, },
