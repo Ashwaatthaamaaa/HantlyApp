@@ -65,6 +65,8 @@ export default function RegisterPartnerScreen() {
   const [isCountyModalVisible, setIsCountyModalVisible] = useState<boolean>(false);
   const [isMunicipalityModalVisible, setIsMunicipalityModalVisible] = useState<boolean>(false);
   const [isServiceModalVisible, setIsServiceModalVisible] = useState<boolean>(false);
+
+  // Data for selectors
   const [counties, setCounties] = useState<ApiDataItem[]>([]);
   const [isLoadingCounties, setIsLoadingCounties] = useState<boolean>(false);
   const [countyError, setCountyError] = useState<string | null>(null);
@@ -74,6 +76,7 @@ export default function RegisterPartnerScreen() {
   const [services, setServices] = useState<ApiDataItem[]>([]);
   const [isLoadingServices, setIsLoadingServices] = useState<boolean>(false);
   const [serviceError, setServiceError] = useState<string | null>(null);
+
   const [isSigningUp, setIsSigningUp] = useState<boolean>(false);
 
   // --- Fetch County List ---
@@ -95,22 +98,45 @@ export default function RegisterPartnerScreen() {
   // --- Fetch Municipalities based on Selected Counties ---
   const fetchMunicipalitiesForCounties = useCallback(async (countyIds: string[]) => {
     if (countyIds.length === 0) { setMunicipalities([]); setSelectedMunicipalityIds([]); setMunicipalityError(null); return; }
+
     setIsLoadingMunicipalities(true); setMunicipalityError(null); setMunicipalities([]);
-    const fetchPromises = countyIds.map(countyId => fetch(`${BASE_URL}/api/Municipality/GetMunicipalityList?CountyId=${countyId}`).then(res => res.ok ? res.json() : Promise.reject(new Error(`Muni fetch failed for ${countyId}`))));
+    // Fetch for all selected counties
+    const fetchPromises = countyIds.map(countyId =>
+        fetch(`${BASE_URL}/api/Municipality/GetMunicipalityList?CountyId=${countyId}`)
+        .then(res => res.ok ? res.json() : Promise.reject(new Error(`Muni fetch failed for ${countyId}`)))
+    );
+
     try {
         const results = await Promise.all(fetchPromises);
-        const allMunicipalities: MunicipalityMaster[] = results.flat();
-        const uniqueMunicipalitiesMap = new Map<string, ApiDataItem>();
-        allMunicipalities.forEach(m => { const idStr = m.municipalityId.toString(); if (!uniqueMunicipalitiesMap.has(idStr)) { uniqueMunicipalitiesMap.set(idStr, { id: idStr, name: m.municipalityName }); } });
-        setMunicipalities(Array.from(uniqueMunicipalitiesMap.values()));
-        setSelectedMunicipalityIds(prevIds => prevIds.filter(id => uniqueMunicipalitiesMap.has(id)));
-    } catch (error: any) { console.error("Municipality fetch failed:", error); setMunicipalityError(`Failed municipalities: ${error.message}`); setMunicipalities([]); setSelectedMunicipalityIds([]); }
-    finally { setIsLoadingMunicipalities(false); }
-  }, []);
+        const allMunicipalities: MunicipalityMaster[] = results.flat(); // Combine results from all counties
 
+        // Create unique list for the modal
+        const uniqueMunicipalitiesMap = new Map<string, ApiDataItem>();
+        allMunicipalities.forEach(m => {
+            const idStr = m.municipalityId.toString();
+            if (!uniqueMunicipalitiesMap.has(idStr)) {
+                uniqueMunicipalitiesMap.set(idStr, { id: idStr, name: m.municipalityName });
+            }
+        });
+        setMunicipalities(Array.from(uniqueMunicipalitiesMap.values()));
+
+        // Filter out previously selected municipalities that are no longer valid
+        setSelectedMunicipalityIds(prevIds => prevIds.filter(id => uniqueMunicipalitiesMap.has(id)));
+
+    } catch (error: any) {
+        console.error("Municipality fetch failed:", error);
+        setMunicipalityError(`Failed municipalities: ${error.message}`);
+        setMunicipalities([]); // Clear on error
+        setSelectedMunicipalityIds([]); // Clear selected on error
+    } finally {
+        setIsLoadingMunicipalities(false);
+    }
+  }, []); // No BASE_URL dependency needed if it's constant
+
+  // Trigger municipality fetch when selected counties change
   useEffect(() => { fetchMunicipalitiesForCounties(selectedCountyIds); }, [selectedCountyIds, fetchMunicipalitiesForCounties]);
 
-   // --- Fetch Service List ---
+  // --- Fetch Service List ---
    useEffect(() => {
     const fetchServices = async () => {
         setIsLoadingServices(true); setServiceError(null);
@@ -128,21 +154,26 @@ export default function RegisterPartnerScreen() {
 
   // --- Image Picker Logic ---
   const handlePickLogo = async () => {
-    if (isSigningUp) return;
+    if (isSigningUp) return; // Prevent picking while signing up
+
+    // Request permission
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
         Alert.alert('Permission Required', 'Sorry, we need camera roll permissions to make this work!');
         return;
     }
+
+    // Launch image library
     try {
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
+            aspect: [1, 1], // Square aspect ratio for logo
+            quality: 0.8, // Compress image slightly
         });
+
         if (!result.canceled && result.assets && result.assets.length > 0) {
-            setCompanyLogo(result.assets[0]);
+            setCompanyLogo(result.assets[0]); // Store the selected asset
         }
     } catch (error) {
         console.error("handlePickLogo: Error launching image picker:", error);
@@ -164,10 +195,14 @@ export default function RegisterPartnerScreen() {
 
   // --- Municipality Selector State Logic ---
   const isMunicipalityDisabled = selectedCountyIds.length === 0 || isLoadingMunicipalities || municipalityError !== null || (!isLoadingMunicipalities && municipalities.length === 0 && !municipalityError);
-  const municipalityPlaceholder = selectedCountyIds.length === 0 ? 'Select County First' : isLoadingMunicipalities ? 'Loading Municipalities...' : municipalityError ? 'Error Loading' : municipalities.length === 0 ? 'No Municipalities Found' : 'Select Municipality';
+  const municipalityPlaceholder = selectedCountyIds.length === 0 ? 'Select County First'
+                              : isLoadingMunicipalities ? 'Loading Municipalities...'
+                              : municipalityError ? 'Error Loading'
+                              : municipalities.length === 0 ? 'No Municipalities Found'
+                              : 'Select Municipality';
 
 
-   // --- Partner Sign Up Handler (FIXED) ---
+   // --- Partner Sign Up Handler (FIXED KEYS) ---
    const handleSignUp = async () => {
     // --- Validation ---
     const requiredFields = [
@@ -179,8 +214,8 @@ export default function RegisterPartnerScreen() {
         { value: password, name: "Password" },
     ];
     const missingFields = requiredFields.filter(field => !field.value);
-    const trimmedEmail = email.trim(); // Trim email for validation and use
-    const trimmedPassword = password; // Keep password as is
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password;
 
     if (missingFields.length > 0) {
         Alert.alert('Missing Information', `Please provide: ${missingFields.map(f => f.name).join(', ')}`);
@@ -192,21 +227,22 @@ export default function RegisterPartnerScreen() {
     if (trimmedPassword.length < 8) { Alert.alert('Password Too Short', 'Password must be at least 8 characters.'); return; }
     if (!/\S+@\S+\.\S+/.test(trimmedEmail)) { Alert.alert('Invalid Email', 'Please enter a valid email address.'); return; }
 
-    // --- FormData Preparation ---
+    // --- FormData Preparation (USING CORRECT KEYS) ---
     setIsSigningUp(true);
     const formData = new FormData();
-    formData.append('companyName', companyName);
-    formData.append('registrationNumber', regNumber);
-    formData.append('description', description);
-    formData.append('contactPerson', companyName); // Revisit if contact person should be different
-    formData.append('mobileNumber', phone);
-    formData.append('emailId', trimmedEmail);
-    formData.append('password', trimmedPassword);
-    formData.append('active', 'true');
-    // ** Add Username field using the trimmed email **
-    formData.append('Username', trimmedEmail);
 
-    // Append logo
+    // Append standard fields with correct keys from API spec/curl example
+    formData.append('CompanyName', companyName);
+    formData.append('CompanyRegistrationNumber', regNumber); // Corrected key
+    formData.append('CompanyPresentation', description); // Corrected key (mapping description to presentation)
+    formData.append('ContactPerson', companyName); // Using CompanyName as ContactPerson based on previous logic
+    formData.append('MobileNumber', phone);
+    formData.append('EmailId', trimmedEmail);
+    formData.append('Password', trimmedPassword);
+    formData.append('Active', 'true');
+    formData.append('Username', trimmedEmail); // Using email as username based on previous logic
+
+    // Append logo with correct key
     if (companyLogo) {
         const uriParts = companyLogo.uri.split('.');
         const fileType = uriParts[uriParts.length - 1];
@@ -214,31 +250,33 @@ export default function RegisterPartnerScreen() {
         const logoFile = {
             uri: companyLogo.uri,
             name: fileName,
-            type: companyLogo.mimeType ?? `image/${fileType}`,
+            type: companyLogo.mimeType ?? `image/${fileType}`, // Guess mime type if missing
         };
-        formData.append('companyLogo', logoFile as any);
+        formData.append('LogoImage', logoFile as any); // Corrected key
     }
 
-    // Append arrays
-    selectedCountyIds.forEach(id => formData.append('CountyId', id));
-    selectedMunicipalityIds.forEach(id => formData.append('MunicipalityId', id));
-    selectedServiceIds.forEach(id => formData.append('ServiceId', id));
+    // Append arrays with correct keys
+    selectedCountyIds.forEach(id => formData.append('CountyIdList', id)); // Corrected key
+    selectedMunicipalityIds.forEach(id => formData.append('MunicipalityIdList', id)); // Corrected key
+    selectedServiceIds.forEach(id => formData.append('ServiceIdList', id)); // Corrected key
 
     const url = `${BASE_URL}/api/Company/CompanySignUp`;
     console.log(`--- Attempting Partner Sign Up ---`);
     console.log(`URL: ${url}`);
-    console.log('FormData Keys:', [...(formData as any)._parts.map((part: any[]) => part[0])].join(', ')); // Log keys
+    // Log keys being sent
+    console.log('FormData Keys:', [...(formData as any)._parts.map((part: any[]) => part[0])].join(', '));
 
     try {
         const response = await fetch(url, {
             method: 'POST',
             body: formData,
+            // Note: Content-Type header is set automatically for FormData by fetch
         });
         const responseText = await response.text();
         console.log(`Response Status: ${response.status}, Text: ${responseText}`);
 
         if (response.ok) {
-            // Success handling (as before)
+            // Success handling
             let successMessage = 'Registration successful! Please log in.';
             try {
                 const responseData: ApiResponse = JSON.parse(responseText);
@@ -247,15 +285,16 @@ export default function RegisterPartnerScreen() {
                 }
             } catch (e) {
                  console.warn("Could not parse success response as JSON:", e);
+                 // Use raw text if it's short and not HTML
                  if (responseText && responseText.length < 150 && !responseText.trim().startsWith('<')) {
                     successMessage = responseText;
                  }
             }
             Alert.alert('Success!', successMessage, [
-                { text: 'OK', onPress: () => router.replace('/login') }
+                { text: 'OK', onPress: () => router.replace('/login') } // Navigate to login after success
             ]);
         } else {
-            // Failure handling (as before)
+            // Failure handling
             let errorTitle = 'Registration Failed';
             let errorMessage = `An error occurred (Status: ${response.status}).`;
             try {
@@ -264,11 +303,11 @@ export default function RegisterPartnerScreen() {
                     errorTitle = errorData.title || 'Validation Errors';
                     errorMessage = "Please correct the following:\n" +
                         Object.entries(errorData.errors)
-                            // ** Check if 'Username' error exists and provide specific feedback **
                             .map(([field, messages]) => {
+                                // Specific check for existing email/username
                                 if (field.toLowerCase() === 'username' && errorData.errors?.[field]?.includes("is already taken")) {
                                     return `- Email: This email is already registered as a partner. Try logging in.`;
-                                }
+                                 }
                                 return `- ${field}: ${(messages as string[]).join(', ')}`;
                             })
                             .join('\n');
@@ -280,6 +319,7 @@ export default function RegisterPartnerScreen() {
                 }
             } catch (e) {
                 console.warn("Could not parse error response as JSON:", e);
+                 // Use raw text if short and not HTML
                 if (responseText && responseText.length < 150 && !responseText.trim().startsWith('<')) {
                     errorMessage = responseText;
                 }
@@ -287,21 +327,22 @@ export default function RegisterPartnerScreen() {
             Alert.alert(errorTitle, errorMessage);
         }
     } catch (error: any) {
-        console.error("Partner Sign Up Error:", error);
+        console.error("Partner Sign Up Network/Setup Error:", error);
         Alert.alert('Error', `An unexpected network or setup error occurred: ${error.message}`);
     } finally {
         setIsSigningUp(false);
     }
   };
+   // --- End Partner Sign Up Handler ---
 
-  // --- JSX Structure (No changes needed here) ---
+  // --- JSX Structure ---
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
       <View style={styles.header}>
          <TouchableOpacity onPress={() => !isSigningUp && router.back()} style={styles.backButton} disabled={isSigningUp}><Ionicons name="arrow-back" size={24} color={COLORS.headerText} /></TouchableOpacity>
          <Text style={styles.headerTitle}>Register As Partner</Text>
-         <View style={styles.backButton} />
+         <View style={styles.backButton} />{/* Placeholder for alignment */}
       </View>
 
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
@@ -312,29 +353,63 @@ export default function RegisterPartnerScreen() {
 
         {/* Logo Picker */}
         <View style={styles.logoContainer}>
-            <Image source={companyLogo?.uri ? { uri: companyLogo.uri } : require('@/assets/images/icon.png')} style={styles.logoPreview} />
-            <TouchableOpacity style={[styles.logoButton, isSigningUp && styles.buttonDisabled]} onPress={handlePickLogo} disabled={isSigningUp}>
+            <Image
+                source={companyLogo?.uri ? { uri: companyLogo.uri } : require('@/assets/images/icon.png')} // Use default icon if no logo selected
+                style={styles.logoPreview}
+            />
+            <TouchableOpacity
+                style={[styles.logoButton, isSigningUp && styles.buttonDisabled]}
+                onPress={handlePickLogo}
+                disabled={isSigningUp}
+             >
                 <Text style={styles.logoButtonText}>{companyLogo ? 'Change Logo *' : 'Select Logo *'}</Text>
             </TouchableOpacity>
         </View>
 
-        <TextInput style={[styles.input, styles.textArea]} placeholder="Company Description *" value={description} onChangeText={setDescription} multiline numberOfLines={4} placeholderTextColor={COLORS.placeholder} editable={!isSigningUp}/>
+        <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Company Description *"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            numberOfLines={4}
+            placeholderTextColor={COLORS.placeholder}
+            editable={!isSigningUp}
+         />
 
         {/* Selectors */}
-        <TouchableOpacity style={[styles.selectorContainer, (isLoadingCounties || countyError !== null || isSigningUp) && styles.disabledSelector ]} onPress={() => !isSigningUp && !isLoadingCounties && counties.length > 0 && !countyError && setIsCountyModalVisible(true)} disabled={isLoadingCounties || countyError !== null || isSigningUp}>
-            <Text style={[styles.selectorText, selectedCountyIds.length === 0 && styles.placeholderText]}>{isLoadingCounties ? 'Loading Counties...' : countyError ? 'Error Loading Counties' : getMultiDisplayText(selectedCountyIds, counties, 'Select County *')}</Text>
+        <TouchableOpacity
+            style={[styles.selectorContainer, (isLoadingCounties || countyError !== null || isSigningUp) && styles.disabledSelector ]}
+            onPress={() => !isSigningUp && !isLoadingCounties && counties.length > 0 && !countyError && setIsCountyModalVisible(true)}
+            disabled={isLoadingCounties || countyError !== null || isSigningUp}
+        >
+            <Text style={[styles.selectorText, selectedCountyIds.length === 0 && styles.placeholderText]}>
+                {isLoadingCounties ? 'Loading Counties...' : countyError ? 'Error Loading Counties' : getMultiDisplayText(selectedCountyIds, counties, 'Select County *')}
+            </Text>
             {isLoadingCounties ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
         {countyError && !isLoadingCounties && <Text style={styles.errorText}>{countyError}</Text>}
 
-        <TouchableOpacity style={[styles.selectorContainer, (isMunicipalityDisabled || isSigningUp) && styles.disabledSelector]} onPress={() => !isSigningUp && !isMunicipalityDisabled && municipalities.length > 0 && setIsMunicipalityModalVisible(true)} disabled={isMunicipalityDisabled || isSigningUp}>
-            <Text style={[styles.selectorText, selectedMunicipalityIds.length === 0 && styles.placeholderText]}>{getMultiDisplayText(selectedMunicipalityIds, municipalities, municipalityPlaceholder + ' *')}</Text>
+        <TouchableOpacity
+            style={[styles.selectorContainer, (isMunicipalityDisabled || isSigningUp) && styles.disabledSelector]}
+            onPress={() => !isSigningUp && !isMunicipalityDisabled && municipalities.length > 0 && setIsMunicipalityModalVisible(true)}
+            disabled={isMunicipalityDisabled || isSigningUp}
+        >
+            <Text style={[styles.selectorText, selectedMunicipalityIds.length === 0 && styles.placeholderText]}>
+                {getMultiDisplayText(selectedMunicipalityIds, municipalities, municipalityPlaceholder + ' *')}
+            </Text>
             {isLoadingMunicipalities ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
         {municipalityError && !isLoadingMunicipalities && <Text style={styles.errorText}>{municipalityError}</Text>}
 
-        <TouchableOpacity style={[styles.selectorContainer, (isLoadingServices || serviceError !== null || isSigningUp) && styles.disabledSelector]} onPress={() => !isSigningUp && !isLoadingServices && services.length > 0 && !serviceError && setIsServiceModalVisible(true)} disabled={isLoadingServices || serviceError !== null || isSigningUp}>
-            <Text style={[styles.selectorText, selectedServiceIds.length === 0 && styles.placeholderText]}>{isLoadingServices ? 'Loading Services...' : serviceError ? 'Error Loading Services' : getMultiDisplayText(selectedServiceIds, services, 'Choose Service Category *')}</Text>
+        <TouchableOpacity
+            style={[styles.selectorContainer, (isLoadingServices || serviceError !== null || isSigningUp) && styles.disabledSelector]}
+            onPress={() => !isSigningUp && !isLoadingServices && services.length > 0 && !serviceError && setIsServiceModalVisible(true)}
+            disabled={isLoadingServices || serviceError !== null || isSigningUp}
+        >
+            <Text style={[styles.selectorText, selectedServiceIds.length === 0 && styles.placeholderText]}>
+                {isLoadingServices ? 'Loading Services...' : serviceError ? 'Error Loading Services' : getMultiDisplayText(selectedServiceIds, services, 'Choose Service Category *')}
+            </Text>
             {isLoadingServices ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
         {serviceError && !isLoadingServices && <Text style={styles.errorText}>{serviceError}</Text>}
@@ -343,17 +418,37 @@ export default function RegisterPartnerScreen() {
         {/* Phone, Email, Password */}
         <View style={styles.inputContainer}><Ionicons name="call-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Phone Number *" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholderTextColor={COLORS.placeholder} editable={!isSigningUp}/></View>
         <View style={styles.inputContainer}><Ionicons name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Email *" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor={COLORS.placeholder} editable={!isSigningUp}/></View>
-        <View style={styles.inputContainer}><Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Password (min 8 chars) *" value={password} onChangeText={setPassword} secureTextEntry={!isPasswordVisible} placeholderTextColor={COLORS.placeholder} editable={!isSigningUp}/><TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} disabled={isSigningUp}><Ionicons name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'} size={24} color={COLORS.textSecondary} style={styles.eyeIcon}/></TouchableOpacity></View>
+        <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+            <TextInput
+                style={styles.input}
+                placeholder="Password (min 8 chars) *"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!isPasswordVisible}
+                placeholderTextColor={COLORS.placeholder}
+                editable={!isSigningUp}
+            />
+            <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} disabled={isSigningUp}>
+                <Ionicons name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'} size={24} color={COLORS.textSecondary} style={styles.eyeIcon}/>
+            </TouchableOpacity>
+        </View>
 
         {/* Sign Up Button */}
-        <TouchableOpacity style={[styles.signUpButton, isSigningUp && styles.buttonDisabled]} onPress={handleSignUp} disabled={isSigningUp}>
+        <TouchableOpacity
+            style={[styles.signUpButton, isSigningUp && styles.buttonDisabled]}
+            onPress={handleSignUp}
+            disabled={isSigningUp}
+        >
             {isSigningUp ? <ActivityIndicator size="small" color={COLORS.buttonText} /> : <Text style={styles.signUpButtonText}>Sign up</Text>}
         </TouchableOpacity>
 
         {/* Bottom Sign In Link */}
          <View style={styles.bottomLinkContainer}>
            <Text style={styles.bottomText}>Already have a partner account? </Text>
-           <TouchableOpacity onPress={() => !isSigningUp && router.push('/login')} disabled={isSigningUp}><Text style={styles.bottomLink}>Sign In</Text></TouchableOpacity>
+           <TouchableOpacity onPress={() => !isSigningUp && router.push('/login')} disabled={isSigningUp}>
+                <Text style={styles.bottomLink}>Sign In</Text>
+            </TouchableOpacity>
          </View>
 
       </ScrollView>
@@ -367,7 +462,7 @@ export default function RegisterPartnerScreen() {
   );
 }
 
-// --- Styles (No changes needed here) ---
+// --- Styles ---
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10, paddingVertical: 12, backgroundColor: COLORS.headerBg },
@@ -396,9 +491,9 @@ const styles = StyleSheet.create({
   errorText: {
       color: COLORS.error,
       fontSize: 12,
-      marginTop: 0,
-      marginBottom: 10,
+      marginTop: 0, // Adjust as needed
+      marginBottom: 10, // Space below error
       alignSelf: 'flex-start',
-      marginLeft: 5,
+      marginLeft: 5, // Indent slightly
   },
 });
