@@ -16,7 +16,7 @@ interface MunicipalityMaster { /* ... same as before ... */ municipalityId: numb
 
 interface PartnerProfile {
     pCompId: number;
-    companyname: string;
+    username: string;
     emailId: string;
     companyRegistrationNumber: string;
     logoImagePath: string | null;
@@ -127,7 +127,7 @@ export default function ProfileScreen() {
                    <View style={styles.userInfoSection}>
                        {partner?.logoImagePath ? ( <Image source={{ uri: partner.logoImagePath }} style={styles.partnerLogo} resizeMode="contain" /> ) : ( <View style={[styles.profilePicPlaceholder, styles.partnerLogoPlaceholder]}><Ionicons name="business" size={30} color={COLORS.textSecondary} /></View> )}
                        <View style={styles.userDetails}>
-                           <Text style={styles.userName}>{partner?.companyname ?? 'N/A'}</Text>
+                           <Text style={styles.userName}>{partner?.username ?? 'N/A'}</Text>
                            <Text style={styles.userEmail}>{partner?.emailId ?? session.email}</Text>
                            <Text style={styles.regNumber}>Reg. No. {partner?.companyRegistrationNumber ?? 'N/A'}</Text>
                        </View>
