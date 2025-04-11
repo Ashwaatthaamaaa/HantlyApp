@@ -13,11 +13,8 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'; //
 import { Link, useRouter } from 'expo-router'; // Import useRouter
-import ForgotPasswordModal from '@/components/ForgotPasswordModal';
-//
+import ForgotPasswordModal from '@/components/ForgotPasswordModal'; //
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
-
-
 
 // --- Colors ---
 const COLORS = { //
@@ -30,54 +27,55 @@ const COLORS = { //
 export default function LoginScreen() { //
   const router = useRouter();
   const { signIn, isLoading } = useAuth();
-
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [isPartner, setIsPartner] = useState<boolean>(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
   const [isForgotModalVisible, setIsForgotModalVisible] = useState<boolean>(false);
 
-// --- Updated Login Handler with Validation ---
+// --- Updated Login Handler with Validation & Field Clearing on ALL Errors ---
 const handleLogin = async () => {
   const trimmedEmail = email.trim();
   const trimmedPassword = password; // Keep password as is for length check
 
-  // ** FIX START: Added Client-Side Validation **
+  // ** Client-Side Validation **
   // 1. Basic Email Format Check
   if (!/\S+@\S+\.\S+/.test(trimmedEmail)) {
       Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      // ** Clear fields on validation error **
+      setEmail('');
+      setPassword('');
+      // ** END CLEAR **
       return;
   }
 
   // 2. Password Length Check
   if (trimmedPassword.length < 8) {
       Alert.alert('Password Too Short', 'Password must be at least 8 characters.');
+      // ** Clear fields on validation error **
+      setEmail('');
+      setPassword('');
+      // ** END CLEAR **
       return;
-  }
-  // ** FIX END **
-
-  // Existing check (redundant now but harmless)
-  if (!trimmedEmail || !trimmedPassword) {
-    Alert.alert('Missing Information', 'Please enter both email and password.');
-    return;
   }
 
   // Call signIn from AuthContext (already handles API logic and alerts)
   const success = await signIn(trimmedEmail, trimmedPassword, isPartner);
-
   if (success) {
     // Navigate immediately on success
     router.replace('/(tabs)/home');
     console.log("Sign in successful, navigation triggered.");
   } else {
     // Error alert is shown inside the signIn function in the context
-    console.log("Sign in failed (handled by AuthContext).");
+    console.log("Sign in failed (API Error handled by AuthContext). Clearing fields.");
+    // Clear fields on API error
+    setEmail('');
+    setPassword('');
   }
 };
   // --- Other handlers ---
   const handleForgotPassword = () => { if (!isLoading) setIsForgotModalVisible(true); };
   const handleNavigateRegister = () => { if (!isLoading) router.push('/register'); };
-
 
   // --- JSX ---
   return (
@@ -93,7 +91,7 @@ const handleLogin = async () => {
         <Text style={styles.welcomeText}>Welcome</Text>
 
         {/* Email Input */}
-        <View style={styles.inputContainer}>
+         <View style={styles.inputContainer}>
             <Ionicons name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
             <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor={COLORS.textSecondary} editable={!isLoading}/>
         </View>
@@ -116,7 +114,7 @@ const handleLogin = async () => {
 
         {/* Sign In Button */}
         <TouchableOpacity style={[styles.loginButton, isLoading && styles.buttonDisabled]} onPress={handleLogin} disabled={isLoading}>
-            {isLoading ? <ActivityIndicator size="small" color={COLORS.buttonPrimaryText} /> : <Text style={styles.loginButtonText}>Sign In</Text>}
+             {isLoading ? <ActivityIndicator size="small" color={COLORS.buttonPrimaryText} /> : <Text style={styles.loginButtonText}>Sign In</Text>}
         </TouchableOpacity>
 
          {/* Separator */}
