@@ -63,31 +63,31 @@ export default function RegisterScreen() {
 
   // --- Fetch County List with Logging ---
   useEffect(() => {
-    console.log("RegisterScreen: Fetching counties..."); // Log fetch start
+    console.log("RegisterScreen: Fetching counties...");
     const fetchCounties = async () => {
-        setIsLoadingCounties(true); // Ensure loading starts true
+        setIsLoadingCounties(true);
         setCountyError(null);
         const url = `${BASE_URL}/api/County/GetCountyList`;
         try {
             const response = await fetch(url);
-            console.log(`RegisterScreen: County fetch response status: ${response.status}`); // Log status
+            console.log(`RegisterScreen: County fetch response status: ${response.status}`);
             if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
             const contentType = response.headers.get("content-type");
             if (!contentType?.includes("application/json")) { throw new Error("Received non-JSON response for Counties"); }
             const data: CountyMaster[] = await response.json();
             const formattedData: ApiDataItem[] = data.map(c => ({ id: c.countyId.toString(), name: c.countyName }));
-            console.log(`RegisterScreen: Counties fetched successfully, count: ${formattedData.length}`); // Log success count
+            console.log(`RegisterScreen: Counties fetched successfully, count: ${formattedData.length}`);
             setCounties(formattedData);
         } catch (error: any) {
-            console.error("RegisterScreen: Failed fetch counties:", error); // Log error
+            console.error("RegisterScreen: Failed fetch counties:", error);
             setCountyError(`Failed to load Counties: ${error.message}`);
         } finally {
-             console.log("RegisterScreen: Finished county fetch, setting isLoadingCounties to false."); // Log finish
+             console.log("RegisterScreen: Finished county fetch, setting isLoadingCounties to false.");
             setIsLoadingCounties(false);
         }
     };
     fetchCounties();
-  }, []); // Empty dependency array: runs only once on mount
+  }, []);
 
   // --- Fetch Municipality Logic ---
   const fetchMunicipalities = useCallback(async (countyId: string) => {
@@ -112,7 +112,7 @@ export default function RegisterScreen() {
     else { setMunicipalities([]); setSelectedMunicipalityId(null); setMunicipalityError(null); }
   }, [selectedCountyId, fetchMunicipalities]);
 
-  // --- User Sign Up Logic ---
+  // --- User Sign Up Logic (with updated navigation) ---
   const handleSignUp = async () => {
     setNameTouched(true); setEmailTouched(true);
     setPhoneTouched(true); setPasswordTouched(true);
@@ -124,12 +124,11 @@ export default function RegisterScreen() {
     const isCountySelected = !!selectedCountyId;
     const isMunicipalitySelected = !!selectedMunicipalityId;
 
-    // ** NEW: Email Format Validation **
-    if (isEmailValid && !/\S+@\S+\.\S+/.test(email)) { // Check format only if email is not empty
+    // Email Format Validation
+    if (isEmailValid && !/\S+@\S+\.\S+/.test(email)) {
         Alert.alert('Invalid Email', 'Please enter a valid email address.');
-        return; // Stop submission if format is invalid
+        return;
     }
-    // ** END NEW VALIDATION **
 
     if (!isNameValid || !isEmailValid || !isPhoneValid || !isPasswordValid || !isCountySelected || !isMunicipalitySelected) {
         Alert.alert('Missing Information', 'Please fill in all required fields correctly.');
@@ -172,7 +171,18 @@ export default function RegisterScreen() {
         }
 
         if (response.ok) {
-            Alert.alert('Sign Up Successful!', message || 'User registered successfully.', [{ text: 'OK', onPress: () => router.push('/login') }]);
+            Alert.alert(
+                'Sign Up Successful!',
+                 message || 'User registered successfully.',
+                 [
+                     {
+                        text: 'OK',
+                        // ** NAVIGATE TO HOME ON SUCCESS **
+                        onPress: () => router.replace('/(tabs)/home')
+                        // ** END NAVIGATION CHANGE **
+                     }
+                 ]
+            );
         }
         else {
             Alert.alert('Sign Up Failed', message || `An error occurred (Status: ${response.status}).`);
@@ -192,8 +202,6 @@ export default function RegisterScreen() {
   const isMunicipalityDisabled = !selectedCountyId || isLoadingMunicipalities || municipalityError !== null || (!isLoadingMunicipalities && municipalities.length === 0 && !municipalityError);
   const municipalityPlaceholder = !selectedCountyId ? 'Select County First' : isLoadingMunicipalities ? 'Loading Municipalities...' : municipalityError ? 'Error Loading' : municipalities.length === 0 ? 'No Municipalities Found' : 'Select Municipality';
 
-
-  // *** Log state right before rendering ***
   console.log(`RegisterScreen Render State: isLoadingCounties=${isLoadingCounties}, countyError=${countyError}, counties.length=${counties.length}, isSigningUp=${isSigningUp}`);
 
   // --- JSX Structure ---
@@ -219,19 +227,13 @@ export default function RegisterScreen() {
          <View style={styles.inputContainer}><Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Password (min 8 chars)" value={password} onChangeText={setPassword} secureTextEntry={!isPasswordVisible} onBlur={() => setPasswordTouched(true)} editable={!isSigningUp}/><TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} disabled={isSigningUp}><Ionicons name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'} size={24} color={COLORS.textSecondary} style={styles.eyeIcon}/></TouchableOpacity></View>
          {passwordTouched && password.length < 8 && <Text style={styles.requiredText}>Required (min 8 chars)</Text>}{!passwordTouched && <View style={styles.requiredPlaceholder} />}
 
-        {/* County Selector with Logging onPress */}
+        {/* County Selector */}
         <TouchableOpacity
             style={[styles.selectorContainer, (isLoadingCounties || countyError !== null || isSigningUp) && styles.disabledSelector ]}
             onPress={() => {
-                 // Log conditions when pressed
                 const canOpen = !isSigningUp && !isLoadingCounties && counties.length > 0 && !countyError;
-                console.log(`County Selector Pressed. Conditions: !isSigningUp=${!isSigningUp}, !isLoadingCounties=${!isLoadingCounties}, counties.length>0=${counties.length > 0}, !countyError=${!countyError}. Can open = ${canOpen}`); // Log conditions
-                if (canOpen) {
-                    setIsCountyModalVisible(true);
-                } else {
-                    console.log("County Selector: Modal cannot be opened due to conditions."); // Log failure reason
-                    if (countyError) Alert.alert("Error", "Could not load counties. Please try again later.");
-                }
+                if (canOpen) setIsCountyModalVisible(true);
+                else if (countyError) Alert.alert("Error", "Could not load counties. Please try again later.");
             }}
             disabled={isLoadingCounties || countyError !== null || isSigningUp}
         >
@@ -240,7 +242,6 @@ export default function RegisterScreen() {
             </Text>
             {isLoadingCounties ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
-        {/* Display error below selector only when not loading */}
         {countyError && !isLoadingCounties && <Text style={styles.errorText}>{countyError}</Text>}
 
         {/* Municipality Selector */}
@@ -248,7 +249,6 @@ export default function RegisterScreen() {
              <Text style={[styles.selectorText, !selectedMunicipalityId && styles.placeholderText]}>{getSingleDisplayText(selectedMunicipalityId, municipalities, municipalityPlaceholder)}</Text>
             {isLoadingMunicipalities ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
-        {/* Display error below selector only when not loading */}
         {municipalityError && !isLoadingMunicipalities && <Text style={styles.errorText}>{municipalityError}</Text>}
 
         {/* Terms Agreement */}
@@ -297,7 +297,5 @@ const styles = StyleSheet.create({
   signUpButton: { backgroundColor: COLORS.buttonBg, paddingVertical: 15, borderRadius: 8, alignItems: 'center', marginTop: 10, minHeight: 50, justifyContent: 'center' },
   buttonDisabled: { backgroundColor: COLORS.buttonDisabledBg },
   signUpButtonText: { color: COLORS.buttonText, fontSize: 18, fontWeight: 'bold' },
-  errorText: { // Style for error messages below selectors
-      color: COLORS.error, fontSize: 12, marginTop: 0, marginBottom: 15, alignSelf: 'flex-start', marginLeft: 5,
-  },
+  errorText: { color: COLORS.error, fontSize: 12, marginTop: 0, marginBottom: 15, alignSelf: 'flex-start', marginLeft: 5, },
 });
