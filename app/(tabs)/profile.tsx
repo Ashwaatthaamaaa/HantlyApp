@@ -10,13 +10,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BASE_URL } from '@/constants/Api';
 
 // --- Types ---
-interface UserProfile { /* ... same as before ... */ userId: number; userName: string; emailId: string; mobileNumber: string; countyName: string; municipalityName: string; }
+interface UserProfile { /* ... same as before ... */ userId: number; username: string; emailId: string; mobileNumber: string; countyName: string; municipalityName: string; }
 interface CountyMaster { /* ... same as before ... */ countyId: number; countyName: string | null; }
 interface MunicipalityMaster { /* ... same as before ... */ municipalityId: number; municipalityName: string | null; countyId?: number; countyName?: string | null; }
 
 interface PartnerProfile {
     pCompId: number;
-    companyName: string;
+    companyname: string;
     emailId: string;
     companyRegistrationNumber: string;
     logoImagePath: string | null;
@@ -113,7 +113,7 @@ export default function ProfileScreen() {
        if (session.type === 'user') {
            // User profile rendering remains the same
            const user = profileData as UserProfile;
-           return ( /* ... user profile JSX ... */ <> <View style={styles.userInfoSection}> <View style={styles.profilePicPlaceholder}><Ionicons name="person" size={40} color={COLORS.textSecondary} /></View> <View style={styles.userDetails}> <Text style={styles.userName}>{user?.userName ?? 'N/A'}</Text> <Text style={styles.userEmail}>{user?.emailId ?? session.email}</Text> </View> </View> <View style={styles.infoRow}> <MaterialCommunityIcons name="phone-outline" size={24} color={COLORS.iconColor} style={styles.infoIcon} /> <Text style={styles.infoText}>{user?.mobileNumber ?? 'N/A'}</Text> </View> <View style={[styles.infoRow, styles.locationSection]}> <View style={styles.locationLabelContainer}><Text style={styles.locationLabel}>County</Text></View> <Text style={styles.locationValue}>{user?.countyName ?? 'N/A'}</Text> </View> <View style={[styles.infoRow, styles.locationSection, { borderBottomWidth: 0 }]}> <View style={styles.locationLabelContainer}><Text style={styles.locationLabel}>Municipality</Text></View> <Text style={styles.locationValue}>{user?.municipalityName ?? 'N/A'}</Text> </View> </> );
+           return ( /* ... user profile JSX ... */ <> <View style={styles.userInfoSection}> <View style={styles.profilePicPlaceholder}><Ionicons name="person" size={40} color={COLORS.textSecondary} /></View> <View style={styles.userDetails}> <Text style={styles.userName}>{user?.username ?? 'N/A'}</Text> <Text style={styles.userEmail}>{user?.emailId ?? session.email}</Text> </View> </View> <View style={styles.infoRow}> <MaterialCommunityIcons name="phone-outline" size={24} color={COLORS.iconColor} style={styles.infoIcon} /> <Text style={styles.infoText}>{user?.mobileNumber ?? 'N/A'}</Text> </View> <View style={[styles.infoRow, styles.locationSection]}> <View style={styles.locationLabelContainer}><Text style={styles.locationLabel}>County</Text></View> <Text style={styles.locationValue}>{user?.countyName ?? 'N/A'}</Text> </View> <View style={[styles.infoRow, styles.locationSection, { borderBottomWidth: 0 }]}> <View style={styles.locationLabelContainer}><Text style={styles.locationLabel}>Municipality</Text></View> <Text style={styles.locationValue}>{user?.municipalityName ?? 'N/A'}</Text> </View> </> );
        } else { // Partner profile
            const partner = profileData as PartnerProfile;
            // De-duplicate lists (logic remains same)
@@ -127,7 +127,7 @@ export default function ProfileScreen() {
                    <View style={styles.userInfoSection}>
                        {partner?.logoImagePath ? ( <Image source={{ uri: partner.logoImagePath }} style={styles.partnerLogo} resizeMode="contain" /> ) : ( <View style={[styles.profilePicPlaceholder, styles.partnerLogoPlaceholder]}><Ionicons name="business" size={30} color={COLORS.textSecondary} /></View> )}
                        <View style={styles.userDetails}>
-                           <Text style={styles.userName}>{partner?.companyName ?? 'N/A'}</Text>
+                           <Text style={styles.userName}>{partner?.companyname ?? 'N/A'}</Text>
                            <Text style={styles.userEmail}>{partner?.emailId ?? session.email}</Text>
                            <Text style={styles.regNumber}>Reg. No. {partner?.companyRegistrationNumber ?? 'N/A'}</Text>
                        </View>
