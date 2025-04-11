@@ -1,3 +1,4 @@
+// File: components/ForgotPasswordModal.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Modal,
@@ -11,7 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
-  ActivityIndicator, // Added
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BASE_URL } from '@/constants/Api';
@@ -38,7 +39,7 @@ const COLORS = {
   borderColor: '#E0E0E0',
   buttonBg: '#696969', // Dark grey/brown button approximation
   buttonText: '#FFFFFF',
-  buttonDisabledBg: '#AAAAAA', // Added
+  buttonDisabledBg: '#AAAAAA',
   error: '#D9534F',
 };
 
@@ -58,18 +59,15 @@ export default function ForgotPasswordModal({
   const [email, setEmail] = useState<string>('');
   const [isPartner, setIsPartner] = useState<boolean>(false);
   const [newPassword, setNewPassword] = useState<string>('');
-  const [otp, setOtp] = useState<string>(''); // OTP is the 'token' in ResetPasswordModel
-
-  // *** State for API call loading status ***
+  const [otp, setOtp] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
 
   // Reset state when modal is closed or opened
   useEffect(() => {
     if (visible) {
       setStep('enterEmail');
-      // Reset fields when modal becomes visible
-      // setEmail(''); // Keep email? Let's keep it for now if user re-opens quickly
+      // Keep email populated if user re-opens quickly after error
+      // setEmail('');
       setIsPartner(false); // Default to user
       setNewPassword('');
       setOtp('');
@@ -77,74 +75,113 @@ export default function ForgotPasswordModal({
     }
   }, [visible]);
 
-  // --- Step 1 Logic: Send Reset Link/OTP ---
+  // --- Step 1 Logic: Check Existence then Send Reset Link/OTP ---
   const handleSendResetLink = async () => {
     const trimmedEmail = email.trim();
+
+    // 1. Client-side email format validation
     if (!trimmedEmail) {
       Alert.alert('Email Required', 'Please enter your email address.');
       return;
     }
+    if (!/\S+@\S+\.\S+/.test(trimmedEmail)) {
+        Alert.alert('Invalid Email Format', 'Please enter a valid email address.');
+        setEmail(''); // Clear field on format error
+        return;
+    }
+    // ** END VALIDATION **
 
     setIsLoading(true);
-    const endpoint = isPartner ? '/api/Company/ForgotPassword' : '/api/User/ForgotPassword';
-    const url = `${BASE_URL}${endpoint}`;
-
-    console.log(`--- Sending Forgot Password Request (${isPartner ? 'Partner' : 'User'}) ---`);
-    console.log(`URL: ${url}`);
-    // Spec indicates request body is just the email string, JSON encoded
-    const requestBody = JSON.stringify(trimmedEmail);
-    console.log(`Request Body: ${requestBody}`);
+    const detailEndpoint = isPartner ? '/api/Company/GetCompanyDetail' : '/api/User/GetUserDetail';
+    const detailUrl = `${BASE_URL}${detailEndpoint}?EmailId=${encodeURIComponent(trimmedEmail)}`;
+    console.log(`--- Checking Existence (${isPartner ? 'Partner' : 'User'}) ---`);
+    console.log(`URL: ${detailUrl}`);
 
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // 'Accept': 'text/plain', // Optional: Server might respond non-JSON on success
-        },
-        body: requestBody,
-      });
+        // 2. Check if user/company exists
+        const detailResponse = await fetch(detailUrl);
+        const detailResponseText = await detailResponse.text(); // Get text for logging/errors
+        console.log(`Existence Check Response Status: ${detailResponse.status}`);
+        console.log(`Existence Check Raw Response Text: ${detailResponseText}`);
 
-       console.log(`Response Status: ${response.status}`);
-       const responseText = await response.text(); // Read response text
-       console.log(`Raw Response Text: ${responseText}`);
+        let userExists = false;
+        if (detailResponse.ok) { // Check if response status is 2xx
+            try {
+                const detailData = JSON.parse(detailResponseText);
+                // Check for indicators of a valid user/company
+                // Assuming API returns user/company details on success
+                // and specific structure (like userId:0, emailId:null) or non-200 status for non-existent
+                if (isPartner) {
+                     // Check if pCompId exists and email matches
+                     userExists = !!detailData && typeof detailData.pCompId === 'number' && detailData.pCompId !== 0 && detailData.emailId === trimmedEmail;
+                } else {
+                    // Check if userId exists and email matches (based on user provided example for non-existent)
+                    userExists = !!detailData && typeof detailData.userId === 'number' && detailData.userId !== 0 && detailData.emailId === trimmedEmail;
+                }
+            } catch (parseError) {
+                console.error("Error parsing detail response JSON:", parseError);
+                // Treat as user not found if JSON parsing fails on a successful HTTP response
+                userExists = false;
+            }
+        } // If status is not OK (e.g., 404), userExists will remain false
 
-      if (response.ok) { // Assume 2xx status means success as per spec
-        Alert.alert(
-            'Request Sent',
-            'If an account exists for this email, password reset instructions (or OTP) have been sent.'
-        );
-        setStep('resetPassword'); // Move to next step
-      } else {
-        // Handle potential errors (e.g., 404 Not Found if email doesn't exist)
-         let errorMessage = `Failed to send request (Status: ${response.status})`;
-         // Try to parse response text for a more specific message if needed
-         // e.g., if API returns specific error messages in plain text or simple JSON
-         if (responseText) {
-             errorMessage = responseText; // Use raw text if available
+        if (!userExists) {
+            Alert.alert('Error', "No account found for this email address.");
+            setEmail(''); // Clear email field
+            setIsLoading(false);
+            return; // Stop processing
+        }
+
+        // 3. If user exists, proceed with Forgot Password API call
+        console.log(`Account exists. Proceeding with Forgot Password for ${trimmedEmail}`);
+        const forgotEndpoint = isPartner ? '/api/Company/ForgotPassword' : '/api/User/ForgotPassword';
+        const forgotUrl = `${BASE_URL}${forgotEndpoint}`;
+        const forgotRequestBody = JSON.stringify(trimmedEmail);
+
+        const forgotResponse = await fetch(forgotUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: forgotRequestBody,
+        });
+        const forgotResponseText = await forgotResponse.text(); // Get text for logging/errors
+        console.log(`Forgot Password Response Status: ${forgotResponse.status}`);
+        console.log(`Forgot Password Raw Response Text: ${forgotResponseText}`);
+
+        if (forgotResponse.ok) {
+            Alert.alert(
+                'Request Sent',
+                'If an account exists for this email, password reset instructions (or OTP) have been sent.'
+            );
+            setStep('resetPassword'); // Move to next step
+        } else {
+            // Handle potential errors during the actual forgot password call
+            let errorMessage = `Failed to send password reset request (Status: ${forgotResponse.status})`;
              try {
-                 const errorJson = JSON.parse(responseText);
-                 errorMessage = errorJson.statusMessage || errorJson.title || errorJson.detail || responseText;
-             } catch (e) {/* Ignore parsing error, stick with raw text */}
-         }
-         Alert.alert('Error', errorMessage);
-      }
+                 const errorJson = JSON.parse(forgotResponseText);
+                 errorMessage = errorJson.statusMessage || errorJson.title || errorJson.detail || forgotResponseText || errorMessage;
+             } catch (e) { errorMessage = forgotResponseText || errorMessage } // Use raw text if not JSON
+            Alert.alert('Error', errorMessage);
+            setEmail(''); // Clear field on the second API call error as well
+        }
+
     } catch (error: any) {
-      console.error("Error sending reset link:", error);
-      Alert.alert('Error', `Could not send reset request. Please check your connection and try again. ${error.message}`);
+        // Catch errors from either fetch call (existence check or forgot password)
+        console.error("Error during forgot password process:", error);
+        Alert.alert('Error', `An error occurred. Please check your connection and try again.`);
+        setEmail(''); // Clear field on any fetch/network error
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
   };
 
-  // --- Step 2 Logic: Reset Password ---
+  // --- Step 2 Logic: Reset Password (remains the same) ---
   const handleResetPassword = async () => {
-    const trimmedEmail = email.trim(); // Need email again for reset API
+    const trimmedEmail = email.trim();
     if (!trimmedEmail || !newPassword || !otp) {
         Alert.alert('Missing Information', 'Please enter the OTP and your new password.');
         return;
     }
-     if (newPassword.length < 8) { // Add password length check if desired
+     if (newPassword.length < 8) {
          Alert.alert('Password Too Short', 'New password must be at least 8 characters.');
          return;
      }
@@ -152,48 +189,34 @@ export default function ForgotPasswordModal({
     setIsLoading(true);
     const endpoint = isPartner ? '/api/Company/ResetPassword' : '/api/User/ResetPassword';
     const url = `${BASE_URL}${endpoint}`;
-
-    // Request body based on ResetPasswordModel
-    const requestBody = {
-      emailId: trimmedEmail,
-      token: otp, // The OTP entered by the user acts as the token
-      newPassword: newPassword,
-    };
-
+    const requestBody = { emailId: trimmedEmail, token: otp, newPassword: newPassword };
     console.log(`--- Attempting Password Reset (${isPartner ? 'Partner' : 'User'}) ---`);
     console.log(`URL: ${url}`);
     console.log(`Request Body: ${JSON.stringify(requestBody)}`);
 
-     try {
+    try {
         const response = await fetch(url, {
              method: 'POST',
-             headers: {
-                 'Content-Type': 'application/json',
-             },
+             headers: { 'Content-Type': 'application/json', },
              body: JSON.stringify(requestBody),
         });
+        const responseText = await response.text();
+        console.log(`Reset Password Response Status: ${response.status}`);
+        console.log(`Reset Password Raw Response Text: ${responseText}`);
 
-         console.log(`Response Status: ${response.status}`);
-         const responseText = await response.text(); // Read response text
-         console.log(`Raw Response Text: ${responseText}`);
-
-        if (response.ok) { // Assume 2xx status means success
-            Alert.alert(
-                'Success',
-                'Your password has been reset successfully.',
-                [{ text: 'OK', onPress: onClose }] // Close modal on success
-            );
+        if (response.ok) {
+            Alert.alert('Success', 'Your password has been reset successfully.', [{ text: 'OK', onPress: onClose }]);
         } else {
-             // Handle errors (e.g., invalid OTP/token, password policy violation)
               let errorMessage = `Password reset failed (Status: ${response.status})`;
-             if (responseText) {
-                 errorMessage = responseText; // Use raw text if available
+              if (responseText) {
                  try {
                      const errorJson = JSON.parse(responseText);
                      errorMessage = errorJson.statusMessage || errorJson.title || errorJson.detail || responseText;
-                 } catch (e) {/* Ignore parsing error, stick with raw text */}
+                 } catch (e) { errorMessage = responseText || errorMessage }
              }
             Alert.alert('Error', errorMessage);
+             // setOtp(''); // Optionally clear fields on reset error too
+             // setNewPassword('');
         }
      } catch (error: any) {
          console.error("Error resetting password:", error);
@@ -203,7 +226,7 @@ export default function ForgotPasswordModal({
      }
   };
 
-  // --- Render Content based on Step ---
+  // --- Render Content based on Step (remains the same) ---
   const renderStepContent = () => {
     if (step === 'enterEmail') {
       return (
@@ -212,29 +235,29 @@ export default function ForgotPasswordModal({
           <View style={styles.inputContainer}>
             <TextInput
                style={styles.input}
-              placeholder="Email Address"
+               placeholder="Email Address"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               placeholderTextColor={COLORS.placeholder}
-              editable={!isLoading} // Disable when loading
-            />
+              editable={!isLoading}
+             />
           </View>
           <TouchableOpacity
              style={styles.checkboxContainer}
-             onPress={() => !isLoading && setIsPartner(!isPartner)} // Disable when loading
+             onPress={() => !isLoading && setIsPartner(!isPartner)}
              disabled={isLoading}
           >
             <MaterialCommunityIcons
-              name={isPartner ? 'checkbox-marked' : 'checkbox-blank-outline'}
+               name={isPartner ? 'checkbox-marked' : 'checkbox-blank-outline'}
               size={24}
               color={isLoading ? COLORS.textSecondary : (isPartner ? COLORS.buttonBg : COLORS.textSecondary)}
             />
             <Text style={[styles.checkboxLabel, isLoading && styles.disabledText]}>Partner account</Text>
           </TouchableOpacity>
           <Text style={styles.infoText}>
-            Password reset instructions will be sent to your email address.
+            Password reset instructions will be sent to your email address if the account exists.
           </Text>
           <TouchableOpacity
              style={[styles.actionButton, isLoading && styles.buttonDisabled]}
@@ -254,55 +277,19 @@ export default function ForgotPasswordModal({
     if (step === 'resetPassword') {
       return (
         <>
-         {/* Display Email (non-editable) */}
          <View style={[styles.inputContainer, styles.disabledInputContainer]}>
-            <TextInput
-              style={[styles.input, styles.disabledInput]}
-              value={email} // Show the email used in step 1
-              editable={false}
-              placeholderTextColor={COLORS.placeholder}
-            />
-             {/* Optional: Button to go back? Or rely on modal close */}
-             {/* <TouchableOpacity onPress={() => setStep('enterEmail')} disabled={isLoading}>
-                 <Ionicons name="arrow-back-circle-outline" size={24} color={COLORS.textSecondary} style={styles.clearIcon} />
-             </TouchableOpacity> */}
+            <TextInput style={[styles.input, styles.disabledInput]} value={email} editable={false} />
           </View>
-           {/* Display Partner Status (non-editable) */}
            <TouchableOpacity style={styles.checkboxContainer} disabled={true}>
-             <MaterialCommunityIcons
-               name={isPartner ? 'checkbox-marked' : 'checkbox-blank-outline'}
-               size={24}
-               color={COLORS.placeholder}
-             />
+             <MaterialCommunityIcons name={isPartner ? 'checkbox-marked' : 'checkbox-blank-outline'} size={24} color={COLORS.placeholder}/>
              <Text style={[styles.checkboxLabel, styles.disabledText]}>Partner account</Text>
            </TouchableOpacity>
-
-          {/* Enter OTP */}
            <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter Otp"
-              value={otp}
-              onChangeText={setOtp}
-              keyboardType="number-pad"
-              placeholderTextColor={COLORS.placeholder}
-              editable={!isLoading}
-            />
+            <TextInput style={styles.input} placeholder="Enter Otp" value={otp} onChangeText={setOtp} keyboardType="number-pad" placeholderTextColor={COLORS.placeholder} editable={!isLoading}/>
           </View>
-
-          {/* New Password */}
            <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="New Password (min 8 chars)"
-              value={newPassword}
-              onChangeText={setNewPassword}
-              secureTextEntry={true}
-              placeholderTextColor={COLORS.placeholder}
-               editable={!isLoading}
-            />
+            <TextInput style={styles.input} placeholder="New Password (min 8 chars)" value={newPassword} onChangeText={setNewPassword} secureTextEntry={true} placeholderTextColor={COLORS.placeholder} editable={!isLoading}/>
           </View>
-
           <Text style={styles.infoText}>
             Enter the OTP sent to your email and set a new password.
           </Text>
@@ -311,11 +298,7 @@ export default function ForgotPasswordModal({
             onPress={handleResetPassword}
             disabled={isLoading}
           >
-             {isLoading ? (
-                <ActivityIndicator size="small" color={COLORS.buttonText} />
-             ) : (
-                <Text style={styles.actionButtonText}>Reset Password</Text>
-             )}
+             {isLoading ? ( <ActivityIndicator size="small" color={COLORS.buttonText} /> ) : ( <Text style={styles.actionButtonText}>Reset Password</Text> )}
           </TouchableOpacity>
         </>
       );
@@ -323,30 +306,18 @@ export default function ForgotPasswordModal({
     return null;
   };
 
-  // --- Modal JSX ---
+  // --- Modal JSX (remains the same) ---
   return (
-    <Modal
-      animationType="fade"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      <KeyboardAvoidingView
-         behavior={Platform.OS === "ios" ? "padding" : "height"}
-         style={styles.modalBackdrop}
-      >
-         {/* Ensure status bar content is visible */}
+    <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalBackdrop}>
          <StatusBar barStyle={Platform.OS === 'ios' ? 'dark-content' : 'light-content'} />
         <View style={styles.modalContent}>
-          {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Forgot password?</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton} disabled={isLoading}>
               <Ionicons name="close" size={28} color={COLORS.textSecondary} />
-            </TouchableOpacity>
+             </TouchableOpacity>
           </View>
-
-          {/* Content Area */}
           <View style={styles.contentArea}>
              {renderStepContent()}
           </View>
@@ -356,124 +327,25 @@ export default function ForgotPasswordModal({
   );
 }
 
-// --- Styles ---
+// --- Styles (remain the same) ---
 const styles = StyleSheet.create({
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: COLORS.modalBackdrop,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '90%',
-    maxWidth: 400,
-    backgroundColor: COLORS.background,
-    borderRadius: 10,
-    overflow: 'hidden', // Keep content within rounded borders
-    paddingBottom: 20, // Padding at the bottom of modal content area
-    elevation: 5, // Android shadow
-     shadowColor: '#000', // iOS shadow
-     shadowOffset: { width: 0, height: 2 },
-     shadowOpacity: 0.25,
-     shadowRadius: 3.84,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderColor,
-    position: 'relative',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-    textAlign: 'center',
-  },
-  closeButton: {
-    padding: 5,
-    position: 'absolute',
-    right: 10,
-    top: 10, // Adjust positioning as needed
-  },
-  contentArea: {
-     paddingHorizontal: 20,
-      paddingTop: 20, // Space below header
-  },
-  subtitle: {
-      fontSize: 16,
-      color: COLORS.textPrimary,
-      marginBottom: 15,
-      textAlign: 'center',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: COLORS.borderColor,
-    borderRadius: 8,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    height: 50,
-  },
-  disabledInputContainer: { // Style to visually disable
-      backgroundColor: '#F8F8F8',
-      opacity: 0.7,
-  },
-  input: {
-    flex: 1,
-    height: '100%',
-    fontSize: 16,
-    color: COLORS.textPrimary,
-  },
-  disabledInput: {
-      color: COLORS.textSecondary,
-  },
-   clearIcon: {
-     paddingLeft: 10,
-   },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-    alignSelf: 'flex-start', // Align checkbox to left
-  },
-  checkboxLabel: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: COLORS.textPrimary,
-  },
-  disabledText: {
-      color: COLORS.textSecondary,
-      opacity: 0.7,
-  },
-  infoText: {
-      fontSize: 12,
-      color: COLORS.accent,
-      textAlign: 'center',
-      marginVertical: 10,
-      paddingHorizontal: 10,
-      lineHeight: 16, // Improve readability
-  },
-  actionButton: {
-    backgroundColor: COLORS.buttonBg,
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 15,
-    minHeight: 50, // Ensure space for indicator
-    justifyContent: 'center',
-  },
-  buttonDisabled: {
-      backgroundColor: COLORS.buttonDisabledBg,
-  },
-  actionButtonText: {
-    color: COLORS.buttonText,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  modalBackdrop: { flex: 1, backgroundColor: COLORS.modalBackdrop, justifyContent: 'center', alignItems: 'center', },
+  modalContent: { width: '90%', maxWidth: 400, backgroundColor: COLORS.background, borderRadius: 10, overflow: 'hidden', paddingBottom: 20, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, },
+  header: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 15, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor, position: 'relative', },
+  title: { fontSize: 18, fontWeight: 'bold', color: COLORS.textPrimary, textAlign: 'center', },
+  closeButton: { padding: 5, position: 'absolute', right: 10, top: 10, },
+  contentArea: { paddingHorizontal: 20, paddingTop: 20, },
+  subtitle: { fontSize: 16, color: COLORS.textPrimary, marginBottom: 15, textAlign: 'center', },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.borderColor, borderRadius: 8, marginBottom: 15, paddingHorizontal: 10, height: 50, },
+  disabledInputContainer: { backgroundColor: '#F8F8F8', opacity: 0.7, },
+  input: { flex: 1, height: '100%', fontSize: 16, color: COLORS.textPrimary, },
+  disabledInput: { color: COLORS.textSecondary, },
+  clearIcon: { paddingLeft: 10, },
+  checkboxContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, alignSelf: 'flex-start', },
+  checkboxLabel: { marginLeft: 8, fontSize: 14, color: COLORS.textPrimary, },
+  disabledText: { color: COLORS.textSecondary, opacity: 0.7, },
+  infoText: { fontSize: 12, color: COLORS.accent, textAlign: 'center', marginVertical: 10, paddingHorizontal: 10, lineHeight: 16, },
+  actionButton: { backgroundColor: COLORS.buttonBg, paddingVertical: 15, borderRadius: 8, alignItems: 'center', marginTop: 15, minHeight: 50, justifyContent: 'center', },
+  buttonDisabled: { backgroundColor: COLORS.buttonDisabledBg, },
+  actionButtonText: { color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold', },
 });
