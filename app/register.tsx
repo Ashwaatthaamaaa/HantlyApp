@@ -1,3 +1,4 @@
+// File: app/register.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -96,7 +97,7 @@ export default function RegisterScreen() {
           const response = await fetch(url);
           if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
           const contentType = response.headers.get("content-type");
-          if (contentType?.includes("application/json")) {
+           if (contentType?.includes("application/json")) {
               const data: MunicipalityMaster[] = await response.json();
               const formattedData: ApiDataItem[] = data.map(m => ({ id: m.municipalityId.toString(), name: m.municipalityName }));
               setMunicipalities(formattedData);
@@ -111,24 +112,77 @@ export default function RegisterScreen() {
     else { setMunicipalities([]); setSelectedMunicipalityId(null); setMunicipalityError(null); }
   }, [selectedCountyId, fetchMunicipalities]);
 
-
   // --- User Sign Up Logic ---
   const handleSignUp = async () => {
-    setNameTouched(true); setEmailTouched(true); setPhoneTouched(true); setPasswordTouched(true);
-    const isNameValid = !!name; const isEmailValid = !!email; const isPhoneValid = !!phone; const isPasswordValid = password.length >= 8; const isCountySelected = !!selectedCountyId; const isMunicipalitySelected = !!selectedMunicipalityId;
-    if (!isNameValid || !isEmailValid || !isPhoneValid || !isPasswordValid || !isCountySelected || !isMunicipalitySelected) { Alert.alert('Missing Information', 'Please fill in all required fields correctly.'); return; }
-    if (!agreedToTerms) { Alert.alert('Terms Required', 'Please agree to the Terms of Service & Privacy Policy.'); return; }
+    setNameTouched(true); setEmailTouched(true);
+    setPhoneTouched(true); setPasswordTouched(true);
+
+    const isNameValid = !!name;
+    const isEmailValid = !!email;
+    const isPhoneValid = !!phone;
+    const isPasswordValid = password.length >= 8;
+    const isCountySelected = !!selectedCountyId;
+    const isMunicipalitySelected = !!selectedMunicipalityId;
+
+    // ** NEW: Email Format Validation **
+    if (isEmailValid && !/\S+@\S+\.\S+/.test(email)) { // Check format only if email is not empty
+        Alert.alert('Invalid Email', 'Please enter a valid email address.');
+        return; // Stop submission if format is invalid
+    }
+    // ** END NEW VALIDATION **
+
+    if (!isNameValid || !isEmailValid || !isPhoneValid || !isPasswordValid || !isCountySelected || !isMunicipalitySelected) {
+        Alert.alert('Missing Information', 'Please fill in all required fields correctly.');
+        return;
+    }
+    if (!agreedToTerms) {
+        Alert.alert('Terms Required', 'Please agree to the Terms of Service & Privacy Policy.');
+        return;
+    }
+
     setIsSigningUp(true);
-    const requestBody = { username: name, password: password, active: true, mobileNumber: phone, emailId: email, contactPerson: name, countyId: parseInt(selectedCountyId!, 10), municipalityId: parseInt(selectedMunicipalityId!, 10) };
+    const requestBody = {
+      username: name,
+      password: password,
+      active: true,
+      mobileNumber: phone,
+      emailId: email,
+      contactPerson: name,
+      countyId: parseInt(selectedCountyId!, 10),
+      municipalityId: parseInt(selectedMunicipalityId!, 10)
+    };
     const url = `${BASE_URL}/api/User/UserSignUp`;
+
     try {
-        const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
-        const responseText = await response.text(); let responseData: ApiResponse | null = null; let message = '';
-        try { responseData = JSON.parse(responseText); message = responseData?.statusMessage || ''; } catch (e) { if (responseText && responseText.length < 150 && !responseText.trim().startsWith('<')) { message = responseText; } }
-        if (response.ok) { Alert.alert('Sign Up Successful!', message || 'User registered successfully.', [{ text: 'OK', onPress: () => router.push('/login') }]); }
-        else { Alert.alert('Sign Up Failed', message || `An error occurred (Status: ${response.status}).`); }
-    } catch (error: any) { Alert.alert('Sign Up Error', `An unexpected error occurred: ${error.message}`); }
-    finally { setIsSigningUp(false); }
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+        const responseText = await response.text();
+        let responseData: ApiResponse | null = null;
+        let message = '';
+        try {
+            responseData = JSON.parse(responseText);
+            message = responseData?.statusMessage || '';
+        } catch (e) {
+            if (responseText && responseText.length < 150 && !responseText.trim().startsWith('<')) {
+                message = responseText;
+            }
+        }
+
+        if (response.ok) {
+            Alert.alert('Sign Up Successful!', message || 'User registered successfully.', [{ text: 'OK', onPress: () => router.push('/login') }]);
+        }
+        else {
+            Alert.alert('Sign Up Failed', message || `An error occurred (Status: ${response.status}).`);
+        }
+    } catch (error: any) {
+        Alert.alert('Sign Up Error', `An unexpected error occurred: ${error.message}`);
+    }
+    finally {
+        setIsSigningUp(false);
+    }
   };
 
   // --- Modal Handlers & Display Text Logic ---
@@ -160,7 +214,7 @@ export default function RegisterScreen() {
          {nameTouched && !name && <Text style={styles.requiredText}>Required</Text>}{!nameTouched && <View style={styles.requiredPlaceholder} />}
          <View style={styles.inputContainer}><Ionicons name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" onBlur={() => setEmailTouched(true)} editable={!isSigningUp} /></View>
          {emailTouched && !email && <Text style={styles.requiredText}>Required</Text>}{!emailTouched && <View style={styles.requiredPlaceholder} />}
-         <View style={styles.inputContainer}><Ionicons name="call-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Phone Number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={10} onBlur={() => setPhoneTouched(true)} editable={!isSigningUp} /><Text style={styles.lengthHint}>{phone.length}/10</Text></View>
+          <View style={styles.inputContainer}><Ionicons name="call-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Phone Number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={10} onBlur={() => setPhoneTouched(true)} editable={!isSigningUp} /><Text style={styles.lengthHint}>{phone.length}/10</Text></View>
          {phoneTouched && !phone && <Text style={styles.requiredText}>Required</Text>}{!phoneTouched && <View style={styles.requiredPlaceholder} />}
          <View style={styles.inputContainer}><Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Password (min 8 chars)" value={password} onChangeText={setPassword} secureTextEntry={!isPasswordVisible} onBlur={() => setPasswordTouched(true)} editable={!isSigningUp}/><TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} disabled={isSigningUp}><Ionicons name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'} size={24} color={COLORS.textSecondary} style={styles.eyeIcon}/></TouchableOpacity></View>
          {passwordTouched && password.length < 8 && <Text style={styles.requiredText}>Required (min 8 chars)</Text>}{!passwordTouched && <View style={styles.requiredPlaceholder} />}
@@ -169,7 +223,7 @@ export default function RegisterScreen() {
         <TouchableOpacity
             style={[styles.selectorContainer, (isLoadingCounties || countyError !== null || isSigningUp) && styles.disabledSelector ]}
             onPress={() => {
-                // Log conditions when pressed
+                 // Log conditions when pressed
                 const canOpen = !isSigningUp && !isLoadingCounties && counties.length > 0 && !countyError;
                 console.log(`County Selector Pressed. Conditions: !isSigningUp=${!isSigningUp}, !isLoadingCounties=${!isLoadingCounties}, counties.length>0=${counties.length > 0}, !countyError=${!countyError}. Can open = ${canOpen}`); // Log conditions
                 if (canOpen) {
