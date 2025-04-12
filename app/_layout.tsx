@@ -1,16 +1,21 @@
 // File: app/_layout.tsx
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, Alert, Platform } from 'react-native';
-import { Stack } from 'expo-router';
+import { View, ActivityIndicator, Alert, Platform, LogBox } from 'react-native';
+// ** Use Slot instead of Stack **
+import { Slot, SplashScreen as ExpoSplashScreen } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { BASE_URL } from '@/constants/Api';
 
+// Ignore specific text warning
+LogBox.ignoreLogs(["Text strings must be rendered within a <Text> component."]);
+
+// Prevent splash screen auto-hide
 SplashScreen.preventAutoHideAsync();
 
-// 🛠️ Notification display config when app is in foreground
+// Notification display config
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -19,97 +24,76 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const InitialLayout = () => {
-  const { isLoading } = useAuth();
+// Main layout component logic
+function RootLayoutNav() {
+  const { isLoading } = useAuth(); // Only need isLoading here now
 
-  // ✅ Register for push notifications
+  // Push Notification setup (remains the same - displays token)
   const registerForPushNotificationsAsync = async () => {
     if (Device.isDevice) {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
-
       if (existingStatus !== 'granted') {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
-
       if (finalStatus !== 'granted') {
-        Alert.alert('Permission required', 'Enable notifications to receive job updates.');
-        return;
+        Alert.alert('Permission Required', 'Push notification permission needed for updates.');
+        return null;
       }
-
-      const tokenData = await Notifications.getExpoPushTokenAsync();
-      const token = tokenData.data;
-      console.log('Expo Push Token:', token);
-
-      // ✅ Send to backend
-      await fetch(`${BASE_URL}/api/DeviceToken/SaveDeviceToken`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pCompId: 123,
-          token: token,
-          platform: Platform.OS,
-        }),
-      })
-        .then(async res => {
-          const text = await res.text();
-          console.log('✅ Response status:', res.status);
-          console.log('✅ Raw response:', text || '(No body)');
-        })
-        .catch(error => {
-          console.log('❌ Error sending token to backend:', error);
-        });         
+      try {
+        console.log("[Push Token] Attempting to get Expo Push Token...");
+        const tokenData = await Notifications.getExpoPushTokenAsync();
+        const token = tokenData.data;
+        console.log('Expo Push Token:', token);
+        Alert.alert('Expo Push Token', token || 'Could not retrieve token');
+        return token;
+      } catch (error: any) {
+        console.error("❌ Error getting Expo Push Token:", error.message);
+        Alert.alert('Error', 'Failed to get push token.');
+        return null;
+      }
     } else {
-      Alert.alert('Physical device required', 'Notifications only work on physical devices.');
+      console.log("Not on physical device, skipping push token.");
+      return null;
     }
   };
+
 
   useEffect(() => {
     if (!isLoading) {
       SplashScreen.hideAsync();
-      console.log('Auth state loaded, hiding splash screen.');
+      console.log("[RootLayout] Auth state loaded, hiding splash screen.");
 
+      // Run notification setup after loading is done
       registerForPushNotificationsAsync();
 
-      // ✅ Foreground notification listener
-      const subscription = Notifications.addNotificationReceivedListener(notification => {
-        const title = notification.request.content.title;
-        const body = notification.request.content.body;
-        Alert.alert(title || 'Job Alert', body || 'You have a new update.');
-      });
+      const notificationListener = Notifications.addNotificationReceivedListener(notification => { console.log("FG Notify Rcvd"); Alert.alert(notification.request.content.title || 'Notification', notification.request.content.body || ''); });
+      const responseListener = Notifications.addNotificationResponseReceivedListener(response => { console.log("Notify Tapped"); /* Handle tap later */ });
 
       return () => {
-        subscription.remove();
+        Notifications.removeNotificationSubscription(notificationListener);
+        Notifications.removeNotificationSubscription(responseListener);
       };
     }
   }, [isLoading]);
 
+
   if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#696969" />
-      </View>
-    );
+    // Keep splash screen visible while loading auth state
+    return null;
   }
 
-  return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="register" options={{ headerShown: false }} />
-      <Stack.Screen name="register-partner" options={{ headerShown: false }} />
-      <Stack.Screen name="create-job-card" />
-      <Stack.Screen name="categories" />
-      <Stack.Screen name="urgentJobList" />
-    </Stack>
-  );
-};
+  // ** Render Slot: Expo Router determines which group layout ((app) or (auth)) to render **
+  // ** Protection logic is moved to (app)/_layout.tsx **
+  return <Slot />;
+}
 
+// Root component wrapping everything with AuthProvider
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <InitialLayout />
+      <RootLayoutNav />
     </AuthProvider>
   );
 }

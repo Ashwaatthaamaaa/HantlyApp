@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
+  Text, // Keep Text import for error/loading states
   StyleSheet,
   ScrollView,
   Image,
@@ -59,10 +59,10 @@ const COLORS = {
 };
 
 // --- Helper Function for Login/Register Prompt ---
-const showLoginRegisterAlert = (router: any) => { /* ... remains same ... */ Alert.alert( "Login Required", "Please log in or register to proceed.", [ { text: "Cancel", style: "cancel" }, { text: "Log In", onPress: () => router.push('/login') }, { text: "Register", onPress: () => router.push('/register') } ] ); };
+const showLoginRegisterAlert = (router: any) => { Alert.alert( "Login Required", "Please log in or register to proceed.", [ { text: "Cancel", style: "cancel" }, { text: "Log In", onPress: () => router.push('/login') }, { text: "Register", onPress: () => router.push('/register') } ] ); };
 
 
-// --- Service Item Component with Fallback Removed ---
+// --- Service Item Component ---
 interface ServiceItemProps {
     item: ServiceListItem;
     session: ReturnType<typeof useAuth>['session'];
@@ -71,21 +71,11 @@ interface ServiceItemProps {
 const ServiceItem: React.FC<ServiceItemProps> = ({ item, session, router }) => {
     const handleItemPress = () => { if (!session) { showLoginRegisterAlert(router); } else if (session.type === 'user') { router.push({ pathname: '/create-job-card', params: { preselectedServiceId: item.id, preselectedServiceName: item.name } }); } else { Alert.alert("Action Not Allowed", "Only users can create job requests from services."); } };
 
-    // Updated renderContent to only show API image or nothing
     const renderContent = () => {
-        // Only render Image if URI exists and content type indicates an image
         if (item.imageUri && item.contentType?.startsWith('image/')) {
-             return (
-                <Image
-                    source={{ uri: item.imageUri }}
-                    style={styles.serviceItemImage}
-                    resizeMode="contain"
-                 />
-             );
+             return ( <Image source={{ uri: item.imageUri }} style={styles.serviceItemImage} resizeMode="contain" /> );
         }
-        // Otherwise, render nothing where the icon/image would be
-        return <View style={styles.serviceItemImagePlaceholder} />; // Return an empty view to maintain layout spacing
-        // Alternatively return null: return null; (might slightly alter layout if items have varying heights)
+        return <View style={styles.serviceItemImagePlaceholder} />;
     };
 
     return (
@@ -117,24 +107,16 @@ export default function HomeScreen() {
         if (!response.ok) { const errorText = await response.text(); throw new Error(`HTTP error! status: ${response.status} - ${errorText || 'Failed to fetch'}`); }
         const contentType = response.headers.get("content-type");
         if (!contentType?.includes("application/json")) { const responseText = await response.text(); throw new Error("Received non-JSON response"); }
-
         const data: Service[] = await response.json();
-        // Updated mapping: Removed fallback icon logic
-        const formattedData: ServiceListItem[] = data.map(service => ({
-            id: service.serviceId.toString(),
-            name: service.serviceName,
-            contentType: service.imageContentType,
-            imageUri: service.imagePath // Directly pass imagePath (or null)
-        }));
+        const formattedData: ServiceListItem[] = data.map(service => ({ id: service.serviceId.toString(), name: service.serviceName, contentType: service.imageContentType, imageUri: service.imagePath }));
         setServices(formattedData);
-
       } catch (err: any) { setError(`Failed to load services: ${err.message}`); }
       finally { setIsLoading(false); }
     };
     fetchServices();
   }, []);
 
-  // --- Event Handlers (remain the same) ---
+  // --- Event Handlers ---
   const handleNewJobRequestPress = () => { if (!session) { showLoginRegisterAlert(router); } else { if (session.type === 'user') { router.push('/create-job-card'); } else { Alert.alert("Action Not Allowed", "Partners cannot create job requests."); } } };
   const handleViewAllServicesPress = () => { router.push('/categories'); };
   const handleUrgentJobPress = () => { if (!session) { showLoginRegisterAlert(router); } else if (session.type !== 'user') { Alert.alert("Feature Not Available", "This feature is only available for users."); } else { router.push('/urgentJobList'); } };
@@ -143,20 +125,90 @@ export default function HomeScreen() {
   const handleSelectUser = () => { setIsRegisterModalVisible(false); router.push('/register'); };
   const handleSelectLanguage = (language: 'en' | 'sv') => { Alert.alert("Language Selected", language === 'en' ? 'English' : 'Swedish'); };
 
-  // --- Render Content for FlatList (remains the same) ---
-  const renderListContent = () => { if (isLoading) { return <ActivityIndicator size="large" color={COLORS.accent} style={styles.loadingIndicator} />; } if (error) { return <Text style={styles.errorText}>{error}</Text>; } if (services.length === 0) { return <Text style={styles.noDataText}>No services available.</Text>; } return ( <FlatList data={services} renderItem={({item}) => <ServiceItem item={item} session={session} router={router} />} keyExtractor={(item) => item.id} numColumns={2} columnWrapperStyle={styles.serviceGridRow} scrollEnabled={false} contentContainerStyle={styles.servicesGridContainer}/> ); }
+  // --- Render Content for FlatList ---
+  const renderListContent = () => {
+      if (isLoading) {
+          return <ActivityIndicator size="large" color={COLORS.accent} style={styles.loadingIndicator} />;
+      }
+      if (error) {
+          return <Text style={styles.errorText}>{error}</Text>;
+      }
+      if (services.length === 0) {
+          return <Text style={styles.noDataText}>No services available.</Text>;
+      }
+      return (
+          <FlatList
+              data={services}
+              renderItem={({item}) => <ServiceItem item={item} session={session} router={router} />}
+              keyExtractor={(item) => item.id}
+              numColumns={2}
+              columnWrapperStyle={styles.serviceGridRow}
+              scrollEnabled={false} // Important if inside ScrollView
+              contentContainerStyle={styles.servicesGridContainer}
+           />
+       );
+   };
 
-  // --- Main Return JSX (remains the same) ---
+  // --- Main Return JSX (Render Section) ---
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-       <Stack.Screen options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.background }, headerTitle: () => <ThemedText style={styles.headerTitle}>Home</ThemedText>, headerTitleAlign: 'left', headerRight: () => ( !session ? ( <View style={styles.headerRightContainer}> <TouchableOpacity onPress={() => setIsLanguageModalVisible(true)} style={styles.headerIconButton} > <Ionicons name="settings-outline" size={24} color={COLORS.headerIconColor} /> </TouchableOpacity> <TouchableOpacity onPress={() => router.push('/login')} style={styles.loginButtonContainer} > <ThemedText style={styles.loginText}>LOG IN</ThemedText> </TouchableOpacity> </View> ) : null ), }} />
+       <Stack.Screen
+         options={{
+           headerShown: true,
+           headerStyle: { backgroundColor: COLORS.background },
+           headerTitle: () => <ThemedText style={styles.headerTitle}>Home</ThemedText>,
+           headerTitleAlign: 'left',
+           headerRight: () => (
+             !session ? (
+               <View style={styles.headerRightContainer}>
+                 <TouchableOpacity onPress={() => setIsLanguageModalVisible(true)} style={styles.headerIconButton} >
+                   <Ionicons name="settings-outline" size={24} color={COLORS.headerIconColor} />
+                 </TouchableOpacity>
+                 <TouchableOpacity onPress={() => router.push('/login')} style={styles.loginButtonContainer} >
+                   <ThemedText style={styles.loginText}>LOG IN</ThemedText>
+                 </TouchableOpacity>
+               </View>
+             ) : null
+           ),
+         }}
+       />
        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContentContainer}>
-            <View style={styles.bannerContainer}> <Image source={require('@/assets/images/banner.png')} style={styles.bannerImage} resizeMode='cover'/> </View>
-            <View style={styles.sectionHeader}> <ThemedText style={styles.sectionTitle}>Services</ThemedText> <TouchableOpacity onPress={handleUrgentJobPress}><ThemedText style={styles.urgentJobText}>Urgent Job 24/7</ThemedText></TouchableOpacity> <TouchableOpacity onPress={handleViewAllServicesPress}><ThemedText style={styles.viewAllText}>View All</ThemedText></TouchableOpacity> </View>
+            <View style={styles.bannerContainer}>
+                 <Image source={require('@/assets/images/banner.png')} style={styles.bannerImage} resizeMode='cover'/>
+            </View>
+            <View style={styles.sectionHeader}>
+                 <ThemedText style={styles.sectionTitle}>Services</ThemedText>
+                 <TouchableOpacity onPress={handleUrgentJobPress}>
+                    <ThemedText style={styles.urgentJobText}>Urgent Job 24/7</ThemedText>
+                 </TouchableOpacity>
+                 <TouchableOpacity onPress={handleViewAllServicesPress}>
+                    <ThemedText style={styles.viewAllText}>View All</ThemedText>
+                 </TouchableOpacity>
+            </View>
+
             {renderListContent()}
-            {(!session || session?.type === 'user') && ( <View style={styles.notFoundSection}> <ThemedText style={styles.notFoundText}>Didn't find your Service?</ThemedText> <ThemedText style={styles.notFoundSubText}>Don't worry, You can post your Requirement</ThemedText> </View> )}
-            <View style={styles.bottomButtonsContainer}> {(!session || session?.type === 'user') && ( <TouchableOpacity style={styles.button} onPress={handleNewJobRequestPress}><ThemedText style={styles.buttonText}>New Job Request</ThemedText></TouchableOpacity> )} {!session && ( <TouchableOpacity style={styles.button} onPress={handleRegisterPress}><ThemedText style={styles.buttonText}>Register</ThemedText></TouchableOpacity> )} </View>
+
+            {(!session || session?.type === 'user') && (
+                <View style={styles.notFoundSection}>
+                    <ThemedText style={styles.notFoundText}>Didn't find your Service?</ThemedText>
+                    <ThemedText style={styles.notFoundSubText}>Don't worry, You can post your Requirement</ThemedText>
+                </View>
+             )}
+
+            <View style={styles.bottomButtonsContainer}>
+                {(!session || session?.type === 'user') && (
+                    <TouchableOpacity style={styles.button} onPress={handleNewJobRequestPress}>
+                        <ThemedText style={styles.buttonText}>New Job Request</ThemedText>
+                    </TouchableOpacity>
+                 )}
+                {!session && (
+                    <TouchableOpacity style={styles.button} onPress={handleRegisterPress}>
+                        <ThemedText style={styles.buttonText}>Register</ThemedText>
+                    </TouchableOpacity>
+                 )}
+            </View>
        </ScrollView>
+
        <RegisterTypeModal visible={isRegisterModalVisible} onClose={() => setIsRegisterModalVisible(false)} onSelectPartner={handleSelectPartner} onSelectUser={handleSelectUser} />
        <LanguageSelectionModal visible={isLanguageModalVisible} onClose={() => setIsLanguageModalVisible(false)} onSelectLanguage={handleSelectLanguage} />
     </SafeAreaView>
@@ -165,7 +217,6 @@ export default function HomeScreen() {
 
 // --- Styles ---
 const styles = StyleSheet.create({
-  // ... other styles remain the same ...
   safeArea: { flex: 1, backgroundColor: COLORS.background, },
   scrollView: { flex: 1, },
   scrollContentContainer: { paddingBottom: 20, },
@@ -182,34 +233,9 @@ const styles = StyleSheet.create({
   viewAllText: { fontSize: 14, color: COLORS.accent, fontWeight: '500', paddingVertical: 5 },
    servicesGridContainer: { paddingHorizontal: 10, },
   serviceGridRow: { justifyContent: 'space-around', },
-  serviceItem: {
-    backgroundColor: COLORS.cardBg,
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center', // Center content vertically
-    width: '48%',
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1.41,
-    elevation: 2,
-    minHeight: 140, // Keep min height
-  },
-  serviceItemImage: { // Style for the actual image
-      width: 60,
-      height: 60,
-      marginBottom: 8,
-  },
-  serviceItemImagePlaceholder: { // Style for the empty space if no image
-      width: 60,
-      height: 60,
-      marginBottom: 8,
-      // backgroundColor: '#eee', // Optional: visualize empty space
-  },
-  // Removed serviceItemIcon style as it's no longer used for default
+  serviceItem: { backgroundColor: COLORS.cardBg, paddingVertical: 15, paddingHorizontal: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center', width: '48%', marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 1.41, elevation: 2, minHeight: 140, },
+  serviceItemImage: { width: 60, height: 60, marginBottom: 8, },
+  serviceItemImagePlaceholder: { width: 60, height: 60, marginBottom: 8, },
   serviceItemText: { fontSize: 14, textAlign: 'center', color: COLORS.textPrimary, fontWeight: '500', flexShrink: 1, paddingHorizontal: 4, },
    notFoundSection: { alignItems: 'center', marginVertical: 25, paddingHorizontal: 15, },
    notFoundText: { fontSize: 16, fontWeight: 'bold', color: COLORS.textPrimary, textAlign: 'center', },
