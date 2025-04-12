@@ -115,7 +115,7 @@ export default function BookingDetailScreen() { //
   const showCustomerInfo = isPartner; //
   return ( //
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: bookingData.toCraftmanType || 'Booking Details', headerStyle: { backgroundColor: COLORS.headerBg }, headerTintColor: COLORS.headerText, headerTitleStyle: { fontWeight: 'bold' }, headerBackTitle: '', }} />
+      <Stack.Screen options={{ title: bookingData.reportingDescription || 'Booking Details', headerStyle: { backgroundColor: COLORS.headerBg }, headerTintColor: COLORS.headerText, headerTitleStyle: { fontWeight: 'bold' }, headerBackTitle: '', headerBackTitleVisible: false,}} />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
         {/* Status Header & Actions */}

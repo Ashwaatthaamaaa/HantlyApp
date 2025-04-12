@@ -170,7 +170,7 @@ export default function UpdateStatusScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: 'Update Service Proof', headerStyle: { backgroundColor: COLORS.headerBg }, headerTintColor: COLORS.headerText, headerTitleStyle: { fontWeight: 'bold' }, headerTitleAlign: 'center', }} />
+      <Stack.Screen options={{ title: 'Update Service Proof', headerStyle: { backgroundColor: COLORS.headerBg }, headerTintColor: COLORS.headerText, headerTitleStyle: { fontWeight: 'bold' }, headerTitleAlign: 'center', headerBackTitleVisible: false,}} />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
           {isFormDisabled && (

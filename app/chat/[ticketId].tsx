@@ -312,7 +312,7 @@ export default function ChatScreen() {
   // --- Render ---
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <Stack.Screen options={{ title: headerTitle }} />
+      <Stack.Screen options={{ title: headerTitle,headerBackTitleVisible: false, }} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoiding}

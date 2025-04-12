@@ -230,6 +230,7 @@ export default function CreateJobCardScreen() {
           headerTintColor: COLORS.headerText,
           headerTitleStyle: { fontWeight: 'bold' },
           headerTitleAlign: 'center',
+          headerBackTitleVisible: false,
         }}
       />
 

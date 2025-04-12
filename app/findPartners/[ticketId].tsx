@@ -125,7 +125,7 @@ export default function FindPartnersScreen() {
   // --- Render ---
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: "Chat with companies" }} />
+      <Stack.Screen options={{ title: "Chat with companies",headerBackTitleVisible: false, }} />
 
       {isLoading && <ActivityIndicator size="large" color={COLORS.accent} style={styles.loadingIndicator} />}
 
