@@ -12,7 +12,11 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 // --- Interfaces ---
-interface DataItem { id: string; name: string; }
+interface DataItem {
+  id: string;
+  name: string | null; // <-- Allow null
+}
+
 interface SelectModalProps {
   visible: boolean;
   title: string;
