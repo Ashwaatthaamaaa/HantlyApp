@@ -61,8 +61,8 @@ export default function LoginScreen() {
     if (success) {
         console.log("[handleLogin] Success is true, navigating home...");
         // Navigate immediately on success
-        router.replace('/(tabs)/home');
-    } else {
+        router.replace('/(app)/(tabs)/home');
+          } else {
         console.log("[handleLogin] Success is false, clearing fields and staying on page.");
         // **** ADDED SEGMENT LOG ****
         console.log("[handleLogin] Current route segments on failure:", segments);
