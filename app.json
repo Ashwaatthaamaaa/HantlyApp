@@ -32,7 +32,8 @@
       },
       "package": "com.sk5633.hantly",
       "permissions": [
-        "android.permission.INTERNET"
+        "android.permission.INTERNET",
+        "android.permission.POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -43,7 +44,8 @@
     "plugins": [
       "expo-router",
       "expo-splash-screen",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true
