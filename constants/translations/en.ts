@@ -87,5 +87,8 @@ export const en = {
     registrationnumberplaceholder : "Registration Number",
     companyname:"Company Name",
     selectlogo: "Select Logo",
-    passwordmin8chars: "Passwordmin(8 Chars)"
+    passwordmin8chars: "Passwordmin(8 Chars)",
+    dontworry: "Don't Worry",
+    didntfindyourservice : "Didn't Find Your Service?",
+    newjobrequest: "New Job Request"
 };
