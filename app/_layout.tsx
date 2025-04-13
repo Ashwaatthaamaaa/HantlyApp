@@ -4,6 +4,7 @@ import { View, ActivityIndicator, Alert, Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { TranslationProvider } from '@/context/TranslationContext';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { BASE_URL } from '@/constants/Api';
@@ -110,10 +111,14 @@ const InitialLayout = () => {
   );
 };
 
-export default function RootLayout() {
+const RootLayout = () => {
   return (
     <AuthProvider>
-      <InitialLayout />
+      <TranslationProvider>
+        <InitialLayout />
+      </TranslationProvider>
     </AuthProvider>
   );
-}
+};
+
+export default RootLayout;
