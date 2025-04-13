@@ -16,6 +16,7 @@ import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'; // Keep icons for placeholders etc.
 import { BASE_URL } from '@/constants/Api';
+import { t } from '@/config/i18n';
 
 // --- Types (Based on API Response) ---
 interface CompanyInfo {
@@ -55,7 +56,7 @@ export default function UrgentJobListScreen() {
     useCallback(() => {
       const fetchUrgentCompanies = async () => {
         if (!session || session.type !== 'user') {
-            setError("Access denied. User session not found.");
+            setError(t('accessdenied'));
             setIsLoading(false);
             setCompanies([]);
             return;
@@ -110,8 +111,8 @@ export default function UrgentJobListScreen() {
             )}
         </View>
         <View style={styles.companyDetails}>
-            <Text style={styles.companyName}>{item.companyName || 'Unknown Company'}</Text>
-            {item.contactPerson && <Text style={styles.contactPerson}>Contact: {item.contactPerson}</Text>}
+            <Text style={styles.companyName}>{item.companyName || t('unknowncompany')}</Text>
+            {item.contactPerson && <Text style={styles.contactPerson}>{t('contact')} {item.contactPerson}</Text>}
             {/* Display Contact Info as Text */}
             {item.mobileNumber && (
                 <View style={styles.contactRow}>
@@ -134,7 +135,7 @@ export default function UrgentJobListScreen() {
   if (isLoading) {
     return (
         <SafeAreaView style={styles.safeArea}>
-             <Stack.Screen options={{ title: "Loading..." }} />
+             <Stack.Screen options={{ title: t('loading') }} />
              <ActivityIndicator size="large" color={COLORS.accent} style={styles.loadingIndicator} />
         </SafeAreaView>
     );
@@ -144,7 +145,7 @@ export default function UrgentJobListScreen() {
   if (error) {
       return (
         <SafeAreaView style={styles.safeArea}>
-            <Stack.Screen options={{ title: "Error" }}/>
+            <Stack.Screen options={{ title: t('error') }}/>
             <View style={styles.centered}>
                 <Ionicons name="alert-circle-outline" size={40} color={COLORS.error} style={{ marginBottom: 15 }}/>
                 <Text style={styles.errorText}>{error}</Text>
@@ -152,7 +153,7 @@ export default function UrgentJobListScreen() {
                  {/* Using a simplified retry - re-running the effect can be complex here */}
                  {/* Best approach might be to navigate back and re-enter */}
                 <TouchableOpacity onPress={() => router.back()} style={styles.retryButton}>
-                    <Text style={styles.retryButtonText}>Go Back</Text>
+                    <Text style={styles.retryButtonText}>{t('goback')}</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -164,7 +165,7 @@ export default function UrgentJobListScreen() {
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen
         options={{
-          title: "24/7 Available Partners",
+          title: t('urgentpartners'),
           headerStyle: { backgroundColor: COLORS.headerBg },
           headerTintColor: COLORS.headerText,
           headerTitleStyle: { fontWeight: 'bold' },
@@ -174,7 +175,7 @@ export default function UrgentJobListScreen() {
 
       {companies.length === 0 ? (
          <View style={styles.centered}>
-          <Text style={styles.noDataText}>No partners currently available 24/7.</Text>
+          <Text style={styles.noDataText}>{t('nopartnersavailable')}</Text>
         </View>
       ) : (
         <FlatList
