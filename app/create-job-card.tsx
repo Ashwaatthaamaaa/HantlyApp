@@ -19,6 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import SelectModal from '@/components/MultiSelectModal';
 import { useAuth } from '@/context/AuthContext';
 import { BASE_URL } from '@/constants/Api';
+import { t } from '@/config/i18n';
 
 // --- Define Types ---
 interface ApiDataItem { id: string; name: string; }
@@ -119,8 +120,66 @@ export default function CreateJobCardScreen() {
   const fetchMunicipalities = useCallback(async (countyId: string) => { /* ... no changes ... */ setIsLoadingMunicipalities(true); setMunicipalityError(null); setMunicipalities([]); const url = `${BASE_URL}/api/Municipality/GetMunicipalityList?CountyId=${countyId}`; try { const response = await fetch(url); if (!response.ok) { throw new Error(`Municipality fetch failed: ${response.status}`); } const data: MunicipalityMaster[] = await response.json(); setMunicipalities(data.map(m => ({ id: m.municipalityId.toString(), name: m.municipalityName }))); } catch (error: any) { console.error("Failed to fetch municipalities:", error); setMunicipalityError(error.message); } finally { setIsLoadingMunicipalities(false); } }, []); //
   useEffect(() => { if (selectedCountyId) { fetchMunicipalities(selectedCountyId); } else { setMunicipalities([]); setSelectedMunicipalityId(null); setMunicipalityError(null); } }, [selectedCountyId, fetchMunicipalities]); //
 
-  // --- Image Picker Logic (remains the same) ---
-  const handleChooseImage = async () => { /* ... no changes ... */ if (selectedImages.length >= 3) { Alert.alert("Limit Reached", "You can select max 3 images."); return; } Alert.alert( "Select Image Source", "", [ { text: "Camera", onPress: async () => { const p = await ImagePicker.requestCameraPermissionsAsync(); if (!p.granted) { Alert.alert("Permission Required", "Camera access needed."); return; } try { const r = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.7 }); if (!r.canceled && r.assets) setSelectedImages(p => [...p, r.assets[0]]); } catch (e) { console.error("launchCameraAsync Error:", e); Alert.alert('Camera Error'); } } }, { text: "Library", onPress: async () => { const p = await ImagePicker.requestMediaLibraryPermissionsAsync(); if (!p.granted) { Alert.alert("Permission Required", "Media library access needed."); return; } try { let r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [4, 3], quality: 0.7 }); if (!r.canceled && r.assets) { const newImgs = r.assets.slice(0, 3 - selectedImages.length); setSelectedImages(p => [...p, ...newImgs]); } } catch (e) { console.error("launchImageLibraryAsync Error:", e); Alert.alert('Library Error'); } } }, { text: "Cancel", style: "cancel" }, ] ); }; //
+  // --- Image Picker Logic ---
+  const handleChooseImage = async () => {
+    if (selectedImages.length >= 3) {
+      Alert.alert(t('limitreached'), t('max3images'));
+      return;
+    }
+    Alert.alert(
+      t('selectimagesource'),
+      "",
+      [
+        {
+          text: t('camera'),
+          onPress: async () => {
+            const p = await ImagePicker.requestCameraPermissionsAsync();
+            if (!p.granted) {
+              Alert.alert(t('permissionrequired'), t('cameraaccessneeded'));
+              return;
+            }
+            try {
+              const r = await ImagePicker.launchCameraAsync({
+                allowsEditing: true,
+                aspect: [4, 3],
+                quality: 0.7
+              });
+              if (!r.canceled && r.assets) setSelectedImages(p => [...p, r.assets[0]]);
+            } catch (e) {
+              console.error("launchCameraAsync Error:", e);
+              Alert.alert(t('cameraerror'));
+            }
+          }
+        },
+        {
+          text: t('library'),
+          onPress: async () => {
+            const p = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (!p.granted) {
+              Alert.alert(t('permissionrequired'), t('medialibraryaccessneeded'));
+              return;
+            }
+            try {
+              let r = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [4, 3],
+                quality: 0.7
+              });
+              if (!r.canceled && r.assets) {
+                const newImgs = r.assets.slice(0, 3 - selectedImages.length);
+                setSelectedImages(p => [...p, ...newImgs]);
+              }
+            } catch (e) {
+              console.error("launchImageLibraryAsync Error:", e);
+              Alert.alert(t('libraryerror'));
+            }
+          }
+        },
+        { text: t('cancel'), style: "cancel" },
+      ]
+    );
+  };
   const handleRemoveImage = (uriToRemove: string) => { setSelectedImages(prev => prev.filter(img => img.uri !== uriToRemove)); }; //
 
   // --- Modal Handlers (remains the same) ---
@@ -133,16 +192,28 @@ export default function CreateJobCardScreen() {
 
   // --- Save Handler (Updated Navigation on Success) ---
   const handleSave = async () => {
-    if (!session) { Alert.alert("Not Logged In", "Log in to create a job request.", [{ text: "Cancel" }, { text: "Log In", onPress: () => router.push('/login') }]); return; } //
-    if (!userName) { Alert.alert('Missing Information', 'Could not retrieve user name. Try again.'); return; } //
-    const trimmedDescription = description.trim(); //
-    let validationError = ''; //
-    if (selectedImages.length === 0) validationError = 'Please select at least one image.'; //
-    else if (selectedServiceIds.length === 0) validationError = 'Please select at least one service category.'; //
-    else if (!trimmedDescription) validationError = 'Please enter a description.'; //
-    else if (!selectedCountyId) validationError = 'Please select a county.'; //
-    else if (!selectedMunicipalityId) validationError = 'Please select a municipality.'; //
-    if (validationError) { Alert.alert('Missing Information', validationError); return; } //
+    if (!session) {
+      Alert.alert(t('notloggedin'), t('logintocreate'), [
+        { text: t('cancel') },
+        { text: t('loginbutton'), onPress: () => router.push('/login') }
+      ]);
+      return;
+    }
+    if (!userName) {
+      Alert.alert(t('error'), t('couldnotretrieveusername'));
+      return;
+    }
+    const trimmedDescription = description.trim();
+    let validationError = '';
+    if (selectedImages.length === 0) validationError = t('pleaseselectimage');
+    else if (selectedServiceIds.length === 0) validationError = t('pleaseselectservice');
+    else if (!trimmedDescription) validationError = t('pleaseenterdescription');
+    else if (!selectedCountyId) validationError = t('pleaseselectcounty');
+    else if (!selectedMunicipalityId) validationError = t('pleaseselectmunicipality');
+    if (validationError) {
+      Alert.alert(t('error'), validationError);
+      return;
+    }
 
     setIsSaving(true); //
     const formData = new FormData(); //
@@ -176,22 +247,22 @@ export default function CreateJobCardScreen() {
         console.log("Save Response Text:", responseText); //
 
         if (response.ok) {
-            let successMessage = "Job card created successfully!"; //
+            let successMessage = t('jobcardcreated'); //
             let newTicketId = null; //
             try {
                 const result = JSON.parse(responseText); //
                 newTicketId = result?.statusCode; //
                 successMessage = result?.statusMessage || successMessage; //
-                if (newTicketId !== null && newTicketId !== undefined) { successMessage += ` Ticket ID: ${newTicketId}`; } //
+                if (newTicketId !== null && newTicketId !== undefined) { successMessage += ` ${t('ticketid')} ${newTicketId}`; } //
                 else { console.warn("Success response received, but statusCode (TicketId) was missing."); } //
             } catch (e) { console.error("Could not parse success response JSON:", e); } //
 
             Alert.alert(
-                'Success',
+                t('success'),
                  successMessage,
                  [
                      {
-                        text: 'OK',
+                        text: t('ok'),
                         // ** NAVIGATE TO BOOKINGS ON SUCCESS **
                         onPress: () => router.replace('/(tabs)/bookings')
                         // ** END NAVIGATION CHANGE **
@@ -202,7 +273,7 @@ export default function CreateJobCardScreen() {
             // Error handling (remains same)
             let errorMessage = `Failed (Status: ${response.status})`; //
             try { const errorData = JSON.parse(responseText); if (errorData.errors && typeof errorData.errors === 'object') { errorMessage = errorData.title || "Validation Errors:\n"; errorMessage += Object.entries(errorData.errors).map(([field, messages]) => `- ${field}: ${(messages as string[]).join(', ')}`).join('\n'); } else { errorMessage = errorData?.statusMessage || errorData?.title || errorData?.detail || responseText || errorMessage; } } catch (e) { errorMessage = responseText || errorMessage; } //
-            Alert.alert('Error Creating Job Card', errorMessage); //
+            Alert.alert(t('errorcreatingjobcard'), errorMessage); //
         }
     } catch (error: any) { console.error("Save Job Card Error:", error); Alert.alert('Error', `An unexpected network or setup error occurred: ${error.message}`); } //
     finally { setIsSaving(false); } //
@@ -225,7 +296,7 @@ export default function CreateJobCardScreen() {
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen
         options={{
-          title: 'Create Job card',
+          title: t('createjobcard'),
           headerStyle: { backgroundColor: COLORS.headerBg },
           headerTintColor: COLORS.headerText,
           headerTitleStyle: { fontWeight: 'bold' },
@@ -239,7 +310,7 @@ export default function CreateJobCardScreen() {
         {/* --- Image Picker Section --- */}
         <TouchableOpacity style={[styles.imagePickerArea, selectedImages.length > 0 && styles.imagePickerAreaCompact]} onPress={handleChooseImage} disabled={isSaving || selectedImages.length >= 3}>
             <Ionicons name="images-outline" size={24} color={COLORS.textSecondary} />
-            <Text style={styles.imagePickerText}>Choose Images ({selectedImages.length}/3) *</Text>
+            <Text style={styles.imagePickerText}>{t('chooseimages')} ({selectedImages.length}/3) *</Text>
         </TouchableOpacity>
         {selectedImages.length > 0 && (
           <View style={styles.thumbnailContainer}>
