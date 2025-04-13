@@ -10,10 +10,14 @@ import {
   SafeAreaView,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SelectModal from '@/components/MultiSelectModal';
+import { sv } from '@/constants/translations/sv';
+import { t } from '@/config/i18n';
 
 // --- Define Types ---
 interface CountyMaster { countyId: number; countyName: string; }
@@ -210,22 +214,22 @@ export default function RegisterScreen() {
       {/* Header */}
       <View style={styles.header}>
          <TouchableOpacity onPress={() => router.back()} style={styles.backButton} disabled={isSigningUp}><Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} /></TouchableOpacity>
-         <Text style={styles.headerTitle}>Register User</Text>
+         <Text style={styles.headerTitle}>{t('registeruser')}</Text>
          <View style={styles.backButton} />
        </View>
 
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.subtitle}>Create your account here</Text>
+        <Text style={styles.subtitle}>{t('createyouraccount')}</Text>
 
         {/* Input Fields ... */}
-         <View style={styles.inputContainer}><Ionicons name="person-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Name" value={name} onChangeText={setName} onBlur={() => setNameTouched(true)} editable={!isSigningUp} /></View>
-         {nameTouched && !name && <Text style={styles.requiredText}>Required</Text>}{!nameTouched && <View style={styles.requiredPlaceholder} />}
-         <View style={styles.inputContainer}><Ionicons name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" onBlur={() => setEmailTouched(true)} editable={!isSigningUp} /></View>
-         {emailTouched && !email && <Text style={styles.requiredText}>Required</Text>}{!emailTouched && <View style={styles.requiredPlaceholder} />}
-          <View style={styles.inputContainer}><Ionicons name="call-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Phone Number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={10} onBlur={() => setPhoneTouched(true)} editable={!isSigningUp} /><Text style={styles.lengthHint}>{phone.length}/10</Text></View>
-         {phoneTouched && !phone && <Text style={styles.requiredText}>Required</Text>}{!phoneTouched && <View style={styles.requiredPlaceholder} />}
-         <View style={styles.inputContainer}><Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder="Password (min 8 chars)" value={password} onChangeText={setPassword} secureTextEntry={!isPasswordVisible} onBlur={() => setPasswordTouched(true)} editable={!isSigningUp}/><TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} disabled={isSigningUp}><Ionicons name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'} size={24} color={COLORS.textSecondary} style={styles.eyeIcon}/></TouchableOpacity></View>
-         {passwordTouched && password.length < 8 && <Text style={styles.requiredText}>Required (min 8 chars)</Text>}{!passwordTouched && <View style={styles.requiredPlaceholder} />}
+         <View style={styles.inputContainer}><Ionicons name="person-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder={t('name')} value={name} onChangeText={setName} onBlur={() => setNameTouched(true)} editable={!isSigningUp} /></View>
+         {nameTouched && !name && <Text style={styles.requiredText}>{t('required')}</Text>}{!nameTouched && <View style={styles.requiredPlaceholder} />}
+         <View style={styles.inputContainer}><Ionicons name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder={t('email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" onBlur={() => setEmailTouched(true)} editable={!isSigningUp} /></View>
+         {emailTouched && !email && <Text style={styles.requiredText}>{t('required')}</Text>}{!emailTouched && <View style={styles.requiredPlaceholder} />}
+          <View style={styles.inputContainer}><Ionicons name="call-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder={t('phonenumber')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={10} onBlur={() => setPhoneTouched(true)} editable={!isSigningUp} /><Text style={styles.lengthHint}>{phone.length}/10</Text></View>
+         {phoneTouched && !phone && <Text style={styles.requiredText}>{t('required')}</Text>}{!phoneTouched && <View style={styles.requiredPlaceholder} />}
+         <View style={styles.inputContainer}><Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} /><TextInput style={styles.input} placeholder={t('password')} value={password} onChangeText={setPassword} secureTextEntry={!isPasswordVisible} onBlur={() => setPasswordTouched(true)} editable={!isSigningUp}/><TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} disabled={isSigningUp}><Ionicons name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'} size={24} color={COLORS.textSecondary} style={styles.eyeIcon}/></TouchableOpacity></View>
+         {passwordTouched && password.length < 8 && <Text style={styles.requiredText}>{t('requiredminchars')}</Text>}{!passwordTouched && <View style={styles.requiredPlaceholder} />}
 
         {/* County Selector */}
         <TouchableOpacity
@@ -233,12 +237,12 @@ export default function RegisterScreen() {
             onPress={() => {
                 const canOpen = !isSigningUp && !isLoadingCounties && counties.length > 0 && !countyError;
                 if (canOpen) setIsCountyModalVisible(true);
-                else if (countyError) Alert.alert("Error", "Could not load counties. Please try again later.");
+                else if (countyError) Alert.alert(t('error'), t('couldnotloadcounties'));
             }}
             disabled={isLoadingCounties || countyError !== null || isSigningUp}
         >
             <Text style={[styles.selectorText, !selectedCountyId && styles.placeholderText]}>
-                {isLoadingCounties ? 'Loading Counties...' : countyError ? 'Error Loading Counties' : getSingleDisplayText(selectedCountyId, counties, 'Select County')}
+                {isLoadingCounties ? t('loadingcounties') : countyError ? t('errorcounties') : getSingleDisplayText(selectedCountyId, counties, t('selectcounty'))}
             </Text>
             {isLoadingCounties ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
@@ -254,19 +258,19 @@ export default function RegisterScreen() {
         {/* Terms Agreement */}
          <TouchableOpacity style={styles.termsContainer} onPress={() => !isSigningUp && setAgreedToTerms(!agreedToTerms)} disabled={isSigningUp}>
            <MaterialCommunityIcons name={agreedToTerms ? 'checkbox-marked-outline' : 'checkbox-blank-outline'} size={24} color={agreedToTerms ? COLORS.accent : COLORS.textSecondary}/>
-           <Text style={styles.termsText}>I agree to the <Text style={styles.linkText}>Terms of Service</Text> & <Text style={styles.linkText}>Privacy Policy</Text></Text>
+           <Text style={styles.termsText}>{t('termsandprivacy')}</Text>
          </TouchableOpacity>
 
          {/* Sign Up Button */}
          <TouchableOpacity style={[styles.signUpButton, (isSigningUp || !agreedToTerms) && styles.buttonDisabled]} onPress={handleSignUp} disabled={isSigningUp || !agreedToTerms}>
-            {isSigningUp ? <ActivityIndicator size="small" color={COLORS.buttonText} /> : <Text style={styles.signUpButtonText}>Sign Up</Text>}
+            {isSigningUp ? <ActivityIndicator size="small" color={COLORS.buttonText} /> : <Text style={styles.signUpButtonText}>{t('signup')}</Text>}
          </TouchableOpacity>
 
       </ScrollView>
 
       {/* Modals */}
-      <SelectModal mode="single" visible={isCountyModalVisible} title="Select County" data={counties} initialSelectedId={selectedCountyId} onClose={() => setIsCountyModalVisible(false)} onConfirmSingle={handleCountyConfirm} />
-      <SelectModal mode="single" visible={isMunicipalityModalVisible} title="Select Municipality" data={municipalities} initialSelectedId={selectedMunicipalityId} onClose={() => setIsMunicipalityModalVisible(false)} onConfirmSingle={handleMunicipalityConfirm} />
+      <SelectModal mode="single" visible={isCountyModalVisible} title={t('selectcounty')} data={counties} initialSelectedId={selectedCountyId} onClose={() => setIsCountyModalVisible(false)} onConfirmSingle={handleCountyConfirm} />
+      <SelectModal mode="single" visible={isMunicipalityModalVisible} title={t('selectmunicipality')} data={municipalities} initialSelectedId={selectedMunicipalityId} onClose={() => setIsMunicipalityModalVisible(false)} onConfirmSingle={handleMunicipalityConfirm} />
 
     </SafeAreaView>
   );
