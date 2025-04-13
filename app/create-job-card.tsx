@@ -226,14 +226,17 @@ export default function CreateJobCardScreen() {
       <Stack.Screen
         options={{
           title: 'Create Job card',
+          headerBackTitle: '', // no back text
+          headerTitleAlign: 'center',
           headerStyle: { backgroundColor: COLORS.headerBg },
           headerTintColor: COLORS.headerText,
-          headerTitleStyle: { fontWeight: 'bold' },
-          headerTitleAlign: 'center',
-          headerBackTitleVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 10 }}>
+              <Ionicons name="arrow-back" size={24} color={COLORS.headerText} />
+            </TouchableOpacity>
+          )
         }}
       />
-
        <ScrollView style={styles.scrollView} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
         {/* --- Image Picker Section --- */}

@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import RegisterTypeModal from '@/components/RegisterTypeModal';
 import LanguageSelectionModal from '@/components/LanguageSelectionModal';
 import { useAuth } from '@/context/AuthContext';
-import { BASE_URL } from '@/constants/Api';
+import { BASE_URL, fetchBaseUrlFromFirebase } from '@/constants/Api';
 
 // --- Define Types based on API Response ---
 interface Service {
@@ -109,30 +109,30 @@ export default function HomeScreen() {
 
   // --- Fetch Services ---
   useEffect(() => {
-    const fetchServices = async () => {
+    const loadBaseUrlAndServices = async () => {
       setIsLoading(true); setError(null);
-      const url = `${BASE_URL}/api/Service/GetServiceList`;
       try {
+        await fetchBaseUrlFromFirebase(); // ✅ fetch BASE_URL from Firebase
+        const url = `${BASE_URL}/api/Service/GetServiceList`;
         const response = await fetch(url);
-        if (!response.ok) { const errorText = await response.text(); throw new Error(`HTTP error! status: ${response.status} - ${errorText || 'Failed to fetch'}`); }
-        const contentType = response.headers.get("content-type");
-        if (!contentType?.includes("application/json")) { const responseText = await response.text(); throw new Error("Received non-JSON response"); }
-
+        if (!response.ok) throw new Error('Failed to fetch services');
         const data: Service[] = await response.json();
-        // Updated mapping: Removed fallback icon logic
-        const formattedData: ServiceListItem[] = data.map(service => ({
-            id: service.serviceId.toString(),
-            name: service.serviceName,
-            contentType: service.imageContentType,
-            imageUri: service.imagePath // Directly pass imagePath (or null)
+        const formattedData = data.map(service => ({
+          id: service.serviceId.toString(),
+          name: service.serviceName,
+          contentType: service.imageContentType,
+          imageUri: service.imagePath
         }));
         setServices(formattedData);
-
-      } catch (err: any) { setError(`Failed to load services: ${err.message}`); }
-      finally { setIsLoading(false); }
+      } catch (err: any) {
+        setError(`Failed to load services: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    fetchServices();
-  }, []);
+  
+    loadBaseUrlAndServices();
+  }, []); 
 
   // --- Event Handlers (remain the same) ---
   const handleNewJobRequestPress = () => { if (!session) { showLoginRegisterAlert(router); } else { if (session.type === 'user') { router.push('/create-job-card'); } else { Alert.alert("Action Not Allowed", "Partners cannot create job requests."); } } };
@@ -148,7 +148,7 @@ export default function HomeScreen() {
 
   // --- Main Return JSX (remains the same) ---
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
        <Stack.Screen options={{ headerShown: true, headerStyle: { backgroundColor: COLORS.background }, headerTitle: () => <ThemedText style={styles.headerTitle}>Home</ThemedText>, headerTitleAlign: 'left', headerRight: () => ( !session ? ( <View style={styles.headerRightContainer}> <TouchableOpacity onPress={() => setIsLanguageModalVisible(true)} style={styles.headerIconButton} > <Ionicons name="settings-outline" size={24} color={COLORS.headerIconColor} /> </TouchableOpacity> <TouchableOpacity onPress={() => router.push('/login')} style={styles.loginButtonContainer} > <ThemedText style={styles.loginText}>LOG IN</ThemedText> </TouchableOpacity> </View> ) : null ), }} />
        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContentContainer}>
             <View style={styles.bannerContainer}> <Image source={require('@/assets/images/banner.png')} style={styles.bannerImage} resizeMode='cover'/> </View>

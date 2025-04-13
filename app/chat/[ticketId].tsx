@@ -312,7 +312,23 @@ export default function ChatScreen() {
   // --- Render ---
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <Stack.Screen options={{ title: headerTitle,headerBackTitleVisible: false, }} />
+      {/* <Stack.Screen options={{ title: headerTitle,headerBackTitleVisible: false, }} /> */}
+
+      <Stack.Screen
+        options={{
+          title: headerTitle,
+          headerBackTitle: '', // no back text
+          headerTitleAlign: 'center',
+          headerStyle: { backgroundColor: COLORS.headerBg },
+          headerTintColor: COLORS.headerText,
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 10 }}>
+              <Ionicons name="arrow-back" size={24} color={COLORS.headerText} />
+            </TouchableOpacity>
+          )
+        }}
+      />
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoiding}

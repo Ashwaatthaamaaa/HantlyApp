@@ -170,7 +170,23 @@ export default function UpdateStatusScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: 'Update Service Proof', headerStyle: { backgroundColor: COLORS.headerBg }, headerTintColor: COLORS.headerText, headerTitleStyle: { fontWeight: 'bold' }, headerTitleAlign: 'center', headerBackTitleVisible: false,}} />
+      {/* <Stack.Screen options={{ title: 'Update Service Proof', headerStyle: { backgroundColor: COLORS.headerBg }, headerTintColor: COLORS.headerText, headerTitleStyle: { fontWeight: 'bold' }, headerTitleAlign: 'center', headerBackTitleVisible: false,}} /> */}
+
+      <Stack.Screen
+        options={{
+          title: "Update Service Proof",
+          headerBackTitle: '', // no back text
+          headerTitleAlign: 'center',
+          headerStyle: { backgroundColor: COLORS.headerBg },
+          headerTintColor: COLORS.headerText,
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 10 }}>
+              <Ionicons name="arrow-back" size={24} color={COLORS.headerText} />
+            </TouchableOpacity>
+          )
+        }}
+      />
+
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
           {isFormDisabled && (

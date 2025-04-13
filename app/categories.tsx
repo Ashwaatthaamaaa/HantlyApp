@@ -139,7 +139,7 @@ export default function CategoriesScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.headerBg}/>
-       <Stack.Screen
+       {/* <Stack.Screen
          options={{
            title: 'All Services',
            headerStyle: { backgroundColor: COLORS.headerBg },
@@ -148,7 +148,23 @@ export default function CategoriesScreen() {
            headerTitleAlign: 'center',
            headerBackTitle: '',
          }}
-       />
+       /> */}
+
+        <Stack.Screen
+          options={{
+            title: 'All Services',
+            headerBackTitle: '', // no back text
+            headerTitleAlign: 'center',
+            headerStyle: { backgroundColor: COLORS.headerBg },
+            headerTintColor: COLORS.headerText,
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 10 }}>
+                <Ionicons name="arrow-back" size={24} color={COLORS.headerText} />
+              </TouchableOpacity>
+            )
+          }}
+        />
+       
        {renderListContent()}
     </SafeAreaView>
   );

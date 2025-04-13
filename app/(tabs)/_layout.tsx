@@ -7,6 +7,7 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
+        
         // tabBarActiveTintColor: 'blue', // Example: Set active tab color - Use Figma color!
         // headerShown: false, // Set to false if you manage headers inside each screen
       }}
