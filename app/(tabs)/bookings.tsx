@@ -19,6 +19,7 @@ import { useAuth } from '@/context/AuthContext'; // Still use for session
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import SelectModal from '@/components/MultiSelectModal';
 import { BASE_URL } from '@/constants/Api';
+import { t } from '@/config/i18n'; // Add translation import
 
 // --- Types ---
 interface TicketImage { imageId?: number; ticketId?: number; imageName?: string | null; imagePath?: string | null; imageContentType?: string | null; }
@@ -71,7 +72,41 @@ const getStatusColor = (status?: string): string => { const lowerStatus = status
 
 // --- Booking Card Component ---
 interface BookingCardProps { item: Booking; }
-const BookingCard: React.FC<BookingCardProps> = React.memo(({ item }) => { const router = useRouter(); const statusColor = getStatusColor(item.status); const imageUrl = item.ticketImages?.[0]?.imagePath; const description = item.reportingDescription; const serviceName = item.toCraftmanType; return ( <TouchableOpacity style={styles.card} onPress={() => router.push(`/bookings/${item.ticketId}`)}><View style={styles.cardImageContainer}>{imageUrl ? ( <Image source={{ uri: imageUrl }} style={styles.cardImage} resizeMode="cover" /> ) : ( <View style={styles.cardImagePlaceholder}><Ionicons name="image-outline" size={30} color={COLORS.iconPlaceholder} /></View> )}</View><View style={styles.cardDetails}><Text style={styles.cardDescription} numberOfLines={1}>{description || 'No Description'}</Text><Text style={styles.cardService} numberOfLines={1}>{serviceName || 'N/A'}</Text><Text style={styles.cardDate} numberOfLines={1}>{formatDate(item.createdOn)}</Text></View><Text style={[styles.cardStatus, { color: statusColor }]}>{item.status || 'N/A'}</Text></TouchableOpacity> ); });
+const BookingCard: React.FC<BookingCardProps> = React.memo(({ item }) => {
+  const router = useRouter();
+  const statusColor = getStatusColor(item.status);
+  const imageUrl = item.ticketImages?.[0]?.imagePath;
+  const description = item.reportingDescription;
+  const serviceName = item.toCraftmanType;
+
+  return (
+    <TouchableOpacity style={styles.card} onPress={() => router.push(`/bookings/${item.ticketId}`)}>
+      <View style={styles.cardImageContainer}>
+        {imageUrl ? (
+          <Image source={{ uri: imageUrl }} style={styles.cardImage} resizeMode="cover" />
+        ) : (
+          <View style={styles.cardImagePlaceholder}>
+            <Ionicons name="image-outline" size={30} color={COLORS.iconPlaceholder} />
+          </View>
+        )}
+      </View>
+      <View style={styles.cardDetails}>
+        <Text style={styles.cardDescription} numberOfLines={1}>
+          {description || t('noDescription')}
+        </Text>
+        <Text style={styles.cardService} numberOfLines={1}>
+          {serviceName || t('notAvailable')}
+        </Text>
+        <Text style={styles.cardDate} numberOfLines={1}>
+          {formatDate(item.createdOn)}
+        </Text>
+      </View>
+      <Text style={[styles.cardStatus, { color: statusColor }]}>
+        {item.status || t('notAvailable')}
+      </Text>
+    </TouchableOpacity>
+  );
+});
 
 
 // --- Filter Modal Component ---
@@ -92,7 +127,13 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilt
     const [tempCountyId, setTempCountyId] = useState<string | null>(initialFilters.countyId);
     const [tempMunicipalityId, setTempMunicipalityId] = useState<string | null>(initialFilters.municipalityId);
     const [municipalitiesForSelectedCounty, setMunicipalitiesForSelectedCounty] = useState<ApiDataItem[]>([]);
-    const jobStatuses: ApiDataItem[] = [ { id: 'Created', name: 'Created (New Requests)' }, { id: 'Accepted', name: 'Accepted' }, { id: 'InProgress', name: 'In Progress' }, { id: 'Completed', name: 'Completed' }, { id: ALL_STATUSES_FILTER_ID, name: 'All Statuses' }, ];
+    const jobStatuses: ApiDataItem[] = [
+      { id: 'Created', name: t('statusCreated') },
+      { id: 'Accepted', name: t('statusAccepted') },
+      { id: 'InProgress', name: t('statusInProgress') },
+      { id: 'Completed', name: t('statusCompleted') },
+      { id: ALL_STATUSES_FILTER_ID, name: t('allStatuses') },
+    ];
 
     useEffect(() => {
       if (tempCountyId && supportedMunicipalities) {
@@ -119,21 +160,21 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilt
     }, [visible, initialFilters]);
 
     const handleApply = () => { onApplyFilters({ status: tempStatus, countyId: tempCountyId, municipalityId: tempMunicipalityId }); onClose(); };
-    const getStatusName = (id: string | null) => jobStatuses.find(s => s.id === id)?.name || 'Select Status';
-    const getCountyName = (id: string | null) => supportedCounties.find(c => c.id === id)?.name || 'Select County';
-    const getMunicipalityName = (id: string | null) => municipalitiesForSelectedCounty.find(m => m.id === id)?.name || 'Select Municipality';
+    const getStatusName = (id: string | null) => jobStatuses.find(s => s.id === id)?.name || t('selectStatus');
+    const getCountyName = (id: string | null) => supportedCounties.find(c => c.id === id)?.name || t('selectCounty');
+    const getMunicipalityName = (id: string | null) => municipalitiesForSelectedCounty.find(m => m.id === id)?.name || t('selectMunicipality');
 
     const [isStatusModalVisible, setIsStatusModalVisible] = useState(false);
     const [isCountyModalVisible, setIsCountyModalVisible] = useState(false);
     const [isMunicipalityModalVisible, setIsMunicipalityModalVisible] = useState(false);
 
     const isCountyDisabled = isLoadingProfile || !!profileError || supportedCounties.length === 0;
-    const countyPlaceholder = isLoadingProfile ? 'Loading Profile...' : profileError ? 'Error Loading Profile' : supportedCounties.length === 0 ? 'No Supported Counties' : 'Select County';
+    const countyPlaceholder = isLoadingProfile ? t('loadingProfile') : profileError ? t('errorLoadingProfile') : supportedCounties.length === 0 ? t('noSupportedCounties') : t('selectCounty');
     const isMunicipalityDisabled = !tempCountyId || isLoadingProfile || !!profileError || municipalitiesForSelectedCounty.length === 0;
-    const municipalityPlaceholder = !tempCountyId ? 'Select County First' : (isLoadingProfile || !!profileError) ? '...' : municipalitiesForSelectedCounty.length === 0 ? 'No Supported Municipalities' : 'Select Municipality';
+    const municipalityPlaceholder = !tempCountyId ? t('selectCountyFirst') : (isLoadingProfile || !!profileError) ? '...' : municipalitiesForSelectedCounty.length === 0 ? t('noSupportedMunicipalities') : t('selectMunicipality');
 
     // JSX for the modal remains the same
-    return ( <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}><View style={styles.filterModalBackdrop}><View style={styles.filterModalContent}><View style={styles.filterModalHeader}><Text style={styles.filterModalTitle}>Filter Jobs</Text><TouchableOpacity onPress={onClose}><Ionicons name="close" size={28} color={COLORS.textSecondary} /></TouchableOpacity></View><TouchableOpacity style={styles.filterSelector} onPress={() => setIsStatusModalVisible(true)}><Text style={tempStatus === null || tempStatus === undefined ? styles.filterPlaceholder : styles.filterValue}>{getStatusName(tempStatus)}</Text><Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} /></TouchableOpacity><TouchableOpacity style={[styles.filterSelector, isCountyDisabled && styles.filterSelectorDisabled]} onPress={() => !isCountyDisabled && setIsCountyModalVisible(true)} disabled={isCountyDisabled}><Text style={!tempCountyId ? styles.filterPlaceholder : styles.filterValue}>{isLoadingProfile ? 'Loading...' : profileError ? 'Error Profile' : getCountyName(tempCountyId) || countyPlaceholder}</Text>{isLoadingProfile ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />}</TouchableOpacity>{profileError && <Text style={styles.filterErrorText}>{profileError}</Text>}<TouchableOpacity style={[styles.filterSelector, isMunicipalityDisabled && styles.filterSelectorDisabled]} onPress={() => !isMunicipalityDisabled && setIsMunicipalityModalVisible(true)} disabled={isMunicipalityDisabled}><Text style={!tempMunicipalityId ? styles.filterPlaceholder : styles.filterValue}>{getMunicipalityName(tempMunicipalityId) || municipalityPlaceholder}</Text><Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} /></TouchableOpacity><TouchableOpacity style={styles.filterApplyButton} onPress={handleApply}><Text style={styles.filterApplyButtonText}>OK</Text></TouchableOpacity></View></View><SelectModal mode="single" visible={isStatusModalVisible} title="Select Status" data={jobStatuses} initialSelectedId={tempStatus} onClose={() => setIsStatusModalVisible(false)} onConfirmSingle={(id) => setTempStatus(id)} /><SelectModal mode="single" visible={isCountyModalVisible} title="Select County" data={supportedCounties} initialSelectedId={tempCountyId} onClose={() => setIsCountyModalVisible(false)} onConfirmSingle={(id) => setTempCountyId(id) } /><SelectModal mode="single" visible={isMunicipalityModalVisible} title="Select Municipality" data={municipalitiesForSelectedCounty} initialSelectedId={tempMunicipalityId} onClose={() => setIsMunicipalityModalVisible(false)} onConfirmSingle={(id) => setTempMunicipalityId(id)} /></Modal> );
+    return ( <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}><View style={styles.filterModalBackdrop}><View style={styles.filterModalContent}><View style={styles.filterModalHeader}><Text style={styles.filterModalTitle}>{t('filterJobs')}</Text><TouchableOpacity onPress={onClose}><Ionicons name="close" size={28} color={COLORS.textSecondary} /></TouchableOpacity></View><TouchableOpacity style={styles.filterSelector} onPress={() => setIsStatusModalVisible(true)}><Text style={tempStatus === null || tempStatus === undefined ? styles.filterPlaceholder : styles.filterValue}>{getStatusName(tempStatus)}</Text><Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} /></TouchableOpacity><TouchableOpacity style={[styles.filterSelector, isCountyDisabled && styles.filterSelectorDisabled]} onPress={() => !isCountyDisabled && setIsCountyModalVisible(true)} disabled={isCountyDisabled}><Text style={!tempCountyId ? styles.filterPlaceholder : styles.filterValue}>{isLoadingProfile ? t('loading') : profileError ? t('errorProfile') : getCountyName(tempCountyId) || countyPlaceholder}</Text>{isLoadingProfile ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />}</TouchableOpacity>{profileError && <Text style={styles.filterErrorText}>{profileError}</Text>}<TouchableOpacity style={[styles.filterSelector, isMunicipalityDisabled && styles.filterSelectorDisabled]} onPress={() => !isMunicipalityDisabled && setIsMunicipalityModalVisible(true)} disabled={isMunicipalityDisabled}><Text style={!tempMunicipalityId ? styles.filterPlaceholder : styles.filterValue}>{getMunicipalityName(tempMunicipalityId) || municipalityPlaceholder}</Text><Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} /></TouchableOpacity><TouchableOpacity style={styles.filterApplyButton} onPress={handleApply}><Text style={styles.filterApplyButtonText}>{t('ok')}</Text></TouchableOpacity></View></View><SelectModal mode="single" visible={isStatusModalVisible} title={t('selectStatus')} data={jobStatuses} initialSelectedId={tempStatus} onClose={() => setIsStatusModalVisible(false)} onConfirmSingle={(id) => setTempStatus(id)} /><SelectModal mode="single" visible={isCountyModalVisible} title={t('selectCounty')} data={supportedCounties} initialSelectedId={tempCountyId} onClose={() => setIsCountyModalVisible(false)} onConfirmSingle={(id) => setTempCountyId(id) } /><SelectModal mode="single" visible={isMunicipalityModalVisible} title={t('selectMunicipality')} data={municipalitiesForSelectedCounty} initialSelectedId={tempMunicipalityId} onClose={() => setIsMunicipalityModalVisible(false)} onConfirmSingle={(id) => setTempMunicipalityId(id)} /></Modal> );
 };
 
 
