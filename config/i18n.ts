@@ -2,6 +2,7 @@ import { I18n } from 'i18n-js';
 // Adjust paths based on your actual structure
 import { en } from '@/constants/translations/en';
 import { sv } from '@/constants/translations/sv';
+import * as SecureStore from 'expo-secure-store';
 
 // Initialize i18n
 const i18n = new I18n({
@@ -16,11 +17,36 @@ i18n.locale = 'en';
 i18n.enableFallback = true;
 // If 'sv' is selected and a key is missing, it will fallback to 'en'
 
+// Load saved locale from storage
+const loadSavedLocale = async () => {
+  try {
+    const savedLocale = await SecureStore.getItemAsync('appLocale');
+    if (savedLocale) {
+      i18n.locale = savedLocale;
+    }
+  } catch (error) {
+    console.error('Error loading saved locale:', error);
+  }
+};
+
+// Load saved locale on initialization
+loadSavedLocale();
+
 // Define the case-insensitive translation function
 export const t = (key: string, config?: object) => {
   const lowerCaseKey = key.toLowerCase();
   // Provide the original key as defaultValue for fallback
   return i18n.t(lowerCaseKey, { ...config, defaultValue: key });
+};
+
+// Function to change locale and save to storage
+export const setLocale = async (locale: string) => {
+  try {
+    await SecureStore.setItemAsync('appLocale', locale);
+    i18n.locale = locale;
+  } catch (error) {
+    console.error('Error saving locale:', error);
+  }
 };
 
 // Export the i18n instance for changing the locale
