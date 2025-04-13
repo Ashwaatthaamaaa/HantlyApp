@@ -352,7 +352,7 @@ export default function BookingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <Stack.Screen
           options={{
               title: session?.type === 'partner' ? 'Job Requests' : 'User Bookings',

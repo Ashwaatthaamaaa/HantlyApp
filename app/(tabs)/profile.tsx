@@ -176,7 +176,7 @@ export default function ProfileScreen() {
 
   // --- Main Return for Logged In User ---
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
        <Stack.Screen
         options={{ title: 'Profile', headerStyle: { backgroundColor: COLORS.headerBg }, headerTintColor: COLORS.headerText, headerTitleStyle: { fontWeight: 'bold' }, headerTitleAlign: 'center', headerRight: () => ( <TouchableOpacity onPress={handleOpenLanguageModal} style={{ marginRight: 15 }} disabled={isUpdatingStatus} > <Ionicons name="settings-outline" size={24} color={COLORS.iconColor} /> </TouchableOpacity> ), }}
       />

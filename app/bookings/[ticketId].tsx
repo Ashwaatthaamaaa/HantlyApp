@@ -115,7 +115,21 @@ export default function BookingDetailScreen() { //
   const showCustomerInfo = isPartner; //
   return ( //
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: bookingData.reportingDescription || 'Booking Details', headerStyle: { backgroundColor: COLORS.headerBg }, headerTintColor: COLORS.headerText, headerTitleStyle: { fontWeight: 'bold' }, headerBackTitle: '', headerBackTitleVisible: false,}} />
+      {/* <Stack.Screen options={{ title: bookingData.reportingDescription || 'Booking Details', headerStyle: { backgroundColor: COLORS.headerBg }, headerTintColor: COLORS.headerText, headerTitleStyle: { fontWeight: 'bold' }, headerBackTitle: '', headerBackTitleVisible: false,}} /> */}
+        <Stack.Screen
+          options={{
+            title: bookingData.reportingDescription || 'Booking Details',
+            headerBackTitle: '', // no back text
+            headerTitleAlign: 'center',
+            headerStyle: { backgroundColor: COLORS.headerBg },
+            headerTintColor: COLORS.headerText,
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 10 }}>
+                <Ionicons name="arrow-back" size={24} color={COLORS.headerText} />
+              </TouchableOpacity>
+            )
+          }}
+        />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
         {/* Status Header & Actions */}
