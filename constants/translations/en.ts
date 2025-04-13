@@ -81,4 +81,11 @@ export const en = {
     unexpectederror: "An unexpected error occurred:",
     couldnotloadcounties: "Could not load counties. Please try again later.",
     termsandprivacy: "I agree to the Terms of Service & Privacy Policy",
+    chooseservicecategory: "Choose Service Category",
+    available24x7label: "Available 24x7 ?",
+    companydescription: "Company Description",
+    registrationnumberplaceholder : "Registration Number",
+    companyname:"Company Name",
+    selectlogo: "Select Logo",
+    passwordmin8chars: "Passwordmin(8 Chars)"
 };
