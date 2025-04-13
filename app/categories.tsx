@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons'; // Keep Ionicons for header/chevr
 import { Stack, useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { BASE_URL } from '@/constants/Api';
+import { sv } from '@/constants/translations/sv';
 
 // --- Define Types based on API Response ---
 interface Service {
@@ -53,7 +54,17 @@ const COLORS = {
 };
 
 // --- Helper Function for Login/Register Prompt ---
-const showLoginRegisterAlert = (router: any) => { /* ... remains same ... */ Alert.alert( "Login Required", "Please log in or register to proceed.", [ { text: "Cancel", style: "cancel" }, { text: "Log In", onPress: () => router.push('/login') }, { text: "Register", onPress: () => router.push('/register') } ] ); };
+const showLoginRegisterAlert = (router: any) => {
+  Alert.alert(
+    sv.loginsrequired,
+    sv.logintoproceed,
+    [
+      { text: sv.cancel, style: "cancel" },
+      { text: sv.login, onPress: () => router.push('/login') },
+      { text: sv.register, onPress: () => router.push('/register') }
+    ]
+  );
+};
 
 // --- List Item Component with Fallback Removed ---
 interface ListItemComponentProps {
@@ -125,23 +136,23 @@ export default function CategoriesScreen() {
   // Updated handler for service press (remains same logic as before)
   const handleServicePress = (service: ServiceListItem) => {
     if (!session) {
-        showLoginRegisterAlert(router);
+      showLoginRegisterAlert(router);
     } else if (session.type === 'user') {
-         router.push({ pathname: '/create-job-card', params: { preselectedServiceId: service.id, preselectedServiceName: service.name } });
+      router.push({ pathname: '/create-job-card', params: { preselectedServiceId: service.id, preselectedServiceName: service.name } });
     } else {
-        Alert.alert("Action Not Allowed", "Only users can create job requests from services.");
+      Alert.alert(sv.actionnotallowed, sv.onlyuserscancreate);
     }
   };
 
   // --- Render List or Loading/Error State (remains same) ---
-   const renderListContent = () => { if (isLoading) { return <ActivityIndicator size="large" color={COLORS.headerBg} style={styles.loadingIndicator} />; } if (error) { return <Text style={styles.errorText}>{error}</Text>; } if (services.length === 0) { return <Text style={styles.noDataText}>No services available.</Text>; } return ( <FlatList data={services} renderItem={({ item }) => <ListItemComponent item={item} onPress={handleServicePress} />} keyExtractor={(item) => item.id} contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false} /> ); };
+   const renderListContent = () => { if (isLoading) { return <ActivityIndicator size="large" color={COLORS.headerBg} style={styles.loadingIndicator} />; } if (error) { return <Text style={styles.errorText}>{sv.failedtoloadservices} {error}</Text>; } if (services.length === 0) { return <Text style={styles.noDataText}>{sv.noservicesavailable}</Text>; } return ( <FlatList data={services} renderItem={({ item }) => <ListItemComponent item={item} onPress={handleServicePress} />} keyExtractor={(item) => item.id} contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false} /> ); };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.headerBg}/>
        <Stack.Screen
          options={{
-           title: 'All Services',
+           title: sv.allservices,
            headerStyle: { backgroundColor: COLORS.headerBg },
            headerTintColor: COLORS.headerText,
            headerTitleStyle: { fontWeight: 'bold' },
