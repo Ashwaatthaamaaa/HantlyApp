@@ -15,6 +15,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'; //
 import { Link, useRouter } from 'expo-router'; // Import useRouter
 import ForgotPasswordModal from '@/components/ForgotPasswordModal'; //
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { t } from '@/config/i18n';
 
 // --- Colors ---
 const COLORS = { //
@@ -36,39 +37,28 @@ export default function LoginScreen() { //
 // --- Updated Login Handler with Validation & Field Clearing on ALL Errors ---
 const handleLogin = async () => {
   const trimmedEmail = email.trim();
-  const trimmedPassword = password; // Keep password as is for length check
+  const trimmedPassword = password;
 
-  // ** Client-Side Validation **
-  // 1. Basic Email Format Check
   if (!/\S+@\S+\.\S+/.test(trimmedEmail)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address.');
-      // ** Clear fields on validation error **
+      Alert.alert(t('invalidemailtitle'), t('invalidemail'));
       setEmail('');
       setPassword('');
-      // ** END CLEAR **
       return;
   }
 
-  // 2. Password Length Check
   if (trimmedPassword.length < 8) {
-      Alert.alert('Password Too Short', 'Password must be at least 8 characters.');
-      // ** Clear fields on validation error **
+      Alert.alert(t('passwordtooshorttitle'), t('passwordtooshort'));
       setEmail('');
       setPassword('');
-      // ** END CLEAR **
       return;
   }
 
-  // Call signIn from AuthContext (already handles API logic and alerts)
   const success = await signIn(trimmedEmail, trimmedPassword, isPartner);
   if (success) {
-    // Navigate immediately on success
     router.replace('/(tabs)/home');
     console.log("Sign in successful, navigation triggered.");
   } else {
-    // Error alert is shown inside the signIn function in the context
     console.log("Sign in failed (API Error handled by AuthContext). Clearing fields.");
-    // Clear fields on API error
     setEmail('');
     setPassword('');
   }
@@ -84,22 +74,22 @@ const handleLogin = async () => {
 
         {/* Header Toggle */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleNavigateRegister} disabled={isLoading}><Text style={[styles.headerText, styles.headerInactive]}>Create Account</Text></TouchableOpacity>
-          <TouchableOpacity disabled={true}><Text style={[styles.headerText, styles.headerActive]}>Login</Text></TouchableOpacity>
+          <TouchableOpacity onPress={handleNavigateRegister} disabled={isLoading}><Text style={[styles.headerText, styles.headerInactive]}>{t('createaccount')}</Text></TouchableOpacity>
+          <TouchableOpacity disabled={true}><Text style={[styles.headerText, styles.headerActive]}>{t('login')}</Text></TouchableOpacity>
         </View>
 
-        <Text style={styles.welcomeText}>Welcome</Text>
+        <Text style={styles.welcomeText}>{t('welcome')}</Text>
 
         {/* Email Input */}
          <View style={styles.inputContainer}>
             <Ionicons name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-            <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor={COLORS.textSecondary} editable={!isLoading}/>
+            <TextInput style={styles.input} placeholder={t('email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor={COLORS.textSecondary} editable={!isLoading}/>
         </View>
 
         {/* Password Input */}
         <View style={styles.inputContainer}>
              <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
-             <TextInput style={styles.input} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry={!isPasswordVisible} placeholderTextColor={COLORS.textSecondary} editable={!isLoading}/>
+             <TextInput style={styles.input} placeholder={t('password')} value={password} onChangeText={setPassword} secureTextEntry={!isPasswordVisible} placeholderTextColor={COLORS.textSecondary} editable={!isLoading}/>
              <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} disabled={isLoading}><Ionicons name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'} size={24} color={COLORS.textSecondary} style={styles.eyeIcon}/></TouchableOpacity>
         </View>
 
@@ -107,22 +97,22 @@ const handleLogin = async () => {
         <View style={styles.optionsRow}>
             <TouchableOpacity style={styles.checkboxContainer} onPress={() => !isLoading && setIsPartner(!isPartner)} disabled={isLoading}>
                 <MaterialCommunityIcons name={isPartner ? 'checkbox-marked-outline' : 'checkbox-blank-outline'} size={24} color={isPartner ? COLORS.accent : COLORS.textSecondary} />
-                <Text style={styles.checkboxLabel}>Sign In as Partner</Text>
+                <Text style={styles.checkboxLabel}>{t('signinaspartner')}</Text>
             </TouchableOpacity>
-             <TouchableOpacity onPress={handleForgotPassword} disabled={isLoading}><Text style={styles.forgotPasswordText}>Forgot Password?</Text></TouchableOpacity>
+             <TouchableOpacity onPress={handleForgotPassword} disabled={isLoading}><Text style={styles.forgotPasswordText}>{t('forgotpassword')}</Text></TouchableOpacity>
          </View>
 
         {/* Sign In Button */}
         <TouchableOpacity style={[styles.loginButton, isLoading && styles.buttonDisabled]} onPress={handleLogin} disabled={isLoading}>
-             {isLoading ? <ActivityIndicator size="small" color={COLORS.buttonPrimaryText} /> : <Text style={styles.loginButtonText}>Sign In</Text>}
+             {isLoading ? <ActivityIndicator size="small" color={COLORS.buttonPrimaryText} /> : <Text style={styles.loginButtonText}>{t('signin')}</Text>}
         </TouchableOpacity>
 
          {/* Separator */}
-        <Text style={styles.separatorText}>Or</Text>
+        <Text style={styles.separatorText}>{t('or')}</Text>
 
         {/* Link to Partner Registration Screen */}
         <TouchableOpacity style={styles.registerPartnerButton} onPress={() => !isLoading && router.push('/register-partner')} disabled={isLoading}>
-            <Text style={styles.registerPartnerButtonText}>Register as Partner</Text>
+            <Text style={styles.registerPartnerButtonText}>{t('registeraspartner')}</Text>
         </TouchableOpacity>
 
       </ScrollView>
