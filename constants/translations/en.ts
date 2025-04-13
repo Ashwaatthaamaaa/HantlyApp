@@ -36,6 +36,49 @@ export const en = {
     home: "Home",
     time: "Time",
     save: "Save",
-    success: "Success"
-    // ... other keys ...
-  };
+    success: "Success",
+    // Login Screen
+    createaccount: "Create Account",
+    welcome: "Welcome",
+    signinaspartner: "Sign In as Partner",
+    signin: "Sign In",
+    or: "Or",
+    registeraspartner: "Register as Partner",
+    
+    // Login Validation Messages
+    invalidemail: "Please enter a valid email address.",
+    passwordtooshort: "Password must be at least 8 characters.",
+    
+    // Alert Titles
+    invalidemailtitle: "Invalid Email",
+    passwordtooshorttitle: "Password Too Short",
+    
+    // Language Modal
+    couldnotsavelanguage: "Could not save language preference.",
+    // Register Screen
+    registeruser: "Register User",
+    createyouraccount: "Create your account here",
+    name: "Name",
+    email: "Email",
+    phonenumber: "Phone Number",
+    password: "Password (min 8 chars)",
+    selectcounty: "Select County",
+    selectmunicipality: "Select Municipality",
+    selectcountyfirst: "Select County First",
+    loadingmunicipalities: "Loading Municipalities...",
+    errormunicipalities: "Error Loading",
+    nomunicipalities: "No Municipalities Found",
+    loadingcounties: "Loading Counties...",
+    errorcounties: "Error Loading Counties",
+    required: "Required",
+    requiredminchars: "Required (min 8 chars)",
+    missinginformation: "Please fill in all required fields correctly.",
+    termsrequired: "Please agree to the Terms of Service & Privacy Policy.",
+    signupsuccessful: "Sign Up Successful!",
+    userregistered: "User registered successfully.",
+    signupfailed: "Sign Up Failed",
+    signuperror: "Sign Up Error",
+    unexpectederror: "An unexpected error occurred:",
+    couldnotloadcounties: "Could not load counties. Please try again later.",
+    termsandprivacy: "I agree to the Terms of Service & Privacy Policy",
+};
