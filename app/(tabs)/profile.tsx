@@ -8,6 +8,9 @@ import LanguageSelectionModal from '@/components/LanguageSelectionModal';
 import { useAuth } from '@/context/AuthContext'; // Used for session/logout
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BASE_URL } from '@/constants/Api';
+import { t } from '@/config/i18n';
+import * as SecureStore from 'expo-secure-store';
+import i18n from '@/config/i18n';
 
 // --- Types ---
 // Local types needed for local state and fetch function
@@ -56,49 +59,117 @@ export default function ProfileScreen() {
 
   // --- Handlers ---
   const handleOpenLanguageModal = () => setIsLanguageModalVisible(true);
-  const handleSelectLanguage = (language: 'en' | 'sv') => { Alert.alert("Language Change", `Selected: ${language === 'en' ? 'English' : 'Swedish'}. (Impl needed)`); };
+  const handleSelectLanguage = async (language: 'en' | 'sv') => {
+    try {
+      await SecureStore.setItemAsync('language', language);
+      i18n.locale = language;
+    } catch (error) {
+      console.error('Failed to change language:', error);
+      Alert.alert(t('error'), t('couldnotsavelanguage'));
+    }
+  };
   const handleResetPassword = () => setIsForgotModalVisible(true);
-  const handleLogout = async () => { Alert.alert("Confirm Logout", "Are you sure?", [{ text: "Cancel", style: "cancel" }, { text: "Log Out", style: "destructive", onPress: signOut }]); };
+  const handleLogout = async () => { 
+    Alert.alert(
+      t('logoutconfirm'), 
+      t('logoutmessage'), 
+      [
+        { text: t('cancel'), style: "cancel" }, 
+        { text: t('logout'), style: "destructive", onPress: signOut }
+      ]
+    ); 
+  };
 
   // Partner Specific: Toggle 24x7 Status handler (uses local fetch)
   const handleToggle24x7 = (currentValue: boolean | null) => {
       if (!session || session.type !== 'partner' || !profileData || typeof session.id === 'undefined' || isUpdatingStatus) return;
       const newValue = !currentValue;
-      const message = `Change availability to 24x7 ${newValue ? 'Yes' : 'No'}?`;
-      Alert.alert("Confirm Availability", message,
-          [ { text: "Cancel", style: "cancel" }, { text: "YES", onPress: async () => {
-                  setIsUpdatingStatus(true);
-                  const url = `${BASE_URL}/api/Company/UpdateCompanyIs24X7?companyId=${session.id}&is24X7=${newValue}`;
-                  console.log(`Updating 24x7 Status: URL=${url}`);
-                  try {
-                      const response = await fetch(url, { method: 'POST' });
-                      if (!response.ok) { const errorText = await response.text(); throw new Error(`Failed to update status (${response.status}): ${errorText}`); }
-                      console.log("Status updated via API, refetching profile locally...");
-                      await fetchProfileDetails(); // Call local fetch
-                      Alert.alert("Status Updated", `Availability set to ${newValue ? '24x7' : 'Regular Hours'}.`);
-                  } catch (err: any) { console.error("Failed to update 24x7 status:", err); Alert.alert("Error", `Could not update status: ${err.message}`); }
-                  finally { setIsUpdatingStatus(false); } } } ]
+      const message = `${t('changeavailability')} ${newValue ? 'Yes' : 'No'}?`;
+      Alert.alert(
+        t('confirmavailability'), 
+        message,
+        [
+          { text: t('cancel'), style: "cancel" }, 
+          { text: "YES", onPress: async () => {
+              setIsUpdatingStatus(true);
+              const url = `${BASE_URL}/api/Company/UpdateCompanyIs24X7?companyId=${session.id}&is24X7=${newValue}`;
+              console.log(`Updating 24x7 Status: URL=${url}`);
+              try {
+                  const response = await fetch(url, { method: 'POST' });
+                  if (!response.ok) { const errorText = await response.text(); throw new Error(`Failed to update status (${response.status}): ${errorText}`); }
+                  console.log("Status updated via API, refetching profile locally...");
+                  await fetchProfileDetails();
+                  Alert.alert(
+                    t('statusupdated'), 
+                    `${t('availabilityset')} ${newValue ? '24x7' : t('regularhours')}.`
+                  );
+              } catch (err: any) { 
+                console.error("Failed to update 24x7 status:", err); 
+                Alert.alert(t('error'), `${t('couldnotupdatestatus')}: ${err.message}`); 
+              }
+              finally { setIsUpdatingStatus(false); } 
+            } 
+          }
+        ]
       );
   };
 
-
   // --- Render Logic ---
-   if (isAuthLoading) { return ( <SafeAreaView style={styles.safeArea}><Stack.Screen options={{ title: 'Profile' }} /><View style={styles.containerCentered}><ActivityIndicator size="large" color={COLORS.accent} /></View></SafeAreaView> ); }
-   if (!session) { return ( <SafeAreaView style={styles.safeArea}><Stack.Screen options={{ title: 'Profile' }} /><View style={styles.containerCentered}><Ionicons name="person-circle-outline" size={60} color={COLORS.textSecondary} style={{ marginBottom: 20 }} /><Text style={styles.loggedOutMessage}>Log in or create an account.</Text><TouchableOpacity style={styles.loginButton} onPress={() => router.push('/login')}><Text style={styles.loginButtonText}>LOG IN</Text></TouchableOpacity></View></SafeAreaView> ); }
-   if (isLoadingProfile) { return ( <SafeAreaView style={styles.safeArea}><Stack.Screen options={{ title: 'Profile' }} /><View style={styles.containerCentered}><ActivityIndicator size="large" color={COLORS.accent} /></View></SafeAreaView> ); }
-   if (error || !profileData) { // Check local error and profileData
-        return ( <SafeAreaView style={styles.safeArea}><Stack.Screen options={{ title: 'Profile' }} /><View style={styles.containerCentered}><Ionicons name="alert-circle-outline" size={40} color={COLORS.error} style={{ marginBottom: 15 }}/><Text style={styles.errorText}>{error || 'Could not load profile.'}</Text><TouchableOpacity style={styles.logoutButton} onPress={handleLogout}><Text style={styles.logoutButtonText}>Log Out</Text></TouchableOpacity></View></SafeAreaView> );
+   if (isAuthLoading) { 
+     return ( 
+       <SafeAreaView style={styles.safeArea}>
+         <Stack.Screen options={{ title: t('profile') }} />
+         <View style={styles.containerCentered}>
+           <ActivityIndicator size="large" color={COLORS.accent} />
+         </View>
+       </SafeAreaView> 
+     ); 
    }
-
+   if (!session) { 
+     return ( 
+       <SafeAreaView style={styles.safeArea}>
+         <Stack.Screen options={{ title: t('profile') }} />
+         <View style={styles.containerCentered}>
+           <Ionicons name="person-circle-outline" size={60} color={COLORS.textSecondary} style={{ marginBottom: 20 }} />
+           <Text style={styles.loggedOutMessage}>{t('logincreateaccount')}</Text>
+           <TouchableOpacity style={styles.loginButton} onPress={() => router.push('/login')}>
+             <Text style={styles.loginButtonText}>{t('login')}</Text>
+           </TouchableOpacity>
+         </View>
+       </SafeAreaView> 
+     ); 
+   }
+   if (isLoadingProfile) { 
+     return ( 
+       <SafeAreaView style={styles.safeArea}>
+         <Stack.Screen options={{ title: t('profile') }} />
+         <View style={styles.containerCentered}>
+           <ActivityIndicator size="large" color={COLORS.accent} />
+         </View>
+       </SafeAreaView> 
+     ); 
+   }
+   if (error || !profileData) {
+     return ( 
+       <SafeAreaView style={styles.safeArea}>
+         <Stack.Screen options={{ title: t('profile') }} />
+         <View style={styles.containerCentered}>
+           <Ionicons name="alert-circle-outline" size={40} color={COLORS.error} style={{ marginBottom: 15 }}/>
+           <Text style={styles.errorText}>{error || t('couldnotloadprofile')}</Text>
+           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+             <Text style={styles.logoutButtonText}>{t('logout')}</Text>
+           </TouchableOpacity>
+         </View>
+       </SafeAreaView> 
+     );
+   }
 
   // --- Render User or Partner Profile Content ---
    const renderContent = () => {
        if (session.type === 'user') {
-           // --- Reverted User Profile Layout ---
-           const user = profileData as UserProfile | null; // Cast local state
+           const user = profileData as UserProfile | null;
            return (
              <>
-                {/* User Info Section (Icon, Name, Email) */}
                 <View style={styles.userInfoSection}>
                     <View style={styles.profilePicPlaceholder}>
                        <Ionicons name="person" size={40} color={COLORS.textSecondary} />
@@ -109,54 +180,67 @@ export default function ProfileScreen() {
                     </View>
                 </View>
 
-                {/* Phone Number Row */}
                 <View style={styles.infoRow}>
                     <MaterialCommunityIcons name="phone-outline" size={24} color={COLORS.iconColor} style={styles.infoIcon} />
                     <Text style={styles.infoText}>{user?.mobileNumber ?? 'N/A'}</Text>
                 </View>
 
-                {/* County Row */}
                 <View style={[styles.infoRow, styles.locationSection]}>
                      <View style={styles.locationLabelContainer}>
-                        <Text style={styles.locationLabel}>County</Text>
+                        <Text style={styles.locationLabel}>{t('county')}</Text>
                      </View>
                      <Text style={styles.locationValue}>{user?.countyName ?? 'N/A'}</Text>
                 </View>
 
-                {/* Municipality Row */}
                 <View style={[styles.infoRow, styles.locationSection, { borderBottomWidth: 0 }]}>
                      <View style={styles.locationLabelContainer}>
-                        <Text style={styles.locationLabel}>Municipality</Text>
+                        <Text style={styles.locationLabel}>{t('municipality')}</Text>
                      </View>
                      <Text style={styles.locationValue}>{user?.municipalityName ?? 'N/A'}</Text>
                 </View>
              </>
            );
-           // --- End Reverted User Profile Layout ---
-       } else { // Partner profile - Use local profileData state
+       } else {
            const partner = profileData as PartnerProfile | null;
            if (!partner) return null;
 
-           // De-duplicate lists logic (remains same)
-           const uniqueCounties = new Map<number, string | null>(); partner?.countyList?.forEach(county => { if (county && !uniqueCounties.has(county.countyId)) uniqueCounties.set(county.countyId, county.countyName); }); const countyNames = Array.from(uniqueCounties.values()).filter(name => !!name).join(', ') || 'N/A';
-           const uniqueMunicipalities = new Map<number, string | null>(); partner?.municipalityList?.forEach(muni => { if (muni && !uniqueMunicipalities.has(muni.municipalityId)) uniqueMunicipalities.set(muni.municipalityId, muni.municipalityName); }); const municipalityNames = Array.from(uniqueMunicipalities.values()).filter(name => !!name).join(', ') || 'N/A';
+           const uniqueCounties = new Map<number, string | null>(); 
+           partner?.countyList?.forEach(county => { 
+             if (county && !uniqueCounties.has(county.countyId)) 
+               uniqueCounties.set(county.countyId, county.countyName); 
+           }); 
+           const countyNames = Array.from(uniqueCounties.values()).filter(name => !!name).join(', ') || 'N/A';
+
+           const uniqueMunicipalities = new Map<number, string | null>(); 
+           partner?.municipalityList?.forEach(muni => { 
+             if (muni && !uniqueMunicipalities.has(muni.municipalityId)) 
+               uniqueMunicipalities.set(muni.municipalityId, muni.municipalityName); 
+           }); 
+           const municipalityNames = Array.from(uniqueMunicipalities.values()).filter(name => !!name).join(', ') || 'N/A';
+
            const serviceNames = partner?.serviceList?.map(s => s.serviceName).join(', ') || 'N/A';
 
-           return ( // Partner rendering remains the same as the last reverted version
+           return (
                <>
                    <View style={styles.userInfoSection}>
-                       {partner?.logoImagePath ? ( <Image source={{ uri: partner.logoImagePath }} style={styles.partnerLogo} resizeMode="contain" /> ) : ( <View style={[styles.profilePicPlaceholder, styles.partnerLogoPlaceholder]}><Ionicons name="business" size={30} color={COLORS.textSecondary} /></View> )}
+                       {partner?.logoImagePath ? ( 
+                         <Image source={{ uri: partner.logoImagePath }} style={styles.partnerLogo} resizeMode="contain" /> 
+                       ) : ( 
+                         <View style={[styles.profilePicPlaceholder, styles.partnerLogoPlaceholder]}>
+                           <Ionicons name="business" size={30} color={COLORS.textSecondary} />
+                         </View> 
+                       )}
                        <View style={styles.userDetails}>
                            <Text style={styles.userName}>{session.name ?? partner?.username ?? 'N/A'}</Text>
                            <Text style={styles.userEmail}>{partner?.emailId ?? session.email}</Text>
-                           <Text style={styles.regNumber}>Reg. No. {partner?.companyRegistrationNumber ?? 'N/A'}</Text>
+                           <Text style={styles.regNumber}>{t('regno')} {partner?.companyRegistrationNumber ?? 'N/A'}</Text>
                        </View>
                        <View style={styles.statusToggle}>
                            <Switch
                                trackColor={{ false: COLORS.switchTrackFalse, true: COLORS.switchTrackTrue }}
                                thumbColor={COLORS.switchThumb}
                                ios_backgroundColor={COLORS.switchTrackFalse}
-                               value={!!partner?.is24X7} // Use local profileData state
+                               value={!!partner?.is24X7}
                                onValueChange={() => handleToggle24x7(partner?.is24X7 ?? false)}
                                disabled={isUpdatingStatus || isLoadingProfile}
                            />
@@ -164,11 +248,34 @@ export default function ProfileScreen() {
                            {isUpdatingStatus && <ActivityIndicator size="small" color={COLORS.accent} style={{marginLeft: 5}}/>}
                        </View>
                    </View>
-                    <View style={[styles.infoRow, styles.locationSection]}> <View style={styles.locationLabelContainer}><Text style={styles.locationLabel}>About</Text></View> <Text style={styles.locationValue}>{partner?.companyPresentation ?? 'N/A'}</Text> </View>
-                    <View style={[styles.infoRow, styles.locationSection]}> <View style={styles.locationLabelContainer}><Text style={styles.locationLabel}>Service Category</Text></View> <Text style={styles.locationValue}>{serviceNames}</Text> </View>
-                    <View style={styles.infoRow}> <MaterialCommunityIcons name="phone-outline" size={24} color={COLORS.iconColor} style={styles.infoIcon} /> <Text style={styles.infoText}>{partner?.mobileNumber ?? 'N/A'}</Text> </View>
-                    <View style={[styles.infoRow, styles.locationSection]}> <View style={styles.locationLabelContainer}><Text style={styles.locationLabel}>County</Text></View> <Text style={styles.locationValue}>{countyNames}</Text> </View>
-                    <View style={[styles.infoRow, styles.locationSection, { borderBottomWidth: 0 }]}> <View style={styles.locationLabelContainer}><Text style={styles.locationLabel}>Municipality</Text></View> <Text style={styles.locationValue}>{municipalityNames}</Text> </View>
+                    <View style={[styles.infoRow, styles.locationSection]}>
+                      <View style={styles.locationLabelContainer}>
+                        <Text style={styles.locationLabel}>{t('about')}</Text>
+                      </View>
+                      <Text style={styles.locationValue}>{partner?.companyPresentation ?? 'N/A'}</Text>
+                    </View>
+                    <View style={[styles.infoRow, styles.locationSection]}>
+                      <View style={styles.locationLabelContainer}>
+                        <Text style={styles.locationLabel}>{t('servicecategory')}</Text>
+                      </View>
+                      <Text style={styles.locationValue}>{serviceNames}</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <MaterialCommunityIcons name="phone-outline" size={24} color={COLORS.iconColor} style={styles.infoIcon} />
+                      <Text style={styles.infoText}>{partner?.mobileNumber ?? 'N/A'}</Text>
+                    </View>
+                    <View style={[styles.infoRow, styles.locationSection]}>
+                      <View style={styles.locationLabelContainer}>
+                        <Text style={styles.locationLabel}>{t('county')}</Text>
+                      </View>
+                      <Text style={styles.locationValue}>{countyNames}</Text>
+                    </View>
+                    <View style={[styles.infoRow, styles.locationSection, { borderBottomWidth: 0 }]}>
+                      <View style={styles.locationLabelContainer}>
+                        <Text style={styles.locationLabel}>{t('municipality')}</Text>
+                      </View>
+                      <Text style={styles.locationValue}>{municipalityNames}</Text>
+                    </View>
                </>
            );
        }
@@ -178,15 +285,32 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
        <Stack.Screen
-        options={{ title: 'Profile', headerStyle: { backgroundColor: COLORS.headerBg }, headerTintColor: COLORS.headerText, headerTitleStyle: { fontWeight: 'bold' }, headerTitleAlign: 'center', headerRight: () => ( <TouchableOpacity onPress={handleOpenLanguageModal} style={{ marginRight: 15 }} disabled={isUpdatingStatus} > <Ionicons name="settings-outline" size={24} color={COLORS.iconColor} /> </TouchableOpacity> ), }}
+        options={{ 
+          title: t('profile'), 
+          headerStyle: { backgroundColor: COLORS.headerBg }, 
+          headerTintColor: COLORS.headerText, 
+          headerTitleStyle: { fontWeight: 'bold' }, 
+          headerTitleAlign: 'center', 
+          headerRight: () => ( 
+            <TouchableOpacity onPress={handleOpenLanguageModal} style={{ marginRight: 15 }} disabled={isUpdatingStatus}>
+              <Ionicons name="settings-outline" size={24} color={COLORS.iconColor} />
+            </TouchableOpacity> 
+          ), 
+        }}
       />
       <ScrollView style={styles.scrollView}>
         <View style={styles.container}>
              {renderContent()}
              {/* Shared Actions */}
-             <TouchableOpacity style={styles.actionRow} onPress={handleResetPassword}> <MaterialCommunityIcons name="lock-reset" size={24} color={COLORS.iconColor} style={styles.infoIcon} /> <Text style={styles.actionText}>Reset Password</Text> <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} /> </TouchableOpacity>
-             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}> <Text style={styles.logoutButtonText}>Log Out</Text> </TouchableOpacity>
-             <Text style={styles.versionText}>v0.0.1</Text>
+             <TouchableOpacity style={styles.actionRow} onPress={handleResetPassword}>
+               <MaterialCommunityIcons name="lock-reset" size={24} color={COLORS.iconColor} style={styles.infoIcon} />
+               <Text style={styles.actionText}>{t('resetpassword')}</Text>
+               <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+             </TouchableOpacity>
+             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+               <Text style={styles.logoutButtonText}>{t('logout')}</Text>
+             </TouchableOpacity>
+             <Text style={styles.versionText}>{t('version')}</Text>
         </View>
       </ScrollView>
        {/* Modals */}
