@@ -237,7 +237,7 @@ export default function CategoriesScreen() {
        {/* Stack Screen Options */}
         <Stack.Screen
           options={{
-            title: 'All Services',
+            title: t('allservices'),
             headerBackTitle: '',
             headerTitleAlign: 'center',
             headerStyle: { backgroundColor: COLORS.headerBg },
