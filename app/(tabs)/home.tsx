@@ -20,7 +20,10 @@ import LanguageSelectionModal from '@/components/LanguageSelectionModal';
 import { useAuth } from '@/context/AuthContext';
 import { BASE_URL, fetchBaseUrlFromFirebase } from '@/constants/Api';
 import { SvgXml } from 'react-native-svg'; // <-- Import SvgXml
-import { t } from '@/config/i18n'; // Import the translation function
+import { t, setLocale } from '@/config/i18n'; // Import the translation function
+import * as SecureStore from 'expo-secure-store';
+import i18n from '@/config/i18n';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 // --- Types ---
@@ -59,12 +62,12 @@ const COLORS = {
 // --- Alert helper ---
 const showLoginRegisterAlert = (router: any) => {
   Alert.alert(
-    'Login Required',
-    'Please log in or register to proceed.',
+    t('loginsrequired'),
+    t('logintoproceed'),
     [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log In', onPress: () => router.push('/login') },
-      { text: 'Register', onPress: () => router.push('/register') },
+      { text: t('cancel'), style: 'cancel' },
+      { text: t('login'), onPress: () => router.push('/login') },
+      { text: t('register'), onPress: () => router.push('/register') },
     ]
   );
 };
@@ -170,6 +173,7 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isRegisterModalVisible, setIsRegisterModalVisible] = useState(false);
   const [isLanguageModalVisible, setIsLanguageModalVisible] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
 
   useEffect(() => {
     const loadServices = async () => {
@@ -206,43 +210,56 @@ export default function HomeScreen() {
     loadServices();
   }, []);
 
-    // --- Event Handlers --- (Copied from previous version)
+    // --- Event Handlers ---
     const handleNewJobRequestPress = () => {
       if (!session) {
         showLoginRegisterAlert(router);
-      } else {
-        if (session.type === 'user') {
-          router.push('/create-job-card');
-        } else {
-          Alert.alert("Action Not Allowed", "Partners cannot create job requests.");
-        }
+        return;
       }
+      Alert.alert(
+        t('newjobrequest'),
+        t('newjobrequestmessage'),
+        [
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('proceed'), onPress: () => router.push('/create-job-card') },
+        ]
+      );
     };
     const handleViewAllServicesPress = () => {
       router.push('/categories');
     };
     const handleUrgentJobPress = () => {
       if (!session) {
-          showLoginRegisterAlert(router);
-      } else if (session.type !== 'user') {
-          Alert.alert("Feature Not Available", "This feature is only available for users.");
-      } else {
-          router.push('/urgentJobList');
+        showLoginRegisterAlert(router);
+        return;
       }
+      Alert.alert(
+        t('urgentjob'),
+        t('urgentjobmessage'),
+        [
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('proceed'), onPress: () => router.push('/urgentJobList') },
+        ]
+      );
     };
     const handleRegisterPress = () => setIsRegisterModalVisible(true);
     const handleSelectPartner = () => { setIsRegisterModalVisible(false); router.push('/register-partner'); };
     const handleSelectUser = () => { setIsRegisterModalVisible(false); router.push('/register'); };
-    const handleSelectLanguage = (language: 'en' | 'sv') => {
-      Alert.alert("Language Selected", language === 'en' ? 'English' : 'Swedish');
-      setIsLanguageModalVisible(false);
+    const handleSelectLanguage = async (language: string) => {
+      try {
+        await setLocale(language);
+        setSelectedLanguage(language);
+        setIsLanguageModalVisible(false);
+      } catch (error) {
+        Alert.alert(t('error'), t('couldnotsavelanguage'));
+      }
     };
     // ---------------------
 
   const renderListContent = () => {
     if (isLoading) return <ActivityIndicator size="large" color={COLORS.accent} style={styles.loadingIndicator} />;
     if (error) return <Text style={styles.errorText}>{error}</Text>;
-    if (services.length === 0) return <Text style={styles.noDataText}>No services available.</Text>;
+    if (services.length === 0) return <Text style={styles.noDataText}>{t('noservicesavailable')}</Text>;
     return (
       <FlatList
         data={services}
@@ -263,7 +280,7 @@ export default function HomeScreen() {
           headerShown: true,
           headerStyle: { backgroundColor: COLORS.background },
           headerShadowVisible: false,
-          headerTitle: () => <ThemedText style={styles.headerTitle}>Home</ThemedText>,
+          headerTitle: () => <ThemedText style={styles.headerTitle}>{t('home')}</ThemedText>,
           headerTitleAlign: 'left',
           headerRight: () =>
             !session ? (
@@ -272,7 +289,7 @@ export default function HomeScreen() {
                   <Ionicons name="settings-outline" size={24} color={COLORS.headerIconColor} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => router.push('/login')} style={styles.loginButtonContainer}>
-                  <ThemedText style={styles.loginText}>LOG IN</ThemedText>
+                  <ThemedText style={styles.loginText}>{t('login')}</ThemedText>
                 </TouchableOpacity>
               </View>
             ) : null,
@@ -283,30 +300,30 @@ export default function HomeScreen() {
           <Image source={require('@/assets/images/banner.png')} style={styles.bannerImage} resizeMode='cover' />
         </View>
         <View style={styles.sectionHeader}>
-          <ThemedText style={styles.sectionTitle}>Services</ThemedText>
+          <ThemedText style={styles.sectionTitle}>{t('services')}</ThemedText>
           <TouchableOpacity onPress={handleUrgentJobPress}>
-             <ThemedText style={styles.urgentJobText}>Urgent Job 24/7</ThemedText>
+             <ThemedText style={styles.urgentJobText}>{t('urgentjob247')}</ThemedText>
            </TouchableOpacity>
           <TouchableOpacity onPress={handleViewAllServicesPress}>
-             <ThemedText style={styles.viewAllText}>View All</ThemedText>
+             <ThemedText style={styles.viewAllText}>{t('viewall')}</ThemedText>
            </TouchableOpacity>
         </View>
         {renderListContent()}
         {(!session || session?.type === 'user') && (
           <View style={styles.notFoundSection}>
-            <ThemedText style={styles.notFoundText}>Didn't find your Service?</ThemedText>
-            <ThemedText style={styles.notFoundSubText}>Don't worry, You can post your Requirement</ThemedText>
+            <ThemedText style={styles.notFoundText}>{t('didntfindyourservice')}</ThemedText>
+            <ThemedText style={styles.notFoundSubText}>{t('dontworry')}</ThemedText>
           </View>
         )}
         <View style={styles.bottomButtonsContainer}>
           {(!session || session?.type === 'user') && (
             <TouchableOpacity style={styles.button} onPress={handleNewJobRequestPress}>
-               <ThemedText style={styles.buttonText}>New Job Request</ThemedText>
+               <ThemedText style={styles.buttonText}>{t('newjobrequest')}</ThemedText>
              </TouchableOpacity>
           )}
           {!session && (
             <TouchableOpacity style={styles.button} onPress={handleRegisterPress}>
-               <ThemedText style={styles.buttonText}>Register</ThemedText>
+               <ThemedText style={styles.buttonText}>{t('register')}</ThemedText>
              </TouchableOpacity>
           )}
         </View>
