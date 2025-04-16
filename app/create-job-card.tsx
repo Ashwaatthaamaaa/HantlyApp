@@ -337,7 +337,7 @@ export default function CreateJobCardScreen() {
             disabled={isLoadingServices || !!serviceError || isSaving || isServiceSelectionDisabled}
             >
             <Text style={styles.selectorText}>
-                {selectedServiceNames.length > 0 ? selectedServiceNames.join(', ') : 'Choose Service Category *'}
+                {selectedServiceNames.length > 0 ? selectedServiceNames.join(', ') : t('chooseservicecategory')}
             </Text>
             {isLoadingServices ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
@@ -358,14 +358,23 @@ export default function CreateJobCardScreen() {
 
 
         {/* --- Description --- */}
-        <TextInput style={[styles.input, styles.textArea]} placeholder="Description *" value={description} onChangeText={setDescription} multiline numberOfLines={4} placeholderTextColor={COLORS.placeholder} editable={!isSaving}/>
+        <TextInput
+          style={[styles.input, styles.textArea]}
+          placeholder={t('enterjobdescription')}
+          placeholderTextColor={COLORS.placeholder}
+          multiline
+          numberOfLines={4}
+          value={description}
+          onChangeText={setDescription}
+          editable={!isSaving}
+        />
          {/* --- End Description --- */}
 
 
          {/* --- County Selector --- */}
          <TouchableOpacity style={[styles.selectorContainer, (isLoadingCounties || !!countyError || isSaving) && styles.disabledSelector]} onPress={() => !isLoadingCounties && !countyError && !isSaving && setIsCountyModalVisible(true)} disabled={isLoadingCounties || !!countyError || isSaving}>
             <Text style={[styles.selectorText, !selectedCountyId && styles.placeholderText]}>
-                 {getSelectedNames([selectedCountyId ?? ''], counties)[0] || 'Select County *'}
+                 {getSelectedNames([selectedCountyId ?? ''], counties)[0] || t('selectcounty')}
              </Text>
             {isLoadingCounties ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
@@ -376,7 +385,7 @@ export default function CreateJobCardScreen() {
          {/* --- Municipality Selector --- */}
         <TouchableOpacity style={[styles.selectorContainer, (isMunicipalityDisabled || isSaving) && styles.disabledSelector]} onPress={() => !isMunicipalityDisabled && !isSaving && setIsMunicipalityModalVisible(true)} disabled={isMunicipalityDisabled || isSaving}>
              <Text style={[styles.selectorText, !selectedMunicipalityId && styles.placeholderText]}>
-                {selectedCountyId && !isLoadingMunicipalities && !municipalityError && municipalities.length === 0 ? 'No Municipalities Found' : getSelectedNames([selectedMunicipalityId ?? ''], municipalities)[0] || municipalityPlaceholder + ' *'}
+                {selectedCountyId && !isLoadingMunicipalities && !municipalityError && municipalities.length === 0 ? t('nomunicipalities') : getSelectedNames([selectedMunicipalityId ?? ''], municipalities)[0] || (!selectedCountyId ? t('selectcountyfirst') : t('selectmunicipality'))}
              </Text>
              {isLoadingMunicipalities ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
