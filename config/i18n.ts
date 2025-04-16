@@ -10,7 +10,7 @@ const i18n = new I18n({
   sv, // Swedish translations (with lowercase keys)
 });
 
-// Set the initial locale. This should ideally be loaded from storage on app start.
+// Set the initial locale
 i18n.locale = 'en';
 
 // Enable fallback mechanism
@@ -20,7 +20,7 @@ i18n.enableFallback = true;
 // Load saved locale from storage
 const loadSavedLocale = async () => {
   try {
-    const savedLocale = await SecureStore.getItemAsync('appLocale');
+    const savedLocale = await SecureStore.getItemAsync('language');
     if (savedLocale) {
       i18n.locale = savedLocale;
     }
@@ -42,10 +42,13 @@ export const t = (key: string, config?: object) => {
 // Function to change locale and save to storage
 export const setLocale = async (locale: string) => {
   try {
-    await SecureStore.setItemAsync('appLocale', locale);
+    await SecureStore.setItemAsync('language', locale);
+    i18n.locale = locale;
+    // Force a re-render by updating the locale
     i18n.locale = locale;
   } catch (error) {
     console.error('Error saving locale:', error);
+    throw error;
   }
 };
 
