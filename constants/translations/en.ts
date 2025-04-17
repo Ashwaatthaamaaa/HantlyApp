@@ -285,9 +285,10 @@ export const en = {
     emailAlreadyRegistered: "Email: Already registered. Try signing in.",
     companylogo: "Company Logo", // Specific key for validation
     available24x7label: "Available 24x7?",
+    registrationnumberplaceholder: "Registration Number",
+    passwordmin8chars: "Password (min 8 chars)",
     // Chat Screen
     enterchatmessage_placeholder: "Enter Message",
-    couldnotsendmessage: "Could not send message: {message}",
     // Find Partners Screen
     chatwithcompanies_title: "Chat with companies",
     failedloadpartners: "Failed to load partners: {message}",
