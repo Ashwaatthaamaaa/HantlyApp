@@ -38,6 +38,26 @@ export const en = {
     save: "Save",
     success: "Success",
     bookings: "Bookings",
+    
+    // Filter and bookings related keys (added)
+    no_description: "No description",
+    not_available: "Not available",
+    status_created: "Created",
+    status_accepted: "Accepted", 
+    status_in_progress: "In Progress",
+    status_completed: "Completed",
+    all_statuses: "All Statuses",
+    select_status: "Select Status",
+    select_county: "Select County",
+    select_municipality: "Select Municipality",
+    loading_profile: "Loading Profile",
+    error_loading_profile: "Error Loading Profile",
+    no_supported_counties: "No Supported Counties",
+    select_county_first: "Select County First",
+    no_supported_municipalities: "No Supported Municipalities",
+    filter_jobs: "Filter Jobs",
+    error_profile: "Error Profile",
+    
     // Login Screen
     createaccount: "Create Account",
     welcome: "Welcome",
