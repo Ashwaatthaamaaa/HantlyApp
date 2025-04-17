@@ -22,6 +22,7 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { BASE_URL } from '@/constants/Api';
+import { t } from '@/config/i18n'; // Import t
 
 // --- Types ---
 interface ChatMessage {
@@ -276,7 +277,7 @@ export default function ChatScreen() {
 
     } catch (err: any) {
       console.error("Error sending message:", err);
-      Alert.alert("Error", `Could not send message: ${err.message}`);
+      Alert.alert(t('error'), t('couldnotsendmessage', { message: err.message })); // Use t()
       // Remove optimistic message on failure
       setMessages(prev => prev.filter(msg => msg.chatId !== optimisticMessage.chatId));
     } finally {
@@ -321,11 +322,6 @@ export default function ChatScreen() {
           headerTitleAlign: 'center',
           headerStyle: { backgroundColor: COLORS.headerBg },
           headerTintColor: COLORS.headerText,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 10 }}>
-              <Ionicons name="arrow-back" size={24} color={COLORS.headerText} />
-            </TouchableOpacity>
-          )
         }}
       />
 
@@ -351,7 +347,7 @@ export default function ChatScreen() {
         <View style={styles.inputArea}>
           <TextInput
             style={styles.textInput}
-            placeholder="Enter Message"
+            placeholder={t('enterchatmessage_placeholder')} // Use t()
             value={newMessage}
             onChangeText={setNewMessage}
             multiline
