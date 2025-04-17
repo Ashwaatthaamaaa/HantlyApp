@@ -324,7 +324,6 @@ export default function CreateJobCardScreen() {
 
 
          {/* --- Service Category --- */}
-        <Text style={styles.label}>{t('chooseservicecategory')}</Text>
         <TouchableOpacity
           style={styles.selectorButton}
           onPress={() => !isSaving && setIsServiceModalVisible(true)}
