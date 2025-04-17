@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { t } from '@/config/i18n';
+import i18n from '@/config/i18n'; // Import the i18n instance directly
 
 // --- Interfaces ---
 interface DataItem {
@@ -28,6 +29,8 @@ interface SelectModalProps {
   onClose: () => void;
   onConfirmSingle?: (selectedId: string | null) => void;
   onConfirmMulti?: (selectedIds: string[]) => void;
+  // Optional prop to override the confirm button text
+  confirmButtonText?: string;
 }
 // --- Colors ---
 const COLORS = { // Use your actual color constants
@@ -47,6 +50,7 @@ export default function SelectModal({
   onClose,
   onConfirmSingle,
   onConfirmMulti,
+  confirmButtonText,
 }: SelectModalProps) {
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -98,6 +102,26 @@ export default function SelectModal({
     onClose();
   };
 
+  // Get the confirmation button text - hardcoded for this specific case
+  // First try the prop, then check current locale, fallback to English text
+  const getConfirmButtonText = () => {
+    // If explicitly provided as a prop, use that
+    if (confirmButtonText) {
+      return confirmButtonText;
+    }
+    
+    // Otherwise, check current locale and use hardcoded translations
+    const currentLocale = i18n.locale;
+    console.log('Current locale in MultiSelectModal:', currentLocale);
+    
+    if (currentLocale === 'sv') {
+      return 'Bekräfta val'; // Swedish translation
+    }
+    
+    // Default to English
+    return 'Confirm Selection';
+  };
+
   // Render list item
   const renderItem = ({ item }: { item: DataItem }) => {
       const isSelected = selectedIds.has(item.id);
@@ -147,7 +171,7 @@ export default function SelectModal({
             {mode === 'multi' && (
               <View style={styles.confirmButtonContainer}>
                   <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmMultiPress}>
-                    <Text style={styles.confirmButtonText}>{t('confirmSelection')}</Text>
+                    <Text style={styles.confirmButtonText}>{getConfirmButtonText()}</Text>
                   </TouchableOpacity>
               </View>
             )}
