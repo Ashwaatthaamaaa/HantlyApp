@@ -354,27 +354,29 @@ export default function BookingsScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <Stack.Screen
-          options={{
-              title: session?.type === 'partner' ? 'Job Requests' : 'User Bookings',
-              headerStyle: { backgroundColor: COLORS.headerBg }, headerTintColor: COLORS.headerText, headerTitleStyle: { fontWeight: 'bold' }, headerTitleAlign: 'center',
-              // Use local isLoadingPartnerProfile for disabled state
-              headerRight: session?.type === 'partner' ? () => ( <TouchableOpacity onPress={() => setIsFilterModalVisible(true)} style={{ marginRight: 15 }} disabled={isLoadingPartnerProfile}><Ionicons name="filter" size={24} color={isLoadingPartnerProfile ? COLORS.borderColor : COLORS.headerText} /></TouchableOpacity> ) : undefined,
-          }}
+        options={{
+          headerStyle: { backgroundColor: COLORS.headerBg },
+          headerTintColor: COLORS.headerText,
+          headerTitleAlign: 'center',
+          headerTitle: t('bookings'),
+          headerRight: () => (
+            <TouchableOpacity onPress={() => setIsFilterModalVisible(true)} style={{ marginRight: 15 }}>
+              <Ionicons name="filter" size={24} color={COLORS.accent} />
+            </TouchableOpacity>
+          ),
+        }}
       />
       {renderListContent()}
-      {session?.type === 'partner' && (
-           <FilterModal
-               visible={isFilterModalVisible}
-               onClose={() => setIsFilterModalVisible(false)}
-               onApplyFilters={handleApplyFilters}
-               initialFilters={activeFilters}
-               // Pass local data/state to modal
-               supportedCounties={formattedSupportedCounties}
-               supportedMunicipalities={partnerMunicipalities as PartnerMunicipality[]} // Cast needed if structure is identical
-               isLoadingProfile={isLoadingPartnerProfile}
-               profileError={partnerProfileError}
-            />
-         )}
+      <FilterModal
+        visible={isFilterModalVisible}
+        onClose={() => setIsFilterModalVisible(false)}
+        onApplyFilters={handleApplyFilters}
+        initialFilters={activeFilters}
+        supportedCounties={formattedSupportedCounties}
+        supportedMunicipalities={partnerMunicipalities as PartnerMunicipality[]}
+        isLoadingProfile={isLoadingPartnerProfile}
+        profileError={partnerProfileError}
+      />
     </SafeAreaView>
   );
 }
