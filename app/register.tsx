@@ -84,7 +84,7 @@ export default function RegisterScreen() {
             setCounties(formattedData);
         } catch (error: any) {
             console.error("RegisterScreen: Failed fetch counties:", error);
-            setCountyError(`Failed to load Counties: ${error.message}`);
+            setCountyError(t('countyloadfailed', { message: error.message }));
         } finally {
              console.log("RegisterScreen: Finished county fetch, setting isLoadingCounties to false.");
             setIsLoadingCounties(false);
@@ -106,7 +106,7 @@ export default function RegisterScreen() {
               const formattedData: ApiDataItem[] = data.map(m => ({ id: m.municipalityId.toString(), name: m.municipalityName }));
               setMunicipalities(formattedData);
           } else { throw new Error("Received non-JSON response for Municipalities"); }
-      } catch (error: any) { console.error("Failed to fetch municipalities:", error); setMunicipalityError(`Failed municipalities: ${error.message}`); }
+      } catch (error: any) { console.error("Failed to fetch municipalities:", error); setMunicipalityError(t('municipalityloadfailed', { message: error.message })); }
       finally { setIsLoadingMunicipalities(false); }
   }, []);
 
@@ -130,16 +130,16 @@ export default function RegisterScreen() {
 
     // Email Format Validation
     if (isEmailValid && !/\S+@\S+\.\S+/.test(email)) {
-        Alert.alert('Invalid Email', 'Please enter a valid email address.');
+        Alert.alert(t('invalidemailtitle'), t('invalidemail'));
         return;
     }
 
     if (!isNameValid || !isEmailValid || !isPhoneValid || !isPasswordValid || !isCountySelected || !isMunicipalitySelected) {
-        Alert.alert('Missing Information', 'Please fill in all required fields correctly.');
+        Alert.alert(t('missinginformation'), t('missinginformation'));
         return;
     }
     if (!agreedToTerms) {
-        Alert.alert('Terms Required', 'Please agree to the Terms of Service & Privacy Policy.');
+        Alert.alert(t('termsrequired'), t('termsrequired'));
         return;
     }
 
@@ -176,23 +176,21 @@ export default function RegisterScreen() {
 
         if (response.ok) {
             Alert.alert(
-                'Sign Up Successful!',
-                 message || 'User registered successfully.',
+                t('signupsuccessful'),
+                 message || t('userregistered'),
                  [
                      {
-                        text: 'OK',
-                        // ** NAVIGATE TO HOME ON SUCCESS **
+                        text: t('ok'),
                         onPress: () => router.replace('/(tabs)/home')
-                        // ** END NAVIGATION CHANGE **
                      }
                  ]
             );
         }
         else {
-            Alert.alert('Sign Up Failed', message || `An error occurred (Status: ${response.status}).`);
+            Alert.alert(t('signupfailed'), message || t('signuperrorwithstatus', { status: response.status }));
         }
     } catch (error: any) {
-        Alert.alert('Sign Up Error', `An unexpected error occurred: ${error.message}`);
+        Alert.alert(t('signuperror'), t('unexpectederror', { message: error.message }));
     }
     finally {
         setIsSigningUp(false);
@@ -204,7 +202,7 @@ export default function RegisterScreen() {
   const handleMunicipalityConfirm = (selectedId: string | null) => setSelectedMunicipalityId(selectedId);
   const getSingleDisplayText = (id: string | null, data: ApiDataItem[], placeholder: string) => { return !id ? placeholder : (data.find(item => item.id === id)?.name ?? placeholder); };
   const isMunicipalityDisabled = !selectedCountyId || isLoadingMunicipalities || municipalityError !== null || (!isLoadingMunicipalities && municipalities.length === 0 && !municipalityError);
-  const municipalityPlaceholder = !selectedCountyId ? 'Select County First' : isLoadingMunicipalities ? 'Loading Municipalities...' : municipalityError ? 'Error Loading' : municipalities.length === 0 ? 'No Municipalities Found' : 'Select Municipality';
+  const municipalityPlaceholder = !selectedCountyId ? t('selectcountyfirst') : isLoadingMunicipalities ? t('loadingmunicipalities') : municipalityError ? t('errormunicipalities') : municipalities.length === 0 ? t('nomunicipalities') : t('selectmunicipality');
 
   console.log(`RegisterScreen Render State: isLoadingCounties=${isLoadingCounties}, countyError=${countyError}, counties.length=${counties.length}, isSigningUp=${isSigningUp}`);
 
@@ -256,13 +254,19 @@ export default function RegisterScreen() {
         {municipalityError && !isLoadingMunicipalities && <Text style={styles.errorText}>{municipalityError}</Text>}
 
         {/* Terms Agreement */}
-         <TouchableOpacity style={styles.termsContainer} onPress={() => !isSigningUp && setAgreedToTerms(!agreedToTerms)} disabled={isSigningUp}>
-           <MaterialCommunityIcons name={agreedToTerms ? 'checkbox-marked-outline' : 'checkbox-blank-outline'} size={24} color={agreedToTerms ? COLORS.accent : COLORS.textSecondary}/>
-           <Text style={styles.termsText}>{t('termsandprivacy')}</Text>
-         </TouchableOpacity>
+         <View style={styles.termsContainer}>
+             <TouchableOpacity onPress={() => !isSigningUp && setAgreedToTerms(!agreedToTerms)} disabled={isSigningUp}>
+                 <MaterialCommunityIcons name={agreedToTerms ? 'checkbox-marked-outline' : 'checkbox-blank-outline'} size={24} color={agreedToTerms ? COLORS.accent : COLORS.textSecondary} />
+             </TouchableOpacity>
+             <Text style={styles.termsText}>
+                {t('termsandprivacy').split('&')[0]}&
+                 <Text style={styles.linkText}>{t('termslinktext')}</Text>
+             </Text>
+         </View>
+        {!agreedToTerms && (nameTouched || emailTouched || phoneTouched || passwordTouched) && <Text style={styles.requiredText}>{t('termsrequired')}</Text>}
 
          {/* Sign Up Button */}
-         <TouchableOpacity style={[styles.signUpButton, (isSigningUp || !agreedToTerms) && styles.buttonDisabled]} onPress={handleSignUp} disabled={isSigningUp || !agreedToTerms}>
+         <TouchableOpacity style={[styles.signUpButton, isSigningUp && styles.buttonDisabled]} onPress={handleSignUp} disabled={isSigningUp}>
             {isSigningUp ? <ActivityIndicator size="small" color={COLORS.buttonText} /> : <Text style={styles.signUpButtonText}>{t('signup')}</Text>}
          </TouchableOpacity>
 
