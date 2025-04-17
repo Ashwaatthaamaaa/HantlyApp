@@ -40,25 +40,7 @@ const COLORS = {
   logoButtonBg: '#F0F0F0', linkText: '#696969', buttonDisabledBg: '#AAAAAA',
   switchThumb: '#FFFFFF', switchTrackTrue: '#696969', switchTrackFalse: '#CCCCCC',
   labelColor: '#666666', // Added for labels in original styles for switch
-  chipBg: '#EFEFEF', // Chip background color
-  chipText: '#444444', // Chip text color
-  chipClose: '#777777', // Chip close icon color
 };
-
-// --- Chip Component ---
-interface ChipProps {
-  label: string;
-  onRemove: () => void;
-  disabled?: boolean;
-}
-const Chip: React.FC<ChipProps> = ({ label, onRemove, disabled }) => (
-  <View style={styles.chip}>
-    <Text style={styles.chipText} numberOfLines={1}>{label}</Text>
-    <TouchableOpacity onPress={onRemove} disabled={disabled} style={styles.chipCloseButton}>
-      <Ionicons name="close-circle" size={18} color={disabled ? COLORS.placeholder : COLORS.chipClose} />
-    </TouchableOpacity>
-  </View>
-);
 
 export default function RegisterPartnerScreen() {
   const router = useRouter();
@@ -222,52 +204,6 @@ export default function RegisterPartnerScreen() {
       setSelectedServiceIds(selectedIds);
   };
 
-  // --- Chip Removal Handlers ---
-  const handleRemoveCounty = (idToRemove: string) => {
-    const newCountyIds = selectedCountyIds.filter(id => id !== idToRemove);
-    setSelectedCountyIds(newCountyIds);
-    // Re-fetch/filter municipalities based on the new county list
-    // Note: The useEffect watching selectedCountyIds already handles this.
-  };
-
-  const handleRemoveMunicipality = (idToRemove: string) => {
-    setSelectedMunicipalityIds(prevIds => prevIds.filter(id => id !== idToRemove));
-  };
-
-  const handleRemoveService = (idToRemove: string) => {
-    setSelectedServiceIds(prevIds => prevIds.filter(id => id !== idToRemove));
-  };
-
-  // --- Render Chips Functions ---
-  const renderChips = (
-      selectedIds: string[],
-      allItems: ApiDataItem[],
-      onRemove: (id: string) => void
-  ) => {
-      if (selectedIds.length === 0) return null;
-
-      return (
-          <View style={styles.chipContainer}>
-              {selectedIds.map(id => {
-                  const item = allItems.find(i => i.id === id);
-                  // Render chip only if item name is found and valid
-                  if (item?.name) {
-                      return (
-                          <Chip
-                              key={id}
-                              label={item.name}
-                              onRemove={() => onRemove(id)}
-                              disabled={isSigningUp}
-                          />
-                      );
-                  }
-                  return null; // Don't render chip if item not found or name missing
-              })}
-          </View>
-      );
-  };
-
-
   // --- Placeholder Text Logic ---
   const isMunicipalitySelectorDisabled = selectedCountyIds.length === 0 || isLoadingMunicipalitiesData || municipalityDataError !== null || (!isLoadingMunicipalitiesData && filteredMunicipalities.length === 0 && !municipalityDataError);
   const municipalitySelectorPlaceholder = selectedCountyIds.length === 0
@@ -381,7 +317,7 @@ export default function RegisterPartnerScreen() {
    };
    // --- End Partner Sign Up Handler ---
 
-  // --- JSX Structure (Updated for Chips) ---
+  // --- JSX Structure (Updated for Chips removed) ---
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Header (Original structure) */}
@@ -437,50 +373,42 @@ export default function RegisterPartnerScreen() {
         </View>
 
         {/* --- County Selector --- */}
-        <TouchableOpacity
-            style={[styles.selectorContainer, (isLoadingCountiesData || countyDataError !== null || isSigningUp) && styles.disabledSelector ]}
-            onPress={() => !isSigningUp && !isLoadingCountiesData && allCounties.length > 0 && !countyDataError && setIsCountyModalVisible(true)}
-            disabled={isLoadingCountiesData || countyDataError !== null || isSigningUp || allCounties.length === 0}>
-            <Text style={styles.selectorText}>
-                {isLoadingCountiesData ? t('loadingcounties') : countyDataError ? t('errorcounties') : t('selectcounty') + ' *'}
+        <TouchableOpacity style={styles.selectorButton} onPress={() => !isSigningUp && setIsCountyModalVisible(true)} disabled={isSigningUp}>
+          <Text style={styles.selectorText}>
+            {selectedCountyIds.length > 0
+              ? `${selectedCountyIds.length} items selected`
+              : t('selectcounty')}
             </Text>
-            {isLoadingCountiesData ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
+          <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
         </TouchableOpacity>
-        {/* County Chips */}
-        {renderChips(selectedCountyIds, allCounties, handleRemoveCounty)}
-        {/* Error message */}
         {countyDataError && !isLoadingCountiesData && <Text style={styles.errorText}>{countyDataError}</Text>}
 
 
         {/* --- Municipality Selector --- */}
         <TouchableOpacity
-            style={[styles.selectorContainer, (isMunicipalitySelectorDisabled || isSigningUp) && styles.disabledSelector]}
-            onPress={() => !isSigningUp && !isMunicipalitySelectorDisabled && filteredMunicipalities.length > 0 && setIsMunicipalityModalVisible(true)}
-            disabled={isMunicipalitySelectorDisabled || isSigningUp}>
-             <Text style={styles.selectorText}>
-                {municipalitySelectorPlaceholder + ' *'}
+          style={[styles.selectorButton, selectedCountyIds.length === 0 && styles.selectorButtonDisabled]}
+          onPress={() => !isSigningUp && selectedCountyIds.length > 0 && setIsMunicipalityModalVisible(true)}
+          disabled={isSigningUp || selectedCountyIds.length === 0}
+        >
+          <Text style={styles.selectorText}>
+            {selectedMunicipalityIds.length > 0
+              ? `${selectedMunicipalityIds.length} items selected`
+              : municipalitySelectorPlaceholder}
              </Text>
-             {isLoadingMunicipalitiesData ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
+          <Ionicons name="chevron-down" size={20} color={selectedCountyIds.length === 0 ? COLORS.placeholder : COLORS.textSecondary} />
         </TouchableOpacity>
-        {/* Municipality Chips */}
-        {renderChips(selectedMunicipalityIds, allMunicipalities, handleRemoveMunicipality)}
-        {/* Error message */}
         {municipalityDataError && !isLoadingMunicipalitiesData && <Text style={styles.errorText}>{municipalityDataError}</Text>}
 
 
         {/* --- Service Selector --- */}
-        <TouchableOpacity
-            style={[styles.selectorContainer, (isLoadingServicesData || serviceDataError !== null || isSigningUp) && styles.disabledSelector]}
-            onPress={() => !isSigningUp && !isLoadingServicesData && allServices.length > 0 && !serviceDataError && setIsServiceModalVisible(true)}
-            disabled={isLoadingServicesData || serviceDataError !== null || isSigningUp || allServices.length === 0}>
-            <Text style={styles.selectorText}>
-                {isLoadingServicesData ? t('loadingservices') : serviceDataError ? t('errorloadingservices') : t('chooseservicecategory')}
+        <TouchableOpacity style={styles.selectorButton} onPress={() => !isSigningUp && setIsServiceModalVisible(true)} disabled={isSigningUp}>
+          <Text style={styles.selectorText}>
+            {selectedServiceIds.length > 0
+              ? `${selectedServiceIds.length} items selected`
+              : t('selectservice')}
             </Text>
-            {isLoadingServicesData ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
+          <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
         </TouchableOpacity>
-        {/* Service Chips */}
-        {renderChips(selectedServiceIds, allServices, handleRemoveService)}
-        {/* Error message */}
         {serviceDataError && !isLoadingServicesData && <Text style={styles.errorText}>{serviceDataError}</Text>}
 
 
@@ -546,7 +474,7 @@ export default function RegisterPartnerScreen() {
   );
 }
 
-// --- Styles (Added Chip styles, kept others) ---
+// --- Styles (Removed Chip styles) ---
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10, paddingVertical: 12, backgroundColor: COLORS.headerBg },
@@ -576,34 +504,28 @@ const styles = StyleSheet.create({
   bottomLink: { fontSize: 14, color: COLORS.linkText, fontWeight: 'bold', marginLeft: 5 },
   errorText: { color: COLORS.error, fontSize: 12, marginTop: 2, marginBottom: 10, alignSelf: 'flex-start', marginLeft: 5, }, // Adjusted margin
 
-  // --- Chip Styles ---
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 5, // Add some space above chips
-    marginBottom: 10, // Add space below chips before next element
-    // Remove border/background if selector has it
-  },
-  chip: {
+  // --- New styles for the selector buttons ---
+  selectorButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.chipBg,
-    borderRadius: 15, // More rounded
-    paddingVertical: 5,
-    paddingLeft: 12,
-    paddingRight: 5, // Space for close button
-    marginRight: 8,
-    marginBottom: 8,
-    maxWidth: '100%', // Prevent very long chips from overflowing badly
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: COLORS.borderColor,
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    minHeight: 50,
+    marginBottom: 15, // Add margin below button now chips are gone
   },
-  chipText: {
-    color: COLORS.chipText,
-    fontSize: 13,
-    marginRight: 5,
-    maxWidth: '85%', // Limit text width within chip
+  selectorButtonDisabled: {
+    backgroundColor: '#F0F0F0',
+    opacity: 0.7,
   },
-  chipCloseButton: {
-    marginLeft: 'auto', // Push close button to the right
-    padding: 2,
+  label: {
+    fontSize: 16,
+    color: COLORS.labelColor,
+    marginBottom: 5,
+    marginTop: 15,
   },
 });
