@@ -1,5 +1,5 @@
 // File: app/(tabs)/home.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ import LanguageSelectionModal from '@/components/LanguageSelectionModal';
 import { useAuth } from '@/context/AuthContext';
 import { BASE_URL, fetchBaseUrlFromFirebase } from '@/constants/Api';
 import { SvgXml } from 'react-native-svg'; // <-- Import SvgXml
-import { t, setLocale } from '@/config/i18n'; // Import the translation function
+import { t, setLocale, langEventEmitter, LANGUAGE_CHANGE_EVENT } from '@/config/i18n'; // Import the translation function and language change event emitter
 import * as SecureStore from 'expo-secure-store';
 import i18n from '@/config/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -173,7 +173,31 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isRegisterModalVisible, setIsRegisterModalVisible] = useState(false);
   const [isLanguageModalVisible, setIsLanguageModalVisible] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(i18n.locale);
+  // Add a state to force re-renders on language change
+  const [currentLanguage, setCurrentLanguage] = useState<string>(i18n.locale);
+
+  // Listen for language change events
+  useEffect(() => {
+    // Set initial language
+    setSelectedLanguage(i18n.locale);
+    setCurrentLanguage(i18n.locale);
+    
+    // Event handler for language changes
+    const handleLanguageChange = (locale: string) => {
+      console.log('Language changed to:', locale);
+      setCurrentLanguage(locale);
+      setSelectedLanguage(locale);
+    };
+    
+    // Subscribe to language change events
+    langEventEmitter.on(LANGUAGE_CHANGE_EVENT, handleLanguageChange);
+    
+    // Clean up subscription on unmount
+    return () => {
+      langEventEmitter.off(LANGUAGE_CHANGE_EVENT, handleLanguageChange);
+    };
+  }, []);
 
   useEffect(() => {
     const loadServices = async () => {
@@ -248,8 +272,8 @@ export default function HomeScreen() {
     const handleSelectLanguage = async (language: string) => {
       try {
         await setLocale(language);
-        setSelectedLanguage(language);
         setIsLanguageModalVisible(false);
+        Alert.alert(t('languageselected'), language === 'en' ? t('english') : t('swedish'));
       } catch (error) {
         Alert.alert(t('error'), t('couldnotsavelanguage'));
       }
