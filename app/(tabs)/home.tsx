@@ -268,14 +268,7 @@ export default function HomeScreen() {
         return; // Stop execution for partners
       }
       // If user, proceed with the original action (show alert to navigate)
-      Alert.alert(
-        t('urgentjob'),
-        t('urgentjobmessage'),
-        [
-          { text: t('cancel'), style: 'cancel' },
-          { text: t('ok'), onPress: () => router.push('/urgentJobList') },
-        ]
-      );
+      router.push('/urgentJobList');
     };
     const handleRegisterPress = () => setIsRegisterModalVisible(true);
     const handleSelectPartner = () => { setIsRegisterModalVisible(false); router.push('/register-partner'); };
