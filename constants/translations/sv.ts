@@ -309,6 +309,7 @@ export const sv = {
     // Partner Registration Screen (Placeholders - Swedish)
     registrationnumberplaceholder: "Registreringsnummer",
     passwordmin8chars: "Lösenord (minst 8 tecken)",
+    alreadyhavepartneraccount: "Har du redan ett partnerkonto?",
 
     // Chat Screen (Swedish)
     enterchatmessage_placeholder: "Skriv meddelande",
