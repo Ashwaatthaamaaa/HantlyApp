@@ -10,6 +10,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { t } from '@/config/i18n';
 
 // --- Interfaces ---
 interface DataItem {
@@ -146,7 +147,7 @@ export default function SelectModal({
             {mode === 'multi' && (
               <View style={styles.confirmButtonContainer}>
                   <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmMultiPress}>
-                    <Text style={styles.confirmButtonText}>Confirm Selection</Text>
+                    <Text style={styles.confirmButtonText}>{t('confirmSelection')}</Text>
                   </TouchableOpacity>
               </View>
             )}
