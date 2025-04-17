@@ -38,8 +38,7 @@ const COLORS = {
   placeholder: '#AAAAAA', accent: '#696969', headerBg: '#FFFFFF',
   headerText: '#333333', error: '#D9534F', borderColor: '#E0E0E0',
   buttonBg: '#696969', buttonText: '#FFFFFF', buttonDisabledBg: '#AAAAAA',
-  imagePickerBg: '#FFFFFF', imagePickerBorder: '#CCCCCC', tagBg: '#E0E0E0',
-  tagText: '#333333', tagIcon: '#555555',
+  imagePickerBg: '#FFFFFF', imagePickerBorder: '#CCCCCC',
 };
 // --------------------
 
@@ -287,7 +286,6 @@ export default function CreateJobCardScreen() {
 
   // Get selected service names based on the state `selectedServiceIds`
   const serviceNamesMap = new Map(services.map(item => [item.id, item.name])); //
-  const selectedServiceNames = getSelectedNames(selectedServiceIds, services); //
 
   // Determine if service selection should be disabled (optional, if preselected)
   const isServiceSelectionDisabled = !!preselectedServiceId; // Example: disable if preselected
@@ -326,29 +324,28 @@ export default function CreateJobCardScreen() {
 
 
          {/* --- Service Category --- */}
+        <Text style={styles.label}>{t('chooseservicecategory')}</Text>
         <TouchableOpacity
-            style={[styles.selectorContainer, (isLoadingServices || !!serviceError || isSaving || isServiceSelectionDisabled) && styles.disabledSelector]}
-            onPress={() => !isLoadingServices && !serviceError && !isSaving && !isServiceSelectionDisabled && setIsServiceModalVisible(true)}
-            disabled={isLoadingServices || !!serviceError || isSaving || isServiceSelectionDisabled}
-            >
-            <Text style={styles.selectorText}>
-                {selectedServiceNames.length > 0 ? selectedServiceNames.join(', ') : t('chooseservicecategory')}
-            </Text>
-            {isLoadingServices ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
+          style={styles.selectorButton}
+          onPress={() => !isSaving && setIsServiceModalVisible(true)}
+          disabled={isSaving || isLoadingServices || !!serviceError}
+        >
+          <Text style={styles.selectorText}>
+            {isLoadingServices
+              ? t('loading')
+              : serviceError
+              ? t('errorloading')
+              : selectedServiceIds.length > 0
+              ? `${selectedServiceIds.length} items selected`
+              : t('chooseservicecategory')}
+          </Text>
+          {isLoadingServices ? (
+            <ActivityIndicator size="small" color={COLORS.textSecondary} />
+          ) : (
+            <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
+          )}
         </TouchableOpacity>
-        {serviceError && !isLoadingServices && <Text style={styles.errorTextSmall}>{serviceError}</Text>}
-         {selectedServiceNames.length > 0 && !isServiceSelectionDisabled && (
-            <View style={styles.tagContainer}>
-                {selectedServiceNames.map((name, index) => (
-                    <View key={selectedServiceIds[index]} style={styles.tag}>
-                        <Text style={styles.tagText}>{name}</Text>
-                        <TouchableOpacity onPress={() => { const newIds = selectedServiceIds.filter(id => id !== selectedServiceIds[index]); setSelectedServiceIds(newIds); }} style={styles.tagRemoveIcon} disabled={isSaving} >
-                           <Ionicons name="close-circle-outline" size={16} color={COLORS.tagIcon} />
-                        </TouchableOpacity>
-                    </View>
-                ))}
-             </View>
-        )}
+        {serviceError && <Text style={styles.errorText}>{serviceError}</Text>}
          {/* --- End Service Category --- */}
 
 
@@ -421,10 +418,6 @@ const styles = StyleSheet.create({
   selectorContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.borderColor, borderRadius: 8, paddingHorizontal: 15, height: 50, marginBottom: 5, }, //
   selectorText: { fontSize: 16, color: COLORS.textPrimary, flex: 1, marginRight: 10, }, //
   placeholderText: { color: COLORS.placeholder, }, //
-  tagContainer: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 5, marginBottom: 15, }, //
-   tag: { flexDirection: 'row', backgroundColor: COLORS.tagBg, borderRadius: 15, paddingVertical: 5, paddingHorizontal: 10, alignItems: 'center', marginRight: 8, marginBottom: 8, }, //
-   tagText: { fontSize: 14, color: COLORS.tagText, }, //
-   tagRemoveIcon: { marginLeft: 5, }, //
   input: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.borderColor, borderRadius: 8, paddingHorizontal: 15, height: 50, fontSize: 16, color: COLORS.textPrimary, marginBottom: 15, }, //
   textArea: { height: 100, textAlignVertical: 'top', paddingTop: 15, marginBottom: 15, }, //
   saveButton: { backgroundColor: COLORS.buttonBg, paddingVertical: 15, borderRadius: 8, alignItems: 'center', marginTop: 25, minHeight: 50, justifyContent: 'center', }, //
@@ -432,4 +425,7 @@ const styles = StyleSheet.create({
   disabledSelector: { backgroundColor: '#F0F0F0', opacity: 0.7, }, //
   buttonDisabled: { backgroundColor: COLORS.buttonDisabledBg, }, //
   errorTextSmall: { color: COLORS.error, fontSize: 12, marginTop: 0, marginBottom: 10, alignSelf: 'flex-start', marginLeft: 5, }, //
+  label: { fontSize: 16, color: COLORS.textPrimary, marginBottom: 5, fontWeight: 'bold', }, //
+  selectorButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.borderColor, borderRadius: 8, paddingHorizontal: 15, height: 50, marginBottom: 5, }, //
+  errorText: { color: COLORS.error, fontSize: 12, marginTop: 0, marginBottom: 10, alignSelf: 'flex-start', marginLeft: 5, }, //
 });
