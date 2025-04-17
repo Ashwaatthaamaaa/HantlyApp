@@ -1,10 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { t } from '@/config/i18n';
+import { t, langEventEmitter, LANGUAGE_CHANGE_EVENT } from '@/config/i18n';
 // Example icon sets
 
 export default function TabLayout() {
+  // Add a state to force re-renders on language change
+  const [, setLanguageChanged] = useState(0);
+
+  // Listen for language change events to trigger re-renders
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      // Increment to force re-render
+      setLanguageChanged(prev => prev + 1);
+    };
+    
+    // Subscribe to language change events
+    langEventEmitter.on(LANGUAGE_CHANGE_EVENT, handleLanguageChange);
+    
+    // Clean up on unmount
+    return () => {
+      langEventEmitter.off(LANGUAGE_CHANGE_EVENT, handleLanguageChange);
+    };
+  }, []);
+
   return (
     <Tabs
       screenOptions={{
