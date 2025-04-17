@@ -42,8 +42,11 @@ loadSavedLocale();
 // Define the case-insensitive translation function
 export const t = (key: string, config?: object) => {
   const lowerCaseKey = key.toLowerCase();
-  // Provide the original key as defaultValue for fallback
-  return i18n.t(lowerCaseKey, { ...config, defaultValue: key });
+  // Ensure defaultValue is separate from the spread config
+  return i18n.t(lowerCaseKey, {
+    defaultValue: key, // Provide the original key as defaultValue
+    ...config, // Spread the rest of the config (like { count: ... })
+  });
 };
 
 // Function to change locale and save to storage
