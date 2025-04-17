@@ -3,6 +3,11 @@ import { I18n } from 'i18n-js';
 import { en } from '@/constants/translations/en';
 import { sv } from '@/constants/translations/sv';
 import * as SecureStore from 'expo-secure-store';
+import { EventEmitter } from 'events';
+
+// Create event emitter for language change notifications
+export const langEventEmitter = new EventEmitter();
+export const LANGUAGE_CHANGE_EVENT = 'languageChanged';
 
 // Initialize i18n
 const i18n = new I18n({
@@ -23,6 +28,8 @@ const loadSavedLocale = async () => {
     const savedLocale = await SecureStore.getItemAsync('language');
     if (savedLocale) {
       i18n.locale = savedLocale;
+      // Emit event for initial load
+      langEventEmitter.emit(LANGUAGE_CHANGE_EVENT, savedLocale);
     }
   } catch (error) {
     console.error('Error loading saved locale:', error);
@@ -44,8 +51,8 @@ export const setLocale = async (locale: string) => {
   try {
     await SecureStore.setItemAsync('language', locale);
     i18n.locale = locale;
-    // Force a re-render by updating the locale
-    i18n.locale = locale;
+    // Emit event for language change
+    langEventEmitter.emit(LANGUAGE_CHANGE_EVENT, locale);
   } catch (error) {
     console.error('Error saving locale:', error);
     throw error;
