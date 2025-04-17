@@ -34,6 +34,25 @@ export const sv = {
     success: "Framgång",
     bookings: "Bokningar",
     
+    // Filter and bookings related keys (added)
+    no_description: "Ingen beskrivning",
+    not_available: "Inte tillgänglig",
+    status_created: "Skapad",
+    status_accepted: "Accepterad", 
+    status_in_progress: "Pågående",
+    status_completed: "Slutförd",
+    all_statuses: "Alla Status",
+    select_status: "Välj Status",
+    select_county: "Välj Län",
+    select_municipality: "Välj Kommun",
+    loading_profile: "Laddar Profil",
+    error_loading_profile: "Fel vid laddning av profil",
+    no_supported_counties: "Inga Stödda Län",
+    select_county_first: "Välj Län Först",
+    no_supported_municipalities: "Inga Stödda Kommuner",
+    filter_jobs: "Filtrera Jobb",
+    error_profile: "Profilfel",
+    
     // Login Screen
     createaccount: "Skapa konto",
     welcome: "Välkommen",
@@ -125,6 +144,8 @@ export const sv = {
     
     // Categories Screen
     allservices: "Alla Tjänster",
+    actionnotallowed: "Åtgärd Inte Tillåten",
+    onlyuserscancreate: "Endast användare kan skapa jobbförfrågningar från tjänster.",
     loginsrequired: "Inloggning Krävs",
     logintoproceed: "Vänligen logga in eller registrera dig för att fortsätta.",
     noservicesavailable: "Inga tjänster tillgängliga.",
