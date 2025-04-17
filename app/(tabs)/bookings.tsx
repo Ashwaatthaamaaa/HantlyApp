@@ -360,9 +360,11 @@ export default function BookingsScreen() {
           headerTitleAlign: 'center',
           headerTitle: t('bookings'),
           headerRight: () => (
-            <TouchableOpacity onPress={() => setIsFilterModalVisible(true)} style={{ marginRight: 15 }}>
-              <Ionicons name="filter" size={24} color={COLORS.accent} />
-            </TouchableOpacity>
+            session?.type === 'partner' ? (
+              <TouchableOpacity onPress={() => setIsFilterModalVisible(true)} style={{ marginRight: 15 }}>
+                <Ionicons name="filter" size={24} color={COLORS.accent} />
+              </TouchableOpacity>
+            ) : null
           ),
         }}
       />
