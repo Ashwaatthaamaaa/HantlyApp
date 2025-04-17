@@ -91,19 +91,19 @@ export default function RegisterPartnerScreen() {
   const handleServiceConfirm = (selectedIds: string[]) => setSelectedServiceIds(selectedIds);
 
   // --- Display Text (Multi-select) (from original) ---
-  const getMultiDisplayText = (ids: string[], data: ApiDataItem[], placeholder: string): string => { if (ids.length === 0) return placeholder; if (ids.length === 1) return data.find(item => item.id === ids[0])?.name ?? placeholder; return `${ids.length} ${t('itemsSelected')}`; }; // Added t('itemsSelected')
+  const getMultiDisplayText = (ids: string[], data: ApiDataItem[], placeholder: string): string => { if (ids.length === 0) return placeholder; if (ids.length === 1) return data.find(item => item.id === ids[0])?.name ?? placeholder; return t('itemsSelected', { count: ids.length }); };
   const isMunicipalityDisabled = selectedCountyIds.length === 0 || isLoadingMunicipalities || municipalityError !== null || (!isLoadingMunicipalities && municipalities.length === 0 && !municipalityError);
 
   // Translate placeholder parts
   const municipalityPlaceholder = selectedCountyIds.length === 0
-    ? t('selectCountyFirst')
+    ? t('selectcountyfirst')
     : isLoadingMunicipalities
-      ? t('loading') + '...'
+      ? t('loadingmunicipalities')
       : municipalityError
-        ? t('errorLoading')
+        ? t('errormunicipalities')
         : municipalities.length === 0
-          ? t('noMunicipalitiesFound')
-          : t('selectMunicipality');
+          ? t('nomunicipalities')
+          : t('selectmunicipality');
 
   // --- Partner Sign Up Handler (Original Logic with Localization) ---
    const handleSignUp = async () => {
@@ -120,14 +120,14 @@ export default function RegisterPartnerScreen() {
     const trimmedEmail = email.trim();
     const trimmedPassword = password;
 
-    if (missingFields.length > 0) { Alert.alert(t('missinginfotitle'), t('provideFields', { fields: missingFields.map(f => f.name).join(', ') })); return; }
-    if (selectedCountyIds.length === 0) { Alert.alert(t('missinginfotitle'), t('selectCountyError')); return; }
-    if (selectedMunicipalityIds.length === 0) { Alert.alert(t('missinginfotitle'), t('selectMunicipalityError')); return; }
-    if (selectedServiceIds.length === 0) { Alert.alert(t('missinginfotitle'), t('selectServiceError')); return; }
-    if (trimmedPassword.length < 8) { Alert.alert(t('passwordTooShortTitle'), t('passwordMin8CharsError')); return; }
-    if (!/\S+@\S+\.\S+/.test(trimmedEmail)) { Alert.alert(t('invalidEmailTitle'), t('invalidEmailMessage')); return; }
+    if (missingFields.length > 0) { Alert.alert(t('missinginfo'), t('provide', { fields: missingFields.map(f => f.name).join(', ') })); return; }
+    if (selectedCountyIds.length === 0) { Alert.alert(t('missinginfo'), t('selectcounty')+"*"); return; }
+    if (selectedMunicipalityIds.length === 0) { Alert.alert(t('missinginfo'), t('selectmunicipality')+"*"); return; }
+    if (selectedServiceIds.length === 0) { Alert.alert(t('missinginfo'), t('selectservice')+"*"); return; }
+    if (trimmedPassword.length < 8) { Alert.alert(t('passwordtooshorttitle'), t('passwordtooshort')); return; }
+    if (!/\S+@\S+\.\S+/.test(trimmedEmail)) { Alert.alert(t('invalidemailtitle'), t('invalidemail')); return; }
     const phoneRegex = /^\d{10}$/;
-    if (!phoneRegex.test(phone)) { Alert.alert(t('invalidPhoneTitle'), t('invalidPhoneMessage')); return; }
+    if (!phoneRegex.test(phone)) { Alert.alert(t('invalidphonenumber'), t('enter10digitnumber')); return; }
 
     // --- FormData Preparation (Original logic) ---
     setIsSigningUp(true);
@@ -173,23 +173,22 @@ export default function RegisterPartnerScreen() {
         const responseText = await response.text();
         console.log(`Response Status: ${response.status}, Text: ${responseText}`);
         if (response.ok) {
-            let successMessage = t('registrationSuccessfulLogin'); // Default success message
+            let successMessage = t('registrationsuccessful');
             try { const responseData: ApiResponse = JSON.parse(responseText); if (responseData?.statusMessage) successMessage = responseData.statusMessage; }
             catch (e) { if (responseText && responseText.length < 150 && !responseText.trim().startsWith('<')) successMessage = responseText; }
-            Alert.alert(t('success'), successMessage, [ { text: t('ok'), onPress: () => router.replace('/login') } ]); // Use t('ok')
+            Alert.alert(t('success'), successMessage, [ { text: t('ok'), onPress: () => router.replace('/login') } ]);
         } else {
-            let errorTitle = t('registrationFailedTitle');
+            let errorTitle = t('registrationfailed');
             let errorMessage = `${t('error')} (Status: ${response.status}).`;
             try {
                 const errorData: ProblemDetails = JSON.parse(responseText);
                 if (errorData.errors) {
-                    errorTitle = errorData.title || t('validationErrorsTitle'); // Use t()
-                    errorMessage = t('correctTheFollowing') + "\n" + Object.entries(errorData.errors).map(([field, messages]) => {
-                        // Try to translate common error messages or field names if needed
+                    errorTitle = errorData.title || t('validationerrors');
+                    errorMessage = t('correctfollowing') + "\n" + Object.entries(errorData.errors).map(([field, messages]) => {
                         let translatedField = t(field.toLowerCase()) || field;
                         let translatedMessages = (messages as string[]).join(', ');
                         if (field.toLowerCase() === 'username' && errorData.errors?.[field]?.includes("is already taken")) {
-                            return `- ${t('email')}: ${t('emailAlreadyRegistered')}`; // Translate specific error
+                            return `- ${t('email')}: ${t('emailAlreadyRegistered')}`;
                         }
                         return `- ${translatedField}: ${translatedMessages}`;
                     }).join('\n');
@@ -199,7 +198,7 @@ export default function RegisterPartnerScreen() {
         }
     } catch (error: any) {
         console.error("Partner Sign Up Network/Setup Error:", error);
-        Alert.alert(t('error'), t('networkError', { message: error.message })); // Use t()
+        Alert.alert(t('error'), t('unexpectednetworkerrorwithmessage', { message: error.message }));
     } finally {
         setIsSigningUp(false);
     }
@@ -358,7 +357,7 @@ export default function RegisterPartnerScreen() {
        <SelectModal
            mode="multi"
            visible={isCountyModalVisible}
-           title={t('selectCounty')} // Use t()
+           title={t('selectcounty')}
            data={counties}
            initialSelectedIds={selectedCountyIds}
            onClose={() => setIsCountyModalVisible(false)}
@@ -366,7 +365,7 @@ export default function RegisterPartnerScreen() {
        <SelectModal
            mode="multi"
            visible={isMunicipalityModalVisible}
-           title={t('selectMunicipality')} // Use t()
+           title={t('selectmunicipality')}
            data={municipalities}
            initialSelectedIds={selectedMunicipalityIds}
            onClose={() => setIsMunicipalityModalVisible(false)}
@@ -374,7 +373,7 @@ export default function RegisterPartnerScreen() {
        <SelectModal
            mode="multi"
            visible={isServiceModalVisible}
-           title={t('chooseServiceCategory')} // Use t()
+           title={t('selectservice')}
            data={services}
            initialSelectedIds={selectedServiceIds}
            onClose={() => setIsServiceModalVisible(false)}
