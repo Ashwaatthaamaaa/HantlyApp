@@ -240,6 +240,12 @@ export default function HomeScreen() {
         showLoginRegisterAlert(router);
         return;
       }
+      // Check if the user is a partner
+      if (session.type === 'partner') {
+        Alert.alert(t('actionnotallowed'), t('partnerscannotcreate')); // Use appropriate key for partners
+        return;
+      }
+      // If user, show the standard confirmation
       Alert.alert(
         t('newjobrequest'),
         t('newjobrequestmessage'),
@@ -249,20 +255,25 @@ export default function HomeScreen() {
         ]
       );
     };
-    const handleViewAllServicesPress = () => {
-      router.push('/categories');
-    };
+    const handleViewAllServicesPress = () => router.push('/categories');
     const handleUrgentJobPress = () => {
       if (!session) {
         showLoginRegisterAlert(router);
         return;
       }
+      // Check if the user is a partner
+      if (session.type === 'partner') {
+        // Show alert for partners with no action buttons (default OK)
+        Alert.alert(t('actionnotallowed'), t('onlyuserscancreate')); 
+        return; // Stop execution for partners
+      }
+      // If user, proceed with the original action (show alert to navigate)
       Alert.alert(
         t('urgentjob'),
         t('urgentjobmessage'),
         [
           { text: t('cancel'), style: 'cancel' },
-          { text: t('proceed'), onPress: () => router.push('/urgentJobList') },
+          { text: t('ok'), onPress: () => router.push('/urgentJobList') },
         ]
       );
     };
