@@ -30,7 +30,7 @@
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.sk5633.hantly",
+      "package": "com.devansh1910.hantly",
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.POST_NOTIFICATIONS"
@@ -55,9 +55,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "a1a53444-ab1d-4a1a-8143-5823a51e7fe1"
+        "projectId": "f612a091-ce80-459e-bcd5-f62cf8cb8855"
       }
     },
-    "owner": "sk5633"
+    "owner": "devansh1910"
   }
 }
