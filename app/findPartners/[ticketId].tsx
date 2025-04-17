@@ -16,6 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 // Note: BASE_URL might not be needed here if API call is mocked, but good practice
 import { BASE_URL } from '@/constants/Api';
+import { t } from '@/config/i18n'; // Import t
 
 // --- Types ---
 interface MockPartner {
@@ -75,8 +76,8 @@ export default function FindPartnersScreen() {
             setPartners(MOCK_PARTNERS);
 
         } catch (err: any) {
-            console.error("Error finding partners (mock):", err);
-            setError(`Failed to load partners: ${err.message}`);
+            console.error("Error finding partners:", err);
+            setError(t('failedloadpartners', { message: err.message })); // Use t() for error
         } finally {
             setIsLoading(false);
         }
@@ -87,7 +88,7 @@ export default function FindPartnersScreen() {
 
   const handleSelectPartner = (partner: MockPartner) => {
       if (!ticketId || !session || session.type !== 'user') {
-          Alert.alert("Error", "Cannot initiate chat. Missing required information.");
+          Alert.alert(t("error"), t("requiredinfomissing")); // Use existing t() keys
           return;
       }
 
@@ -129,16 +130,11 @@ export default function FindPartnersScreen() {
 
       <Stack.Screen
         options={{
-          title: 'Chat with companies',
+          title: t('chatwithcompanies_title'), // Use t()
           headerBackTitle: '', // no back text
           headerTitleAlign: 'center',
           headerStyle: { backgroundColor: COLORS.headerBg },
           headerTintColor: COLORS.headerText,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 10 }}>
-              <Ionicons name="arrow-back" size={24} color={COLORS.headerText} />
-            </TouchableOpacity>
-          )
         }}
       />
 
@@ -153,7 +149,7 @@ export default function FindPartnersScreen() {
 
       {!isLoading && !error && partners.length === 0 && (
           <View style={styles.centered}>
-              <Text style={styles.noDataText}>No matching partners found for this job's criteria.</Text>
+              <Text style={styles.noDataText}>{t('nopartnersfound')}</Text> // Use t()
           </View>
       )}
 
