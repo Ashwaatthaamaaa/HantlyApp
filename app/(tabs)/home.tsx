@@ -246,14 +246,8 @@ export default function HomeScreen() {
         return;
       }
       // If user, show the standard confirmation
-      Alert.alert(
-        t('newjobrequest'),
-        t('newjobrequestmessage'),
-        [
-          { text: t('cancel'), style: 'cancel' },
-          { text: t('proceed'), onPress: () => router.push('/create-job-card') },
-        ]
-      );
+      router.push('/create-job-card');
+
     };
     const handleViewAllServicesPress = () => router.push('/categories');
     const handleUrgentJobPress = () => {
