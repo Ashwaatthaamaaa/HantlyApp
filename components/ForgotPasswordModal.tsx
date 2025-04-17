@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BASE_URL } from '@/constants/Api';
+import { t } from '@/config/i18n';
 
 // --- Base URL ---
 // const BASE_URL = '...'; // Already imported from constants
@@ -79,17 +80,15 @@ export default function ForgotPasswordModal({
   // --- Step 1 Logic: Check Existence then Send Reset Link/OTP ---
   const handleSendResetLink = async () => {
     const trimmedEmail = email.trim();
-    // 1. Client-side email format validation
     if (!trimmedEmail) {
-      Alert.alert('Email Required', 'Please enter your email address.');
+      Alert.alert(t('fpm_emailrequired_title'), t('fpm_emailrequired_message'));
       return;
     }
     if (!/\S+@\S+\.\S+/.test(trimmedEmail)) {
-        Alert.alert('Invalid Email Format', 'Please enter a valid email address.');
-        setEmail(''); // Clear field on format error
+        Alert.alert(t('fpm_invalidemailformat_title'), t('invalidemail'));
+        setEmail('');
         return;
     }
-    // ** END VALIDATION **
 
     setIsLoading(true);
     const detailEndpoint = isPartner ? '/api/Company/GetCompanyDetail' : '/api/User/GetUserDetail'; // [cite: 933]
@@ -119,10 +118,10 @@ export default function ForgotPasswordModal({
         }
 
         if (!userExists) {
-            Alert.alert('Error', "No account found for this email address."); // [cite: 943]
-            setEmail(''); // [cite: 944]
+            Alert.alert(t('error'), t('fpm_noaccountfound_message'));
+            setEmail('');
             setIsLoading(false);
-            return; // [cite: 945]
+            return;
         }
 
         // 3. If user exists, proceed with Forgot Password API call
@@ -145,20 +144,20 @@ export default function ForgotPasswordModal({
         if (forgotResponse.ok) {
             // --- MODIFIED ALERT ---
             Alert.alert(
-                'Success', // Changed title
-                'OTP successfully sent to the registered email.' // Changed message
+                t('success'),
+                t('fpm_otpsent_message')
             );
             // --- END MODIFICATION ---
             setStep('resetPassword'); // Move to next step [cite: 950]
         } else {
             // Handle potential errors during the actual forgot password call
-            let errorMessage = `Failed to send password reset request (Status: ${forgotResponse.status})`; // [cite: 951]
+            let errorMessage = t('fpm_sendresetfailed_message', { status: forgotResponse.status });
             try {
-                 const errorJson = JSON.parse(forgotResponseText); // [cite: 952]
-                 errorMessage = errorJson.statusMessage || errorJson.title || errorJson.detail || forgotResponseText || errorMessage; // [cite: 952]
-             } catch (e) { errorMessage = forgotResponseText || errorMessage } // [cite: 953]
-            Alert.alert('Error', errorMessage); // [cite: 954]
-            setEmail(''); // Clear field on the second API call error as well [cite: 954]
+                 const errorJson = JSON.parse(forgotResponseText);
+                 errorMessage = errorJson.statusMessage || errorJson.title || errorJson.detail || forgotResponseText || errorMessage;
+             } catch (e) { errorMessage = forgotResponseText || errorMessage }
+            Alert.alert(t('error'), errorMessage);
+            setEmail('');
         }
         // ###################################
         // ## END OF CODE CHANGE          ##
@@ -166,11 +165,11 @@ export default function ForgotPasswordModal({
 
     } catch (error: any) {
         // Catch errors from either fetch call (existence check or forgot password)
-        console.error("Error during forgot password process:", error); // [cite: 955]
-        Alert.alert('Error', `An error occurred. Please check your connection and try again.`); // [cite: 955]
-        setEmail(''); // [cite: 956]
+        console.error("Error during forgot password process:", error);
+        Alert.alert(t('error'), t('fpm_genericerror_message'));
+        setEmail('');
     } finally {
-        setIsLoading(false); // [cite: 957]
+        setIsLoading(false);
     }
   };
 
@@ -178,11 +177,11 @@ export default function ForgotPasswordModal({
   const handleResetPassword = async () => { // [cite: 957]
     const trimmedEmail = email.trim(); // [cite: 957]
     if (!trimmedEmail || !newPassword || !otp) { // [cite: 958]
-        Alert.alert('Missing Information', 'Please enter the OTP and your new password.'); // [cite: 958]
+        Alert.alert(t('missinginfo'), t('fpm_missingotpnewpassword_message')); // Use t()
         return; // [cite: 959]
     }
      if (newPassword.length < 8) { // [cite: 959]
-         Alert.alert('Password Too Short', 'New password must be at least 8 characters.'); // [cite: 959]
+         Alert.alert(t('passwordtooshorttitle'), t('fpm_newpasswordtooshort_message')); // Use t()
          return; // [cite: 960]
      }
 
@@ -203,22 +202,22 @@ export default function ForgotPasswordModal({
         console.log(`Reset Password Response Status: ${response.status}`); // [cite: 964]
         console.log(`Reset Password Raw Response Text: ${responseText}`); // [cite: 965]
         if (response.ok) { // [cite: 965]
-            Alert.alert('Success', 'Your password has been reset successfully.', [{ text: 'OK', onPress: onClose }]); // [cite: 965]
+            Alert.alert(t('success'), t('fpm_resetsuccess_message'), [{ text: t('ok'), onPress: onClose }]);
         } else {
-              let errorMessage = `Password reset failed (Status: ${response.status})`; // [cite: 966]
-              if (responseText) { // [cite: 967]
+              let errorMessage = t('fpm_resetfailed_message', { status: response.status });
+              if (responseText) {
                  try {
-                     const errorJson = JSON.parse(responseText); // [cite: 967]
-                     errorMessage = errorJson.statusMessage || errorJson.title || errorJson.detail || responseText; // [cite: 968]
-                 } catch (e) { errorMessage = responseText || errorMessage } // [cite: 969]
+                     const errorJson = JSON.parse(responseText);
+                     errorMessage = errorJson.statusMessage || errorJson.title || errorJson.detail || responseText;
+                 } catch (e) { errorMessage = responseText || errorMessage }
              }
-            Alert.alert('Error', errorMessage); // [cite: 970]
+            Alert.alert(t('error'), errorMessage);
         }
      } catch (error: any) {
-         console.error("Error resetting password:", error); // [cite: 972]
-         Alert.alert('Error', `Could not reset password. Please try again. ${error.message}`); // [cite: 972]
+         console.error("Error resetting password:", error);
+         Alert.alert(t('error'), t('fpm_resetexception_message', { message: error.message }));
      } finally {
-        setIsLoading(false); // [cite: 973]
+        setIsLoading(false);
      }
   };
 
@@ -227,11 +226,11 @@ export default function ForgotPasswordModal({
     if (step === 'enterEmail') { // [cite: 973]
       return (
         <>
-          <Text style={styles.subtitle}>Enter your email address</Text> {/* [cite: 973] */}
+          <Text style={styles.subtitle}>{t('fpm_enteremail_subtitle')}</Text>
           <View style={styles.inputContainer}> {/* [cite: 973] */}
             <TextInput
                style={styles.input} // [cite: 974]
-               placeholder="Email Address" // [cite: 974]
+               placeholder={t('fpm_email_placeholder')} // Use t()
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -250,10 +249,10 @@ export default function ForgotPasswordModal({
               size={24}
               color={isLoading ? COLORS.textSecondary : (isPartner ? COLORS.buttonBg : COLORS.textSecondary)} // [cite: 977]
             />
-            <Text style={[styles.checkboxLabel, isLoading && styles.disabledText]}>Partner account</Text> {/* [cite: 977] */}
+            <Text style={[styles.checkboxLabel, isLoading && styles.disabledText]}>{t('fpm_partneraccount_label')}</Text> {/* Use t() */}
           </TouchableOpacity>
-          <Text style={styles.infoText}> {/* [cite: 977] */}
-            Password reset instructions will be sent to your email address if the account exists.
+          <Text style={styles.infoText}>
+            {t('fpm_step1_infotext')}
           </Text>
           <TouchableOpacity
              style={[styles.actionButton, isLoading && styles.buttonDisabled]} // [cite: 978]
@@ -263,7 +262,7 @@ export default function ForgotPasswordModal({
              {isLoading ? ( // [cite: 979]
                 <ActivityIndicator size="small" color={COLORS.buttonText} /> // [cite: 979]
              ) : (
-                <Text style={styles.actionButtonText}>Ok</Text> // [cite: 979]
+                <Text style={styles.actionButtonText}>{t('ok')}</Text> // Use t() */}
              )}
           </TouchableOpacity>
         </>
@@ -278,16 +277,16 @@ export default function ForgotPasswordModal({
           </View>
            <TouchableOpacity style={styles.checkboxContainer} disabled={true}> {/* [cite: 980] */}
              <MaterialCommunityIcons name={isPartner ? 'checkbox-marked' : 'checkbox-blank-outline'} size={24} color={COLORS.placeholder}/> {/* [cite: 980] */}
-             <Text style={[styles.checkboxLabel, styles.disabledText]}>Partner account</Text> {/* [cite: 981] */}
+             <Text style={[styles.checkboxLabel, styles.disabledText]}>{t('fpm_partneraccount_label')}</Text> {/* Use t() */}
            </TouchableOpacity>
            <View style={styles.inputContainer}> {/* [cite: 981] */}
-            <TextInput style={styles.input} placeholder="Enter Otp" value={otp} onChangeText={setOtp} keyboardType="number-pad" placeholderTextColor={COLORS.placeholder} editable={!isLoading}/> {/* [cite: 981] */}
+            <TextInput style={styles.input} placeholder={t('fpm_otp_placeholder')} value={otp} onChangeText={setOtp} keyboardType="number-pad" placeholderTextColor={COLORS.placeholder} editable={!isLoading}/> {/* Use t() */}
           </View>
            <View style={styles.inputContainer}> {/* [cite: 981] */}
-            <TextInput style={styles.input} placeholder="New Password (min 8 chars)" value={newPassword} onChangeText={setNewPassword} secureTextEntry={true} placeholderTextColor={COLORS.placeholder} editable={!isLoading}/> {/* [cite: 981] */}
+            <TextInput style={styles.input} placeholder={t('fpm_newpassword_placeholder')} value={newPassword} onChangeText={setNewPassword} secureTextEntry={true} placeholderTextColor={COLORS.placeholder} editable={!isLoading}/> {/* Use t() */}
           </View>
-          <Text style={styles.infoText}> {/* [cite: 982] */}
-            Enter the OTP sent to your email and set a new password.
+          <Text style={styles.infoText}>
+            {t('fpm_step2_infotext')}
           </Text>
           <TouchableOpacity
             style={[styles.actionButton, isLoading && styles.buttonDisabled]} // [cite: 983]
@@ -297,7 +296,7 @@ export default function ForgotPasswordModal({
              {isLoading ? ( // [cite: 984]
               <ActivityIndicator size="small" color={COLORS.buttonText} /> // [cite: 984]
               ) : (
-                 <Text style={styles.actionButtonText}>Reset Password</Text> // [cite: 984]
+                 <Text style={styles.actionButtonText}>{t('resetpassword')}</Text> // Use t() */}
                  )}
           </TouchableOpacity>
         </>
@@ -313,7 +312,7 @@ export default function ForgotPasswordModal({
          <StatusBar barStyle={Platform.OS === 'ios' ? 'dark-content' : 'light-content'} /> {/* [cite: 985] */}
         <View style={styles.modalContent}> {/* [cite: 985] */}
           <View style={styles.header}> {/* [cite: 985] */}
-            <Text style={styles.title}>Forgot password?</Text> {/* [cite: 985] */}
+            <Text style={styles.title}>{t('forgotpassword')}</Text> {/* Use t() */}
             <TouchableOpacity onPress={onClose} style={styles.closeButton} disabled={isLoading}> {/* [cite: 986] */}
               <Ionicons name="close" size={28} color={COLORS.textSecondary} /> {/* [cite: 986] */}
              </TouchableOpacity>
