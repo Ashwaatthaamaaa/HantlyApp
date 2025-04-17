@@ -163,7 +163,8 @@ export const sv = {
     itemsSelected: "{count} valda",
     emailAlreadyRegistered: "E-post: Redan registrerad. Försök logga in.",
     companylogo: "Företagslogotyp",
-
+    // Removed duplicate confirmSelection since it was defined earlier
+    
     // Home Screen
     services: "Tjänster",
     urgentjob247: "Akut Jobb 24/7",
