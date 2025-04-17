@@ -8,6 +8,7 @@ import { TranslationProvider } from '@/context/TranslationContext';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { BASE_URL } from '@/constants/Api';
+import { t } from '@/config/i18n'; // Import t
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,7 +36,7 @@ const InitialLayout = () => {
       }
 
       if (finalStatus !== 'granted') {
-        Alert.alert('Permission required', 'Enable notifications to receive job updates.');
+        Alert.alert(t('permissionrequired_title'), t('permissionrequired_message'));
         return;
       }
 
@@ -62,7 +63,7 @@ const InitialLayout = () => {
           console.log('❌ Error sending token to backend:', error);
         });         
     } else {
-      Alert.alert('Physical device required', 'Notifications only work on physical devices.');
+      Alert.alert(t('physicaldevice_title'), t('physicaldevice_message'));
     }
   };
 
@@ -77,7 +78,7 @@ const InitialLayout = () => {
       const subscription = Notifications.addNotificationReceivedListener(notification => {
         const title = notification.request.content.title;
         const body = notification.request.content.body;
-        Alert.alert(title || 'Job Alert', body || 'You have a new update.');
+        Alert.alert(title || t('jobalert_title'), body || t('jobalert_message'));
       });
 
       return () => {
@@ -97,7 +98,10 @@ const InitialLayout = () => {
   return (
     <Stack
     screenOptions={{
-      headerBackTitleVisible: false, // Add this line
+      headerBackVisible: true,
+      headerTitleAlign: 'center',
+      headerStyle: { backgroundColor: '#696969' },
+      headerTintColor: '#FFFFFF',
     }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
