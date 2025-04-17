@@ -92,17 +92,17 @@ const BookingCard: React.FC<BookingCardProps> = React.memo(({ item }) => {
       </View>
       <View style={styles.cardDetails}>
         <Text style={styles.cardDescription} numberOfLines={1}>
-          {description || t('noDescription')}
+          {description || t('no_description')}
         </Text>
         <Text style={styles.cardService} numberOfLines={1}>
-          {serviceName || t('notAvailable')}
+          {serviceName || t('not_available')}
         </Text>
         <Text style={styles.cardDate} numberOfLines={1}>
           {formatDate(item.createdOn)}
         </Text>
       </View>
       <Text style={[styles.cardStatus, { color: statusColor }]}>
-        {item.status || t('notAvailable')}
+        {item.status || t('not_available')}
       </Text>
     </TouchableOpacity>
   );
@@ -128,11 +128,11 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilt
     const [tempMunicipalityId, setTempMunicipalityId] = useState<string | null>(initialFilters.municipalityId);
     const [municipalitiesForSelectedCounty, setMunicipalitiesForSelectedCounty] = useState<ApiDataItem[]>([]);
     const jobStatuses: ApiDataItem[] = [
-      { id: 'Created', name: t('statusCreated') },
-      { id: 'Accepted', name: t('statusAccepted') },
-      { id: 'InProgress', name: t('statusInProgress') },
-      { id: 'Completed', name: t('statusCompleted') },
-      { id: ALL_STATUSES_FILTER_ID, name: t('allStatuses') },
+      { id: 'Created', name: t('status_created') },
+      { id: 'Accepted', name: t('status_accepted') },
+      { id: 'InProgress', name: t('status_in_progress') },
+      { id: 'Completed', name: t('status_completed') },
+      { id: ALL_STATUSES_FILTER_ID, name: t('all_statuses') },
     ];
 
     useEffect(() => {
@@ -160,21 +160,21 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilt
     }, [visible, initialFilters]);
 
     const handleApply = () => { onApplyFilters({ status: tempStatus, countyId: tempCountyId, municipalityId: tempMunicipalityId }); onClose(); };
-    const getStatusName = (id: string | null) => jobStatuses.find(s => s.id === id)?.name || t('selectStatus');
-    const getCountyName = (id: string | null) => supportedCounties.find(c => c.id === id)?.name || t('selectCounty');
-    const getMunicipalityName = (id: string | null) => municipalitiesForSelectedCounty.find(m => m.id === id)?.name || t('selectMunicipality');
+    const getStatusName = (id: string | null) => jobStatuses.find(s => s.id === id)?.name || t('select_status');
+    const getCountyName = (id: string | null) => supportedCounties.find(c => c.id === id)?.name || t('select_county');
+    const getMunicipalityName = (id: string | null) => municipalitiesForSelectedCounty.find(m => m.id === id)?.name || t('select_municipality');
 
     const [isStatusModalVisible, setIsStatusModalVisible] = useState(false);
     const [isCountyModalVisible, setIsCountyModalVisible] = useState(false);
     const [isMunicipalityModalVisible, setIsMunicipalityModalVisible] = useState(false);
 
     const isCountyDisabled = isLoadingProfile || !!profileError || supportedCounties.length === 0;
-    const countyPlaceholder = isLoadingProfile ? t('loadingProfile') : profileError ? t('errorLoadingProfile') : supportedCounties.length === 0 ? t('noSupportedCounties') : t('selectCounty');
+    const countyPlaceholder = isLoadingProfile ? t('loading_profile') : profileError ? t('error_loading_profile') : supportedCounties.length === 0 ? t('no_supported_counties') : t('select_county');
     const isMunicipalityDisabled = !tempCountyId || isLoadingProfile || !!profileError || municipalitiesForSelectedCounty.length === 0;
-    const municipalityPlaceholder = !tempCountyId ? t('selectCountyFirst') : (isLoadingProfile || !!profileError) ? '...' : municipalitiesForSelectedCounty.length === 0 ? t('noSupportedMunicipalities') : t('selectMunicipality');
+    const municipalityPlaceholder = !tempCountyId ? t('select_county_first') : (isLoadingProfile || !!profileError) ? '...' : municipalitiesForSelectedCounty.length === 0 ? t('no_supported_municipalities') : t('select_municipality');
 
     // JSX for the modal remains the same
-    return ( <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}><View style={styles.filterModalBackdrop}><View style={styles.filterModalContent}><View style={styles.filterModalHeader}><Text style={styles.filterModalTitle}>{t('filterJobs')}</Text><TouchableOpacity onPress={onClose}><Ionicons name="close" size={28} color={COLORS.textSecondary} /></TouchableOpacity></View><TouchableOpacity style={styles.filterSelector} onPress={() => setIsStatusModalVisible(true)}><Text style={tempStatus === null || tempStatus === undefined ? styles.filterPlaceholder : styles.filterValue}>{getStatusName(tempStatus)}</Text><Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} /></TouchableOpacity><TouchableOpacity style={[styles.filterSelector, isCountyDisabled && styles.filterSelectorDisabled]} onPress={() => !isCountyDisabled && setIsCountyModalVisible(true)} disabled={isCountyDisabled}><Text style={!tempCountyId ? styles.filterPlaceholder : styles.filterValue}>{isLoadingProfile ? t('loading') : profileError ? t('errorProfile') : getCountyName(tempCountyId) || countyPlaceholder}</Text>{isLoadingProfile ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />}</TouchableOpacity>{profileError && <Text style={styles.filterErrorText}>{profileError}</Text>}<TouchableOpacity style={[styles.filterSelector, isMunicipalityDisabled && styles.filterSelectorDisabled]} onPress={() => !isMunicipalityDisabled && setIsMunicipalityModalVisible(true)} disabled={isMunicipalityDisabled}><Text style={!tempMunicipalityId ? styles.filterPlaceholder : styles.filterValue}>{getMunicipalityName(tempMunicipalityId) || municipalityPlaceholder}</Text><Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} /></TouchableOpacity><TouchableOpacity style={styles.filterApplyButton} onPress={handleApply}><Text style={styles.filterApplyButtonText}>{t('ok')}</Text></TouchableOpacity></View></View><SelectModal mode="single" visible={isStatusModalVisible} title={t('selectStatus')} data={jobStatuses} initialSelectedId={tempStatus} onClose={() => setIsStatusModalVisible(false)} onConfirmSingle={(id) => setTempStatus(id)} /><SelectModal mode="single" visible={isCountyModalVisible} title={t('selectCounty')} data={supportedCounties} initialSelectedId={tempCountyId} onClose={() => setIsCountyModalVisible(false)} onConfirmSingle={(id) => setTempCountyId(id) } /><SelectModal mode="single" visible={isMunicipalityModalVisible} title={t('selectMunicipality')} data={municipalitiesForSelectedCounty} initialSelectedId={tempMunicipalityId} onClose={() => setIsMunicipalityModalVisible(false)} onConfirmSingle={(id) => setTempMunicipalityId(id)} /></Modal> );
+    return ( <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}><View style={styles.filterModalBackdrop}><View style={styles.filterModalContent}><View style={styles.filterModalHeader}><Text style={styles.filterModalTitle}>{t('filter_jobs')}</Text><TouchableOpacity onPress={onClose}><Ionicons name="close" size={28} color={COLORS.textSecondary} /></TouchableOpacity></View><TouchableOpacity style={styles.filterSelector} onPress={() => setIsStatusModalVisible(true)}><Text style={tempStatus === null || tempStatus === undefined ? styles.filterPlaceholder : styles.filterValue}>{getStatusName(tempStatus)}</Text><Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} /></TouchableOpacity><TouchableOpacity style={[styles.filterSelector, isCountyDisabled && styles.filterSelectorDisabled]} onPress={() => !isCountyDisabled && setIsCountyModalVisible(true)} disabled={isCountyDisabled}><Text style={!tempCountyId ? styles.filterPlaceholder : styles.filterValue}>{isLoadingProfile ? t('loading') : profileError ? t('error_profile') : getCountyName(tempCountyId) || countyPlaceholder}</Text>{isLoadingProfile ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />}</TouchableOpacity>{profileError && <Text style={styles.filterErrorText}>{profileError}</Text>}<TouchableOpacity style={[styles.filterSelector, isMunicipalityDisabled && styles.filterSelectorDisabled]} onPress={() => !isMunicipalityDisabled && setIsMunicipalityModalVisible(true)} disabled={isMunicipalityDisabled}><Text style={!tempMunicipalityId ? styles.filterPlaceholder : styles.filterValue}>{getMunicipalityName(tempMunicipalityId) || municipalityPlaceholder}</Text><Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} /></TouchableOpacity><TouchableOpacity style={styles.filterApplyButton} onPress={handleApply}><Text style={styles.filterApplyButtonText}>{t('ok')}</Text></TouchableOpacity></View></View><SelectModal mode="single" visible={isStatusModalVisible} title={t('select_status')} data={jobStatuses} initialSelectedId={tempStatus} onClose={() => setIsStatusModalVisible(false)} onConfirmSingle={(id) => setTempStatus(id)} /><SelectModal mode="single" visible={isCountyModalVisible} title={t('select_county')} data={supportedCounties} initialSelectedId={tempCountyId} onClose={() => setIsCountyModalVisible(false)} onConfirmSingle={(id) => setTempCountyId(id) } /><SelectModal mode="single" visible={isMunicipalityModalVisible} title={t('select_municipality')} data={municipalitiesForSelectedCounty} initialSelectedId={tempMunicipalityId} onClose={() => setIsMunicipalityModalVisible(false)} onConfirmSingle={(id) => setTempMunicipalityId(id)} /></Modal> );
 };
 
 
