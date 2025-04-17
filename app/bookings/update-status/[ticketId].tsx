@@ -17,6 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { BASE_URL } from '@/constants/Api';
+import { t } from '@/config/i18n'; // Import the translation function
 
 // Re-use BookingDetail type if appropriate or define a subset needed here
 // Assuming TicketImage type is defined elsewhere or here if needed
@@ -64,7 +65,7 @@ export default function UpdateStatusScreen() {
   const fetchCurrentData = useCallback(async () => {
       if (!ticketId || !session || session.type !== 'partner') {
           setIsLoadingBooking(false);
-          setFetchError("Invalid session or Ticket ID.");
+          setFetchError(t('invalidsessionorticketid')); // Use t()
           setIsFormDisabled(true);
           return;
       }
@@ -83,7 +84,7 @@ export default function UpdateStatusScreen() {
           // Check Status and Disable Form if necessary
           const currentStatus = data.status?.toLowerCase() || 'unknown';
           if (currentStatus !== 'inprogress' && currentStatus !== 'in progress') {
-              Alert.alert("Cannot Update", "Service proof can only be uploaded or updated when the job status is 'In Progress'.");
+              Alert.alert(t('cannotupdate'), t('updateonlyinprogress')); // Use t()
               setIsFormDisabled(true);
           } else {
               setIsFormDisabled(false);
@@ -91,37 +92,33 @@ export default function UpdateStatusScreen() {
           }
       } catch (err: any) {
           console.error("Error fetching current booking data:", err);
-          setFetchError(err.message);
+          setFetchError(err.message); // Keep original error message
           setIsFormDisabled(true);
       } finally {
           setIsLoadingBooking(false);
       }
-  }, [ticketId, session]); // Removed router dependency unless needed for auto-navigation
+  }, [ticketId, session]);
 
-  // --- MODIFICATION START: Fix TS2345 ---
-  // Fetch data when the screen gains focus using the correct pattern
+  // Fetch data when the screen gains focus
   useFocusEffect(
       useCallback(() => {
-          fetchCurrentData(); // Call the async function wrapped in useCallback
+          fetchCurrentData();
       }, [fetchCurrentData])
   );
-  // --- MODIFICATION END ---
 
   // --- Image Picker Logic ---
-  const handleChooseProofImage = async () => { if (isFormDisabled || isSubmitting) return; if (proofImages.length >= MAX_PROOF_IMAGES) { Alert.alert("Limit Reached", `Max ${MAX_PROOF_IMAGES} images.`); return; } Alert.alert( "Select Image Source", "", [ { text: "Camera", onPress: async () => { const p = await ImagePicker.requestCameraPermissionsAsync(); if (!p.granted) { Alert.alert("Permission Required", "Camera access needed."); return; } try { const r = await ImagePicker.launchCameraAsync({ quality: 0.7 }); if (!r.canceled && r.assets) { setProofImages(p => [...p, r.assets[0]]); } } catch (e) { console.error("Launch Camera Error:", e); Alert.alert('Camera Error'); } } }, { text: "Library", onPress: async () => { const p = await ImagePicker.requestMediaLibraryPermissionsAsync(); if (!p.granted) { Alert.alert("Permission Required", "Media library access needed."); return; } try { let r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 }); if (!r.canceled && r.assets) { const newImages = r.assets.slice(0, MAX_PROOF_IMAGES - proofImages.length); setProofImages(p => [...p, ...newImages]); } } catch (e) { console.error("Launch Library Error:", e); Alert.alert('Library Error'); } } }, { text: "Cancel", style: "cancel" }, ] ); };
-  const handleRemoveProofImage = (uriToRemove: string) => { if (isSubmitting) return; setProofImages(prev => prev.filter(img => img.uri !== uriToRemove)); };
+  const handleChooseProofImage = async () => { if (isFormDisabled || isSubmitting) return; if (proofImages.length >= MAX_PROOF_IMAGES) { Alert.alert(t('limitreached'), t('maximagesalert', { max: MAX_PROOF_IMAGES })); return; } Alert.alert( t('selectimagesource'), "", [ { text: t('camera'), onPress: async () => { const p = await ImagePicker.requestCameraPermissionsAsync(); if (!p.granted) { Alert.alert(t('permissionrequired'), t('cameraaccessneeded')); return; } try { const r = await ImagePicker.launchCameraAsync({ quality: 0.7 }); if (!r.canceled && r.assets) { setProofImages(p => [...p, r.assets[0]]); } } catch (e) { console.error("Launch Camera Error:", e); Alert.alert(t('cameraerror')); } } }, { text: t('library'), onPress: async () => { const p = await ImagePicker.requestMediaLibraryPermissionsAsync(); if (!p.granted) { Alert.alert(t('permissionrequired'), t('medialibraryaccessneeded')); return; } try { let r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 }); if (!r.canceled && r.assets) { const newImages = r.assets.slice(0, MAX_PROOF_IMAGES - proofImages.length); setProofImages(p => [...p, ...newImages]); } } catch (e) { console.error("Launch Library Error:", e); Alert.alert(t('libraryerror')); } } }, { text: t('cancel'), style: "cancel" }, ] ); }; // Use t()
+  const handleRemoveProofImage = (uriToRemove: string) => { if (isSubmitting) return; setProofImages(prev => prev.filter(img => img.uri !== uriToRemove)); }; // No change needed
 
   // --- Submit Report Handler ---
   const handleSubmitReport = async () => {
-      if (isFormDisabled) { Alert.alert("Cannot Submit", "Updates are only allowed when the job is 'In Progress'."); return; }
-      if (!session || session.type !== 'partner' || !ticketId) { Alert.alert("Error", "Invalid session or Ticket ID."); return; }
+      if (isFormDisabled) { Alert.alert(t('cannotsubmit'), t('updateonlyinprogress')); return; } // Use t()
+      if (!session || session.type !== 'partner' || !ticketId) { Alert.alert(t('error'), t('invalidsessionorticketid')); return; } // Use t()
       const trimmedComment = companyComment.trim();
-      if (!trimmedComment) { Alert.alert("Missing Information", "Please enter a description of the work done."); return; }
-      // Require *new* images OR rely on existing images if not adding new ones?
-      // Let's adjust: Require comment, but images are optional IF some already exist. Require if none exist.
+      if (!trimmedComment) { Alert.alert(t('missinginformation'), t('enterdescriptionalert')); return; } // Use t()
       const existingImages = currentBookingData?.ticketWorkImages || [];
       if (proofImages.length === 0 && existingImages.length === 0) {
-          Alert.alert("Missing Information", "Please upload at least one service proof image.");
+          Alert.alert(t('missinginformation'), t('uploadoneimagealert')); // Use t()
           return;
       }
 
@@ -129,7 +126,6 @@ export default function UpdateStatusScreen() {
       const formData = new FormData();
       formData.append('TicketId', ticketId.toString());
       formData.append('CompanyComment', trimmedComment);
-      // Append only NEWLY selected images
       proofImages.forEach((image, index) => {
         const uriParts = image.uri.split('.'); const fileType = uriParts[uriParts.length - 1]; const mimeType = image.mimeType ?? `image/${fileType}`; const fileName = image.fileName ?? `proof_image_${ticketId}_${Date.now()}_${index}.${fileType}`;
         formData.append('Images', { uri: image.uri, name: fileName, type: mimeType } as any);
@@ -140,50 +136,41 @@ export default function UpdateStatusScreen() {
           const response = await fetch(url, { method: 'POST', body: formData });
           const responseText = await response.text();
           console.log("Submit Report Response Status:", response.status); console.log("Submit Report Response Text:", responseText);
-          if (response.ok) { let successMessage = "Report submitted successfully."; try { const result = JSON.parse(responseText); successMessage = result?.statusMessage || successMessage; } catch (e) {} Alert.alert('Success', successMessage, [{ text: 'OK', onPress: () => router.back() }]); }
-          else { let errorMessage = `Failed (Status: ${response.status})`; try { const errorData = JSON.parse(responseText); errorMessage = errorData?.statusMessage || errorData?.title || errorData?.detail || responseText || errorMessage; } catch (e) { errorMessage = responseText || errorMessage; } Alert.alert('Error Submitting Report', errorMessage); }
-      } catch (error: any) { console.error("Submit Report Error:", error); Alert.alert('Error', `An unexpected network error occurred: ${error.message}`); }
+          if (response.ok) { let successMessage = t('reportsubmittedsuccess'); try { const result = JSON.parse(responseText); successMessage = result?.statusMessage || successMessage; } catch (e) {} Alert.alert(t('success'), successMessage, [{ text: t('ok'), onPress: () => router.back() }]); } // Use t()
+          else { let errorMessage = `Failed (Status: ${response.status})`; try { const errorData = JSON.parse(responseText); errorMessage = errorData?.statusMessage || errorData?.title || errorData?.detail || responseText || errorMessage; } catch (e) { errorMessage = responseText || errorMessage; } Alert.alert(t('errorsubmittingreport'), errorMessage); } // Use t()
+      } catch (error: any) { console.error("Submit Report Error:", error); Alert.alert(t('error'), t('unexpectednetworkerrorwithmessage', { message: error.message })); } // Use t()
       finally { setIsSubmitting(false); }
   };
 
 
   // --- Render ---
   if (isLoadingBooking) {
-      return <SafeAreaView style={styles.centered}><ActivityIndicator size="large" color={COLORS.accent} /></SafeAreaView>;
+      return <SafeAreaView style={styles.centered}><ActivityIndicator size="large" color={COLORS.accent} /></SafeAreaView>; // No change needed
   }
 
   // Handle fetch error state
   if (fetchError) {
        return (
            <SafeAreaView style={styles.centered}>
-               <Stack.Screen options={{ title: 'Error' }}/>
+               <Stack.Screen options={{ title: t('error') }}/>
                <Ionicons name="alert-circle-outline" size={40} color={COLORS.error} />
                <Text style={styles.errorText}>{fetchError}</Text>
-               {/* --- MODIFICATION START: Fix TS2339 --- */}
                <TouchableOpacity onPress={() => router.back()} style={styles.submitButton}>
-                   <Text style={styles.submitButtonText}>Go Back</Text>
+                   <Text style={styles.submitButtonText}>{t('goback')}</Text>
                </TouchableOpacity>
-               {/* --- MODIFICATION END --- */}
            </SafeAreaView>
-       );
+       ); // Use t()
    }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* <Stack.Screen options={{ title: 'Update Service Proof', headerStyle: { backgroundColor: COLORS.headerBg }, headerTintColor: COLORS.headerText, headerTitleStyle: { fontWeight: 'bold' }, headerTitleAlign: 'center', headerBackTitleVisible: false,}} /> */}
-
       <Stack.Screen
         options={{
-          title: "Update Service Proof",
+          title: t('updateserviceproof'), // Use t()
           headerBackTitle: '', // no back text
           headerTitleAlign: 'center',
           headerStyle: { backgroundColor: COLORS.headerBg },
           headerTintColor: COLORS.headerText,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 10 }}>
-              <Ionicons name="arrow-back" size={24} color={COLORS.headerText} />
-            </TouchableOpacity>
-          )
         }}
       />
 
@@ -191,14 +178,14 @@ export default function UpdateStatusScreen() {
 
           {isFormDisabled && (
               <View style={styles.disabledOverlay}>
-                  <Text style={styles.disabledText}>Updates only allowed when job is In Progress.</Text>
+                  <Text style={styles.disabledText}>{t('updatesonlyinprogressinfo')}</Text> // Use t()
               </View>
           )}
 
           {/* Display currently uploaded images (read-only) */}
            {currentBookingData?.ticketWorkImages && currentBookingData.ticketWorkImages.length > 0 && (
                <View>
-                   <Text style={styles.inputLabel}>Current Proof Images:</Text>
+                   <Text style={styles.inputLabel}>{t('currentproofimages')}</Text> // Use t()
                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbnailContainerExisting}>
                        {currentBookingData.ticketWorkImages.map((image) => (
                            <View key={image.imageId || image.imagePath} style={styles.thumbnailWrapper}>
@@ -206,15 +193,14 @@ export default function UpdateStatusScreen() {
                            </View>
                        ))}
                    </ScrollView>
-                   {/* Clarify image update behavior */}
-                   <Text style={styles.infoText}>Selecting new images below will be added (API might replace/add depending on backend logic).</Text>
+                   <Text style={styles.infoText}>{t('addimagesinfo')}</Text> // Use t()
                </View>
            )}
 
            {/* Image Picker Area */}
            <TouchableOpacity style={[styles.imagePickerArea, (isFormDisabled || isSubmitting) && styles.disabledInput, proofImages.length > 0 && styles.imagePickerAreaCompact]} onPress={handleChooseProofImage} disabled={isFormDisabled || isSubmitting || proofImages.length >= MAX_PROOF_IMAGES} >
              <Ionicons name="images-outline" size={24} color={COLORS.textSecondary} />
-             <Text style={styles.imagePickerText}>Add Images ({proofImages.length}/{MAX_PROOF_IMAGES}) *</Text>
+             <Text style={styles.imagePickerText}>{t('addimagesbutton', { count: proofImages.length, max: MAX_PROOF_IMAGES })}</Text> // Use t()
            </TouchableOpacity>
 
            {/* Newly Selected Proof Images Display */}
@@ -232,10 +218,10 @@ export default function UpdateStatusScreen() {
            )}
 
            {/* Description Input */}
-            <Text style={styles.inputLabel}>Description of work done *</Text>
+            <Text style={styles.inputLabel}>{t('descriptionworkdone')}</Text> // Use t()
             <TextInput
               style={[styles.input, styles.textArea, (isFormDisabled || isSubmitting) && styles.disabledInput]}
-              placeholder="Enter details about the job completed..."
+              placeholder={t('enterjobdetailsplaceholder')} // Use t()
               value={companyComment}
               onChangeText={setCompanyComment}
               multiline
@@ -250,7 +236,7 @@ export default function UpdateStatusScreen() {
               onPress={handleSubmitReport}
               disabled={isFormDisabled || isSubmitting}
             >
-               {isSubmitting ? <ActivityIndicator color={COLORS.buttonText} /> : <Text style={styles.submitButtonText}>Submit Report</Text>}
+               {isSubmitting ? <ActivityIndicator color={COLORS.buttonText} /> : <Text style={styles.submitButtonText}>{t('submitreport')}</Text>} // Use t()
             </TouchableOpacity>
 
       </ScrollView>
