@@ -287,6 +287,8 @@ export const en = {
     available24x7label: "Available 24x7?",
     registrationnumberplaceholder: "Registration Number",
     passwordmin8chars: "Password (min 8 chars)",
+    alreadyhavepartneraccount: "Already have a partner account?",
+    
     // Chat Screen
     enterchatmessage_placeholder: "Enter Message",
     // Find Partners Screen
