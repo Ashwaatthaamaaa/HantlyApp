@@ -88,7 +88,7 @@ export default function UrgentJobListScreen() {
           setCompanies(data);
         } catch (err: any) {
           console.error("Error fetching urgent companies:", err);
-          setError(`Failed to load available companies: ${err.message}`);
+          setError(t('failedloadurgentcompanies', { message: err.message }));
           setCompanies([]);
         } finally {
           setIsLoading(false);
@@ -175,16 +175,11 @@ export default function UrgentJobListScreen() {
 
       <Stack.Screen
         options={{
-          title: '24/7 Available Partners',
+          title: t('urgentjobpartners247'),
           headerBackTitle: '', // no back text
           headerTitleAlign: 'center',
           headerStyle: { backgroundColor: COLORS.headerBg },
           headerTintColor: COLORS.headerText,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 10 }}>
-              <Ionicons name="arrow-back" size={24} color={COLORS.headerText} />
-            </TouchableOpacity>
-          )
         }}
       />
 
