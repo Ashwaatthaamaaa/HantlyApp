@@ -364,4 +364,8 @@ export const sv = {
         review_submit_error: "Kunde inte skicka recension",
         missinginfo: "Information saknas", // Can reuse this if appropriate
         commentdisplay_prefix: "Kommentar:",
+        partner_view_review_title: "Kundrecension",
+        partner_view_comment_prefix: "Kommentar:", // Can be same as user view or different if needed
+        partner_view_no_comment: "Kunden lämnade ingen kommentar.", // Message when comment is empty/null
+    
 };
