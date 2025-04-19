@@ -340,4 +340,8 @@ export const en = {
         missinginfo: "Missing Information", // Can reuse this if appropriate
     
         commentdisplay_prefix: "Comment:",
+
+        partner_view_review_title: "Customer Review",
+        partner_view_comment_prefix: "Comment:", // Can be same as user view or different if needed
+        partner_view_no_comment: "Customer did not leave a comment.", // Message when comment is empty/null
 };
