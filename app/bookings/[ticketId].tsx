@@ -1,5 +1,5 @@
 // File: app/bookings/[ticketId].tsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -149,6 +149,10 @@ export default function BookingDetailScreen() {
           if (!response.ok) { const errorText = await response.text(); console.error(`HTTP error ${response.status}: ${errorText}`); throw new Error(t('failedfetchdetails', { status: response.status, errorText: errorText || 'Server error' })); }
           const data: BookingDetail = await response.json();
           setBookingData(data);
+          // Reset review state when new data is fetched
+          setSelectedRating(0);
+          setReviewCommentText('');
+          setIsSubmittingReview(false);
       } catch (err: any) { console.error("Error fetching booking details:", err); setError(t('failedloadbookingdetails', { message: err?.message || 'Unknown error' })); setBookingData(null); }
       finally { setIsLoading(false); }
   }, [ticketId, session, router]);
@@ -212,9 +216,9 @@ export default function BookingDetailScreen() {
   const handleSubmitReview = useCallback(async () => { if (!session || session.type !== 'user' || ticketId === undefined) { Alert.alert(t('error'), t('requiredinfomissing')); return; } if (selectedRating === 0) { Alert.alert(t('missinginfo'), t('review_select_rating_alert')); return; } setIsSubmittingReview(true); const url = `${BASE_URL}/api/IssueTicket/UpdateTicketReview`; const requestBody: { ticketId: number; reviewStarRating: number; reviewComment: string; } = { ticketId: ticketId, reviewStarRating: selectedRating, reviewComment: reviewCommentText.trim(), }; console.log(`Submitting review for Ticket ${ticketId}:`, requestBody); try { const response = await fetch(url, { method: 'POST', headers: { 'accept': 'text/plain', 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody), }); const responseText = await response.text(); console.log("Submit Review Response Status:", response.status); console.log("Submit Review Response Text:", responseText); if (!response.ok) { let errorMessage = `Failed (Status: ${response.status})`; try { const errorData = JSON.parse(responseText); errorMessage = errorData?.statusMessage || errorData?.title || errorData?.detail || responseText || errorMessage; } catch (e) { errorMessage = responseText || errorMessage; } throw new Error(errorMessage); } let successMessage = t('review_submit_success_default'); try { const result: ReviewApiResponse = JSON.parse(responseText); successMessage = result?.statusMessage || successMessage; } catch (e) { /* Ignore */ } Alert.alert(t('success'), successMessage); await fetchBookingDetails(); } catch (err: any) { console.error("Submit Review Error:", err); Alert.alert(t('error'), `${t('review_submit_error')}: ${err?.message || 'Unknown error'}`); } finally { setIsSubmittingReview(false); } }, [session, ticketId, selectedRating, reviewCommentText, fetchBookingDetails]);
 
   // --- Render Logic ---
-  if (isLoading && !bookingData) { return ( <SafeAreaView style={styles.centered}><ActivityIndicator size="large" color={COLORS.accent} /><Text style={{ marginTop: 10, color: COLORS.textSecondary }}>{t('loading')}</Text></SafeAreaView> ); }
+  if (isLoading && !bookingData) { return ( <SafeAreaView style={styles.centered}><ActivityIndicator size="large" color={COLORS.accent} /><Text style={styles.loadingText}>{t('loading')}</Text></SafeAreaView> ); }
   if (error) { return ( <SafeAreaView style={styles.centered}><Ionicons name="alert-circle-outline" size={40} color={COLORS.error} /><Text style={styles.errorText}>{error}</Text><TouchableOpacity onPress={fetchBookingDetails} style={styles.retryButton}><Text style={styles.retryButtonText}>{t('retry')}</Text></TouchableOpacity></SafeAreaView> ); }
-  if (!bookingData) { return ( <SafeAreaView style={styles.centered}><Ionicons name="information-circle-outline" size={40} color={COLORS.textSecondary} /><Text style={{ marginTop: 10, color: COLORS.textSecondary, textAlign: 'center' }}>{t('bookingnotfound', { ticketId: ticketIdParam })}</Text><TouchableOpacity onPress={() => router.back()} style={styles.retryButton}><Text style={styles.retryButtonText}>{t('goback')}</Text></TouchableOpacity></SafeAreaView> ); }
+  if (!bookingData) { return ( <SafeAreaView style={styles.centered}><Ionicons name="information-circle-outline" size={40} color={COLORS.textSecondary} /><Text style={styles.noDataText}>{t('bookingnotfound', { ticketId: ticketIdParam })}</Text><TouchableOpacity onPress={() => router.back()} style={styles.retryButton}><Text style={styles.retryButtonText}>{t('goback')}</Text></TouchableOpacity></SafeAreaView> ); }
 
    // --- Derived State ---
   const isPartner = session?.type === 'partner';
@@ -239,6 +243,7 @@ export default function BookingDetailScreen() {
   const showCustomerInfo = isPartner;
   const showReviewInputForm = !isPartner && isCompleted && bookingData.reviewStarRating == null;
   const showSubmittedReview = !isPartner && isCompleted && bookingData.reviewStarRating != null;
+  const showCustomerReviewForPartner = isPartner && isCompleted && bookingData.reviewStarRating != null;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
@@ -293,58 +298,105 @@ export default function BookingDetailScreen() {
          </View>
 
         {/* Interested Partners List */}
-        { !isPartner && isCreated && ( <View style={styles.detailsSection}>{/* ... partners list ... */} </View> )}
-
-        {/* Partner Contact User Button */}
-        { partnerCanInitiateChat && ( <TouchableOpacity style={[styles.chatButton, {backgroundColor: COLORS.statusAccepted}]} onPress={handleInitiatePartnerChatOnDetail}>{/* ... button content ... */}</TouchableOpacity> )}
-
-        {/* General Chat Button */}
-        { (userCanChatWithAssigned || partnerCanChatWithAssigned) && (
-            <TouchableOpacity 
-                style={[
-                    styles.chatButton, 
-                    { paddingHorizontal: 20, minWidth: 150 }  // Added padding and minWidth to prevent squishing
-                ]} 
-                onPress={handleChatPress}
-            >
-                <Ionicons name="chatbubbles-outline" size={20} color={COLORS.buttonText} style={{ marginRight: 8 }} />
-                <Text style={styles.chatButtonText}>{t('chat')}</Text>
-            </TouchableOpacity>
+        { !isPartner && isCreated && (
+            <View style={styles.detailsSection}>
+                <Text style={styles.sectionTitle}>{t('interestedpartners')}</Text>
+                {isLoadingChatList && <ActivityIndicator color={COLORS.accent} style={{ marginVertical: 10 }} />}
+                {chatListError && <Text style={styles.errorTextSmall}>{chatListError}</Text>}
+                {!isLoadingChatList && !chatListError && interestedPartners.length === 0 && ( <Text style={styles.noPartnersText}>{t('nopartnersmessage')}</Text> )}
+                {!isLoadingChatList && !chatListError && interestedPartners.length > 0 && (
+                    interestedPartners.map((partner) => (
+                        <TouchableOpacity key={partner.companyId} style={styles.partnerRow} onPress={() => handleNavigateToPartnerChat(partner)}>
+                            <View style={styles.partnerLogoPlaceholder}>
+                                {partner.companyLogoPath ? ( <Image source={{ uri: partner.companyLogoPath }} style={styles.partnerListLogo} resizeMode="contain"/> ) : ( <Ionicons name="business-outline" size={24} color={COLORS.textSecondary} /> )}
+                            </View>
+                            <Text style={styles.partnerNameText}>{partner.companyUserName}</Text>
+                            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+                        </TouchableOpacity>
+                    ))
+                )}
+            </View>
         )}
 
+        {/* Partner Contact User Button */}
+        { partnerCanInitiateChat && ( <TouchableOpacity style={[styles.chatButton, {backgroundColor: COLORS.statusAccepted}]} onPress={handleInitiatePartnerChatOnDetail}><Ionicons name="chatbubble-ellipses-outline" size={20} color={COLORS.buttonText} style={{ marginRight: 8 }}/><Text style={styles.chatButtonText}>{t('contactuserquote')}</Text></TouchableOpacity> )}
+
+        {/* General Chat Button */}
+        { (userCanChatWithAssigned || partnerCanChatWithAssigned) && ( <TouchableOpacity style={styles.chatButton} onPress={handleChatPress}><Ionicons name="chatbubbles-outline" size={20} color={COLORS.buttonText} style={{ marginRight: 8 }}/><Text style={styles.chatButtonText}>{t('chat')}</Text></TouchableOpacity> )}
+
         {/* Provider Info Section */}
-        {userCanSeeProviderInfo && bookingData.companyId != null && ( <View style={styles.detailsSection}>{/* ... provider info ... */} </View> )}
+        {userCanSeeProviderInfo && bookingData.companyId != null && (
+             <View style={styles.detailsSection}>
+                <Text style={styles.sectionTitle}>{t('aboutprovider')}</Text>
+                <View style={styles.providerCard}>
+                    <View style={styles.providerLogoPlaceholder}><Ionicons name="business-outline" size={30} color={COLORS.textSecondary} /></View>
+                    <View style={styles.providerDetails}>
+                        <Text style={styles.providerName}>{bookingData.companyName || t('notapplicable')}</Text>
+                        {bookingData.companyEmailId && <Text style={styles.providerContact}>{bookingData.companyEmailId}</Text>}
+                        {bookingData.companyMobileNumber && (
+                            <TouchableOpacity onPress={handleCallProvider} style={styles.providerContactRow}>
+                                <MaterialCommunityIcons name="phone" size={16} color={COLORS.textSecondary} style={styles.providerIcon}/>
+                                <Text style={[styles.providerContact, styles.phoneLink]}>{bookingData.companyMobileNumber}</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+            </View>
+        )}
 
         {/* Customer Info Section */}
-        {showCustomerInfo && ( <View style={styles.detailsSection}>{/* ... customer info ... */} </View> )}
+        {showCustomerInfo && (
+             <View style={styles.detailsSection}>
+                <Text style={styles.sectionTitle}>{t('aboutcustomer')}</Text>
+                <View style={styles.providerCard}>
+                    <View style={styles.providerLogoPlaceholder}><Ionicons name="person-outline" size={30} color={COLORS.textSecondary} /></View>
+                    <View style={styles.providerDetails}>
+                        <Text style={styles.providerName}>{bookingData.userName || bookingData.reportingPerson || t('notapplicable')}</Text>
+                        {bookingData.userEmailId && <Text style={styles.providerContact}>{bookingData.userEmailId}</Text>}
+                        {bookingData.userMobileNumber && (
+                            <TouchableOpacity onPress={handleCallCustomer} style={styles.providerContactRow}>
+                                <MaterialCommunityIcons name="phone" size={16} color={COLORS.textSecondary} style={styles.providerIcon}/>
+                                <Text style={[styles.providerContact, styles.phoneLink]}>{bookingData.userMobileNumber}</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+            </View>
+        )}
 
         {/* Service Proof Section */}
-        {showServiceProofSection && ( <View style={styles.detailsSection}>{/* ... service proof display ... */} </View> )}
+        {showServiceProofSection && (
+             <View style={styles.detailsSection}>
+                <Text style={styles.sectionTitle}>{t('serviceproof')}</Text>
+                {serviceProofCommentExists && ( <><Text style={styles.sectionLabel}>{t('partnercomment')}</Text><View><Text style={styles.sectionValue}>{bookingData.companyComment}</Text></View></> )}
+                {serviceProofImagesExist && (
+                    <>
+                    <Text style={styles.sectionLabel}>{t('proofimages')}</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.proofThumbnailsContainer}>
+                        {Array.isArray(serviceProofImages) && serviceProofImages.map((image, index) => (
+                            <TouchableOpacity key={image.imageId ?? `work-${index}`} onPress={() => openImageViewer(serviceProofImages, index)} disabled={!image.imagePath}>
+                                <Image source={{ uri: image.imagePath ?? '' }} style={styles.thumbnail} resizeMode="cover" />
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                    </>
+                )}
+            </View>
+         )}
 
         {/* Partner Update Proof Button */}
-        {isPartner && ( <TouchableOpacity style={[styles.actionRow, !partnerCanUpdateProof && styles.actionRowDisabled]} onPress={handleNavigateToUpdateStatus} disabled={!partnerCanUpdateProof}>{/* ... button content ... */}</TouchableOpacity> )}
+        {isPartner && ( <TouchableOpacity style={[styles.actionRow, !partnerCanUpdateProof && styles.actionRowDisabled]} onPress={handleNavigateToUpdateStatus} disabled={!partnerCanUpdateProof}><View style={styles.actionRowContent}><Ionicons name="camera-outline" size={20} color={!partnerCanUpdateProof ? COLORS.textSecondary : COLORS.textPrimary} style={{ marginRight: 10 }}/><Text style={[styles.actionText, !partnerCanUpdateProof && styles.disabledText]}>{serviceProofImagesExist || serviceProofCommentExists ? t('viewupdateserviceproof') : t('uploadserviceproof')}</Text></View><Ionicons name="chevron-forward" size={20} color={!partnerCanUpdateProof ? COLORS.textSecondary : COLORS.textPrimary} /></TouchableOpacity> )}
 
-         {/* Submitted Review Display */}
+         {/* User Submitted Review Display */}
         {showSubmittedReview && (
             <View style={styles.detailsSection}>
                 <Text style={styles.sectionTitle}>{t('yourreview')}</Text>
                 <View style={styles.starRatingDisplay}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                        <Ionicons key={star} name={star <= (bookingData.reviewStarRating ?? 0) ? 'star' : 'star-outline'} size={24} color={COLORS.starColor} style={styles.starIconDisplay}/>
-                    ))}
+                    {[1, 2, 3, 4, 5].map((star) => ( <Ionicons key={star} name={star <= (bookingData.reviewStarRating ?? 0) ? 'star' : 'star-outline'} size={24} color={COLORS.starColor} style={styles.starIconDisplay}/> ))}
                     <Text style={styles.ratingTextDisplay}>({bookingData.reviewStarRating ?? 0}/5)</Text>
                 </View>
-                {/* MODIFICATION: Use translation for comment prefix */}
-                {bookingData.reviewComment && bookingData.reviewComment.trim() !== '' && (
-                    <Text style={styles.sectionValue}>{`${t('commentdisplay_prefix')} ${bookingData.reviewComment}`}</Text>
-                )}
-                {/* END MODIFICATION */}
-                {bookingData.companyComment && bookingData.companyComment.trim() !== '' && (
-                    <>
-                        <Text style={styles.sectionLabel}>{t('providerresponse')}</Text>
-                        <Text style={styles.sectionValue}>{bookingData.companyComment}</Text>
-                    </>
-                )}
+                {bookingData.reviewComment && bookingData.reviewComment.trim() !== '' && ( <Text style={styles.sectionValue}>{`${t('commentdisplay_prefix')} ${bookingData.reviewComment}`}</Text> )}
+                {bookingData.companyComment && bookingData.companyComment.trim() !== '' && ( <><Text style={styles.sectionLabel}>{t('providerresponse')}</Text><View><Text style={styles.sectionValue}>{bookingData.companyComment}</Text></View></> )}
             </View>
         )}
 
@@ -354,40 +406,36 @@ export default function BookingDetailScreen() {
                 <Text style={styles.sectionTitle}>{t('review_section_title')}</Text>
                 <Text style={styles.sectionLabel}>{t('review_rating_label')}</Text>
                 <View style={styles.starRatingInput}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                        <TouchableOpacity key={star} onPress={() => !isSubmittingReview && setSelectedRating(star)} disabled={isSubmittingReview}>
-                            <Ionicons name={star <= selectedRating ? 'star' : 'star-outline'} size={32} color={COLORS.starColor} style={styles.starIconInput} />
-                        </TouchableOpacity>
-                    ))}
+                    {[1, 2, 3, 4, 5].map((star) => ( <TouchableOpacity key={star} onPress={() => !isSubmittingReview && setSelectedRating(star)} disabled={isSubmittingReview}><Ionicons name={star <= selectedRating ? 'star' : 'star-outline'} size={32} color={COLORS.starColor} style={styles.starIconInput} /></TouchableOpacity> ))}
                 </View>
-
                 <Text style={styles.sectionLabel}>{t('review_comment_label')}</Text>
-                <TextInput
-                    style={[styles.reviewTextInput, isSubmittingReview && styles.disabledInput]}
-                    placeholder={t('review_comment_placeholder')}
-                    value={reviewCommentText} onChangeText={setReviewCommentText}
-                    multiline numberOfLines={4} placeholderTextColor={COLORS.textSecondary}
-                    editable={!isSubmittingReview}
-                />
-
-                <TouchableOpacity
-                    style={[styles.submitButton, (isSubmittingReview || selectedRating === 0) && styles.buttonDisabledBg]}
-                    onPress={handleSubmitReview}
-                    disabled={isSubmittingReview || selectedRating === 0} >
+                <TextInput style={[styles.reviewTextInput, isSubmittingReview && styles.disabledInput]} placeholder={t('review_comment_placeholder')} value={reviewCommentText} onChangeText={setReviewCommentText} multiline numberOfLines={4} placeholderTextColor={COLORS.textSecondary} editable={!isSubmittingReview} />
+                <TouchableOpacity style={[styles.submitButton, (isSubmittingReview || selectedRating === 0) && styles.buttonDisabledBg]} onPress={handleSubmitReview} disabled={isSubmittingReview || selectedRating === 0} >
                     {isSubmittingReview ? <ActivityIndicator color={COLORS.buttonText} /> : <Text style={styles.submitButtonText}>{t('review_submit_button')}</Text> }
                 </TouchableOpacity>
+            </View>
+        )}
+
+        {/* Customer Review Display (Partner View) */}
+        {showCustomerReviewForPartner && (
+             <View style={styles.detailsSection}>
+                <Text style={styles.sectionTitle}>{t('partner_view_review_title')}</Text>
+                <View style={styles.starRatingDisplay}>
+                    {[1, 2, 3, 4, 5].map((star) => ( <Ionicons key={star} name={star <= (bookingData.reviewStarRating ?? 0) ? 'star' : 'star-outline'} size={24} color={COLORS.starColor} style={styles.starIconDisplay} /> ))}
+                    <Text style={styles.ratingTextDisplay}>({bookingData.reviewStarRating ?? 0}/5)</Text>
+                </View>
+                {bookingData.reviewComment && bookingData.reviewComment.trim() !== '' ? (
+                    <View><Text style={styles.sectionValue}>{`${t('partner_view_comment_prefix')} ${bookingData.reviewComment}`}</Text></View>
+                ) : (
+                     <Text style={[styles.sectionValue, styles.italicText]}>{t('partner_view_no_comment')}</Text>
+                )}
             </View>
         )}
 
       </ScrollView>
 
        {/* Modals */}
-       <ImageViewing
-            images={imagesForViewer} imageIndex={currentImageIndex} visible={isImageViewerVisible}
-            onRequestClose={() => setImageViewerVisible(false)} presentationStyle="overFullScreen"
-            swipeToCloseEnabled={true} doubleTapToZoomEnabled={true}
-            FooterComponent={({ imageIndex }) => ( <View style={styles.imageViewerFooter}><Text style={styles.imageViewerFooterText}>{`${imageIndex + 1} / ${imagesForViewer.length}`}</Text></View> )}
-       />
+       <ImageViewing images={imagesForViewer} imageIndex={currentImageIndex} visible={isImageViewerVisible} onRequestClose={() => setImageViewerVisible(false)} presentationStyle="overFullScreen" swipeToCloseEnabled={true} doubleTapToZoomEnabled={true} FooterComponent={({ imageIndex }) => ( <View style={styles.imageViewerFooter}><Text style={styles.imageViewerFooterText}>{`${imageIndex + 1} / ${imagesForViewer.length}`}</Text></View> )} />
        <Modal isVisible={isOtpModalVisible} onBackdropPress={() => !isSubmittingStatus && setOtpModalVisible(false)} onBackButtonPress={() => !isSubmittingStatus && setOtpModalVisible(false)} avoidKeyboard style={styles.otpModalContainer} backdropOpacity={0.5} animationIn="zoomIn" animationOut="zoomOut" >
             <View style={styles.otpModalContent}>
                  <Text style={styles.otpModalTitle}>{t('enterotpfromuser')}</Text>
@@ -410,6 +458,8 @@ const styles = StyleSheet.create({
     scrollView: { flex: 1, },
     container: { flexGrow: 1, padding: 20, paddingBottom: 40, },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: COLORS.background, },
+    loadingText: { marginTop: 10, color: COLORS.textSecondary }, // Added loading text style
+    noDataText: { marginTop: 10, color: COLORS.textSecondary, textAlign: 'center' }, // Added no data text style
     errorText: { color: COLORS.error, fontSize: 16, textAlign: 'center', marginTop: 10, marginBottom: 20, },
     retryButton: { marginTop: 15, backgroundColor: COLORS.accent, paddingVertical: 10, paddingHorizontal: 25, borderRadius: 5, },
     retryButtonText: { color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold', },
@@ -430,25 +480,8 @@ const styles = StyleSheet.create({
     sectionLabel: { fontSize: 14, color: COLORS.labelColor, marginBottom: 5, marginTop: 10, fontWeight: '600', },
     sectionValue: { fontSize: 16, color: COLORS.textPrimary, marginBottom: 8, lineHeight: 23, },
     sectionTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.textPrimary, marginBottom: 15, paddingTop: 20, borderTopWidth: 1, borderTopColor: COLORS.borderColor, marginTop: 10, },
-    chatButton: {
-        backgroundColor: COLORS.accent,
-        paddingVertical: 14,
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'row',
-        marginBottom: 15,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
-    },
-    chatButtonText: {
-        color: COLORS.buttonText,
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
+    chatButton: { backgroundColor: COLORS.accent, paddingVertical: 14, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginBottom: 15, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 3, paddingHorizontal: 20, minWidth: 150 },
+    chatButtonText: { color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold', },
     providerCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.cardBg, borderRadius: 8, padding: 15, borderWidth: 1, borderColor: COLORS.borderColor, marginTop: 5, },
     providerLogoPlaceholder: { width: 50, height: 50, borderRadius: 25, backgroundColor: COLORS.iconPlaceholder, justifyContent: 'center', alignItems: 'center', marginRight: 15, },
     providerLogo: { width: 50, height: 50, borderRadius: 8, },
@@ -498,4 +531,6 @@ const styles = StyleSheet.create({
     starRatingDisplay: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
     starIconDisplay: { marginRight: 2 },
     ratingTextDisplay: { marginLeft: 8, fontSize: 14, color: COLORS.textSecondary },
+    // Added style for italic text, e.g., for 'no comment' message
+    italicText: { fontStyle: 'italic', color: COLORS.textSecondary },
 });
