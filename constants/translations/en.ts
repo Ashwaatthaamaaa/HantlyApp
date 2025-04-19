@@ -325,4 +325,19 @@ export const en = {
     rtm_user_button: "USER",
     // Errors
     error_title: "Error",
+
+
+        // Review Feature Keys
+        review_section_title: "Rate this Service",
+        review_rating_label: "Your Rating:",
+        review_comment_label: "Your Comment (Optional):",
+        review_comment_placeholder: "Tell us about your experience...",
+        review_submit_button: "Submit Review",
+        review_select_rating_alert: "Please select a star rating.",
+        // review_enter_comment_alert: "Please enter a comment.", // Uncomment if comment becomes mandatory
+        review_submit_success_default: "Review submitted successfully!",
+        review_submit_error: "Could not submit review",
+        missinginfo: "Missing Information", // Can reuse this if appropriate
+    
+        commentdisplay_prefix: "Comment:",
 };
