@@ -299,7 +299,18 @@ export default function BookingDetailScreen() {
         { partnerCanInitiateChat && ( <TouchableOpacity style={[styles.chatButton, {backgroundColor: COLORS.statusAccepted}]} onPress={handleInitiatePartnerChatOnDetail}>{/* ... button content ... */}</TouchableOpacity> )}
 
         {/* General Chat Button */}
-        { (userCanChatWithAssigned || partnerCanChatWithAssigned) && ( <TouchableOpacity style={styles.chatButton} onPress={handleChatPress}>{/* ... button content ... */}</TouchableOpacity> )}
+        { (userCanChatWithAssigned || partnerCanChatWithAssigned) && (
+            <TouchableOpacity 
+                style={[
+                    styles.chatButton, 
+                    { paddingHorizontal: 20, minWidth: 150 }  // Added padding and minWidth to prevent squishing
+                ]} 
+                onPress={handleChatPress}
+            >
+                <Ionicons name="chatbubbles-outline" size={20} color={COLORS.buttonText} style={{ marginRight: 8 }} />
+                <Text style={styles.chatButtonText}>{t('chat')}</Text>
+            </TouchableOpacity>
+        )}
 
         {/* Provider Info Section */}
         {userCanSeeProviderInfo && bookingData.companyId != null && ( <View style={styles.detailsSection}>{/* ... provider info ... */} </View> )}
@@ -394,9 +405,7 @@ export default function BookingDetailScreen() {
 }
 
 // --- Styles ---
-// (Keep existing styles)
 const styles = StyleSheet.create({
-    // ... (All styles from the previous 'type-checked' response) ...
     safeArea: { flex: 1, backgroundColor: COLORS.background, },
     scrollView: { flex: 1, },
     container: { flexGrow: 1, padding: 20, paddingBottom: 40, },
@@ -421,8 +430,25 @@ const styles = StyleSheet.create({
     sectionLabel: { fontSize: 14, color: COLORS.labelColor, marginBottom: 5, marginTop: 10, fontWeight: '600', },
     sectionValue: { fontSize: 16, color: COLORS.textPrimary, marginBottom: 8, lineHeight: 23, },
     sectionTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.textPrimary, marginBottom: 15, paddingTop: 20, borderTopWidth: 1, borderTopColor: COLORS.borderColor, marginTop: 10, },
-    chatButton: { backgroundColor: COLORS.accent, paddingVertical: 14, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginBottom: 15, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 3, },
-    chatButtonText: { color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold', },
+    chatButton: {
+        backgroundColor: COLORS.accent,
+        paddingVertical: 14,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        marginBottom: 15,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+    },
+    chatButtonText: {
+        color: COLORS.buttonText,
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
     providerCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.cardBg, borderRadius: 8, padding: 15, borderWidth: 1, borderColor: COLORS.borderColor, marginTop: 5, },
     providerLogoPlaceholder: { width: 50, height: 50, borderRadius: 25, backgroundColor: COLORS.iconPlaceholder, justifyContent: 'center', alignItems: 'center', marginRight: 15, },
     providerLogo: { width: 50, height: 50, borderRadius: 8, },
