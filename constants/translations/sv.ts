@@ -350,4 +350,18 @@ export const sv = {
 
     // Errors
     error_title: "Fel",
+
+
+        // Review Feature Keys (Swedish)
+        review_section_title: "Betygsätt denna tjänst",
+        review_rating_label: "Ditt betyg:",
+        review_comment_label: "Din kommentar (Valfritt):",
+        review_comment_placeholder: "Berätta om din upplevelse...",
+        review_submit_button: "Skicka recension",
+        review_select_rating_alert: "Välj ett stjärnbetyg.",
+        // review_enter_comment_alert: "Vänligen skriv en kommentar.", // Uncomment if comment becomes mandatory
+        review_submit_success_default: "Recension skickad!",
+        review_submit_error: "Kunde inte skicka recension",
+        missinginfo: "Information saknas", // Can reuse this if appropriate
+        commentdisplay_prefix: "Kommentar:",
 };
