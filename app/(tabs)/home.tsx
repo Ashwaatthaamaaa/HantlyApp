@@ -18,12 +18,11 @@ import { Ionicons } from '@expo/vector-icons';
 import RegisterTypeModal from '@/components/RegisterTypeModal';
 import LanguageSelectionModal from '@/components/LanguageSelectionModal';
 import { useAuth } from '@/context/AuthContext';
-import { BASE_URL, fetchBaseUrlFromFirebase } from '@/constants/Api';
+import { BASE_URL } from '@/constants/Api';
 import { SvgXml } from 'react-native-svg'; // <-- Import SvgXml
 import { t, setLocale, langEventEmitter, LANGUAGE_CHANGE_EVENT } from '@/config/i18n'; // Import the translation function and language change event emitter
 import * as SecureStore from 'expo-secure-store';
 import i18n from '@/config/i18n';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 // --- Types ---
@@ -200,38 +199,29 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    const loadServices = async () => {
+    const fetchServices = async () => {
       setIsLoading(true); setError(null);
+      const url = `${BASE_URL}/api/Service/GetServiceList`;
       try {
-        await fetchBaseUrlFromFirebase();
-        const url = `${BASE_URL}/api/Service/GetServiceList`;
         const response = await fetch(url);
-        if (!response.ok) {
-             const errorText = await response.text();
-             throw new Error(`Failed to fetch services (Status: ${response.status}): ${errorText}`);
-         }
-         const contentType = response.headers.get("content-type");
-         if (!contentType || !contentType.includes("application/json")) {
-           const responseText = await response.text();
-           console.error("Received non-JSON response for services:", responseText);
-           throw new Error(`Received non-JSON response from server.`);
-         }
+        if (!response.ok) { const errorText = await response.text(); throw new Error(`HTTP error! status: ${response.status} - ${errorText || 'Failed to fetch'}`); }
+        const contentType = response.headers.get("content-type");
+        if (!contentType?.includes("application/json")) { const responseText = await response.text(); throw new Error("Received non-JSON response"); }
 
         const data: Service[] = await response.json();
-        const formatted = data.map(service => ({
-          id: service.serviceId.toString(),
-          name: service.serviceName,
-          contentType: service.imageContentType,
-          imageUri: service.imagePath
+        // Updated mapping: Removed fallback icon logic
+        const formattedData: ServiceListItem[] = data.map(service => ({
+            id: service.serviceId.toString(),
+            name: service.serviceName,
+            contentType: service.imageContentType,
+            imageUri: service.imagePath // Directly pass imagePath (or null)
         }));
-        setServices(formatted);
-      } catch (err: any) {
-        setError(`Failed to load services: ${err.message}`);
-      } finally {
-        setIsLoading(false);
-      }
+        setServices(formattedData);
+
+      } catch (err: any) { setError(`Failed to load services: ${err.message}`); }
+      finally { setIsLoading(false); }
     };
-    loadServices();
+    fetchServices();
   }, []);
 
     // --- Event Handlers ---
