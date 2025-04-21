@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "407384156866",
+    "project_id": "hantlyapplication",
+    "storage_bucket": "hantlyapplication.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:407384156866:android:a07fa702a449505eaca95b",
+        "android_client_info": {
+          "package_name": "com.devansh1910.hantly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALsjWUDQa3BM1iY3GXSOYrG2aL_ZlyhN4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
