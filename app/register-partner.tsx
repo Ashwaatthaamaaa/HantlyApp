@@ -237,8 +237,11 @@ export default function RegisterPartnerScreen() {
     if (selectedMunicipalityIds.length === 0) { Alert.alert(t('missinginfo'), t('selectmunicipality')+"*"); return; }
     if (selectedServiceIds.length === 0) { Alert.alert(t('missinginfo'), t('selectservice')+"*"); return; }
     if (trimmedPassword.length < 8) { Alert.alert(t('passwordtooshorttitle'), t('passwordtooshort')); return; }
-    if (!/\\S+@\\S+\\.\\S+/.test(trimmedEmail)) { Alert.alert(t('invalidemailtitle'), t('invalidemail')); return; }
-    const phoneRegex = /^\\d{10}$/;
+    if (!/\S+@\S+\.\S+/.test(trimmedEmail)) {
+        Alert.alert(t('invalidemailtitle'), t('invalidemail'));
+        return;
+    }
+    const phoneRegex = /^\d{10}$/;
     if (!phoneRegex.test(phone)) { Alert.alert(t('invalidphonenumber'), t('enter10digitnumber')); return; }
 
     // --- FormData Preparation (Original logic) ---
@@ -296,14 +299,14 @@ export default function RegisterPartnerScreen() {
                 const errorData: ProblemDetails = JSON.parse(responseText);
                 if (errorData.errors) {
                     errorTitle = errorData.title || t('validationerrors');
-                    errorMessage = t('correctfollowing') + "\\n" + Object.entries(errorData.errors).map(([field, messages]) => {
+                    errorMessage = t('correctfollowing') + "\n" + Object.entries(errorData.errors).map(([field, messages]) => {
                         let translatedField = t(field.toLowerCase()) || field;
                         let translatedMessages = (messages as string[]).join(', ');
                         if (field.toLowerCase() === 'username' && errorData.errors?.[field]?.includes("is already taken")) {
                             return `- ${t('email')}: ${t('emailAlreadyRegistered')}`;
                         }
                         return `- ${translatedField}: ${translatedMessages}`;
-                    }).join('\\n');
+                    }).join('\n');
                 } else { errorMessage = errorData.detail || errorData.title || responseText || errorMessage; if (errorData.title && errorData.title !== errorTitle) errorTitle = errorData.title; }
             } catch (e) { if (responseText && responseText.length < 150 && !responseText.trim().startsWith('<')) errorMessage = responseText; }
             Alert.alert(errorTitle, errorMessage);
