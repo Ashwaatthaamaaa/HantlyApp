@@ -29,12 +29,14 @@ import i18n from '@/config/i18n';
 interface Service {
   serviceId: number;
   serviceName: string;
+  serviceName_Swedish: string;
   imagePath: string | null;
   imageContentType: string | null;
 }
 interface ServiceListItem {
   id: string;
   name: string;
+  nameSwedish: string;
   imageUri?: string | null;
   iconName?: string;
   iconSet?: 'ion';
@@ -76,10 +78,14 @@ interface ServiceItemProps {
   item: ServiceListItem;
   session: ReturnType<typeof useAuth>['session'];
   router: ReturnType<typeof useRouter>;
+  currentLanguage: string;
 }
-const ServiceItem: React.FC<ServiceItemProps> = ({ item, session, router }) => {
+const ServiceItem: React.FC<ServiceItemProps> = ({ item, session, router, currentLanguage }) => {
   const [svgXml, setSvgXml] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<boolean>(false); // Track fetch errors
+
+  // Get the display name based on current language
+  const displayName = currentLanguage === 'sv' ? item.nameSwedish : item.name;
 
   const handleItemPress = () => {
     if (!session) return showLoginRegisterAlert(router);
@@ -88,11 +94,11 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, session, router }) => {
         pathname: '/create-job-card',
         params: {
           preselectedServiceId: item.id,
-          preselectedServiceName: item.name,
+          preselectedServiceName: displayName, // Use the language-specific name
         },
       });
     } else {
-      Alert.alert('Action Not Allowed', 'Only users can create job requests from services.');
+      Alert.alert(t('actionnotallowed'), t('onlyuserscancreate'));
     }
   };
 
@@ -158,7 +164,7 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, session, router }) => {
   return (
     <TouchableOpacity style={styles.serviceItem} onPress={handleItemPress}>
       {renderContent()}
-      <ThemedText style={styles.serviceItemText}>{item.name}</ThemedText>
+      <ThemedText style={styles.serviceItemText}>{displayName}</ThemedText>
     </TouchableOpacity>
   );
 };
@@ -209,10 +215,11 @@ export default function HomeScreen() {
         if (!contentType?.includes("application/json")) { const responseText = await response.text(); throw new Error("Received non-JSON response"); }
 
         const data: Service[] = await response.json();
-        // Updated mapping: Removed fallback icon logic
+        // Include Swedish names with fallback to English if not available
         const formattedData: ServiceListItem[] = data.map(service => ({
             id: service.serviceId.toString(),
             name: service.serviceName,
+            nameSwedish: service.serviceName_Swedish || service.serviceName, // Fallback to English if Swedish not available
             contentType: service.imageContentType,
             imageUri: service.imagePath // Directly pass imagePath (or null)
         }));
@@ -275,7 +282,7 @@ export default function HomeScreen() {
     return (
       <FlatList
         data={services}
-        renderItem={({ item }) => <ServiceItem item={item} session={session} router={router} />}
+        renderItem={({ item }) => <ServiceItem item={item} session={session} router={router} currentLanguage={currentLanguage} />}
         keyExtractor={(item) => item.id}
         numColumns={2}
         columnWrapperStyle={styles.serviceGridRow}
