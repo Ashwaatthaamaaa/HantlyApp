@@ -17,20 +17,24 @@ import { Stack, useRouter } from 'expo-router';
 import { SvgXml } from 'react-native-svg'; // <-- Import SvgXml
 import { useAuth } from '@/context/AuthContext';
 import { BASE_URL } from '@/constants/Api';
-import { t } from '@/config/i18n'; // Import the translation function
+import { t, langEventEmitter, LANGUAGE_CHANGE_EVENT } from '@/config/i18n'; // Import the translation function
+import i18n from '@/config/i18n'; // Import i18n for locale
 
 
 // --- Define Types based on API Response ---
 interface Service {
   serviceId: number;
   serviceName: string;
+  serviceName_Swedish: string;
   imagePath: string | null; // Allow null
   imageContentType: string | null; // Allow null
+  imageName: string | null;
 }
 
 interface ServiceListItem {
     id: string;
     name: string;
+    nameSwedish: string;
     imageUri?: string | null; // Allow null
     iconName?: string; // Keep for type consistency
     iconSet?: 'ion';
@@ -55,12 +59,12 @@ const COLORS = {
 // --- Helper Function for Login/Register Prompt ---
 const showLoginRegisterAlert = (router: any) => {
   Alert.alert(
-    "Login Required",
-    "Please log in or register to proceed.",
+    t('loginsrequired'),
+    t('logintoproceed'),
     [
-      { text: "Cancel", style: "cancel" },
-      { text: "Log In", onPress: () => router.push('/login') },
-      { text: "Register", onPress: () => router.push('/register') }
+      { text: t('cancel'), style: "cancel" },
+      { text: t('login'), onPress: () => router.push('/login') },
+      { text: t('register'), onPress: () => router.push('/register') }
     ]
   );
 };
@@ -70,11 +74,15 @@ const showLoginRegisterAlert = (router: any) => {
 interface ListItemComponentProps {
   item: ServiceListItem;
   onPress: (item: ServiceListItem) => void;
+  currentLanguage: string;
 }
 
-const ListItemComponent: React.FC<ListItemComponentProps> = ({ item, onPress }) => {
+const ListItemComponent: React.FC<ListItemComponentProps> = ({ item, onPress, currentLanguage }) => {
     const [svgXml, setSvgXml] = useState<string | null>(null);
     const [fetchError, setFetchError] = useState<boolean>(false); // Track fetch errors
+
+    // Get the display name based on currentLanguage prop
+    const displayName = currentLanguage === 'sv' ? item.nameSwedish : item.name;
 
     useEffect(() => {
         const fetchSvg = async () => {
@@ -141,7 +149,7 @@ const ListItemComponent: React.FC<ListItemComponentProps> = ({ item, onPress }) 
   return (
     <TouchableOpacity style={styles.itemContainer} onPress={() => onPress(item)}>
       {renderVisual()}
-      <Text style={styles.itemText}>{item.name}</Text>
+      <Text style={styles.itemText}>{displayName}</Text>
        <Ionicons name="chevron-forward-outline" size={20} color={COLORS.textSecondary} />
     </TouchableOpacity>
   );
@@ -155,6 +163,28 @@ export default function CategoriesScreen() {
   const [services, setServices] = useState<ServiceListItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  // Add state to track current language and force re-renders
+  const [currentLanguage, setCurrentLanguage] = useState<string>(i18n.locale);
+
+  // Listen for language changes
+  useEffect(() => {
+    // Set initial language
+    setCurrentLanguage(i18n.locale);
+    
+    // Event handler for language changes
+    const handleLanguageChange = (locale: string) => {
+      console.log('Categories: Language changed to:', locale);
+      setCurrentLanguage(locale);
+    };
+    
+    // Subscribe to language change events
+    langEventEmitter.on(LANGUAGE_CHANGE_EVENT, handleLanguageChange);
+    
+    // Clean up subscription on unmount
+    return () => {
+      langEventEmitter.off(LANGUAGE_CHANGE_EVENT, handleLanguageChange);
+    };
+  }, []);
 
   // --- Fetch Services ---
   useEffect(() => {
@@ -171,10 +201,11 @@ export default function CategoriesScreen() {
         const contentType = response.headers.get("content-type");
         if (contentType?.includes("application/json")) {
             const data: Service[] = await response.json();
-            // Pass content type and uri
+            // Pass content type and uri, and both language names
             const formattedData: ServiceListItem[] = data.map(service => ({
                 id: service.serviceId.toString(),
                 name: service.serviceName,
+                nameSwedish: service.serviceName_Swedish || service.serviceName, // Fallback to English if Swedish not available
                 contentType: service.imageContentType,
                 imageUri: service.imagePath,
             }));
@@ -200,10 +231,13 @@ export default function CategoriesScreen() {
     } else if (session.type === 'user') {
          router.push({
              pathname: '/create-job-card',
-             params: { preselectedServiceId: service.id, preselectedServiceName: service.name }
+             params: { 
+                 preselectedServiceId: service.id, 
+                 preselectedServiceName: currentLanguage === 'sv' ? service.nameSwedish : service.name 
+             }
          });
     } else {
-        Alert.alert("Action Not Allowed", "Only users can create job requests from services.");
+        Alert.alert(t('actionnotallowed'), t('onlyuserscancreate'));
     }
   };
   // --------------------------
@@ -217,12 +251,12 @@ export default function CategoriesScreen() {
        return <Text style={styles.errorText}>{error}</Text>;
      }
      if (services.length === 0) {
-       return <Text style={styles.noDataText}>No services available.</Text>;
+       return <Text style={styles.noDataText}>{t('noservicesavailable')}</Text>;
      }
      return (
        <FlatList
          data={services}
-         renderItem={({ item }) => <ListItemComponent item={item} onPress={handleServicePress} />}
+         renderItem={({ item }) => <ListItemComponent item={item} onPress={handleServicePress} currentLanguage={currentLanguage} />}
          keyExtractor={(item) => item.id}
          contentContainerStyle={styles.listContainer}
          showsVerticalScrollIndicator={false}
