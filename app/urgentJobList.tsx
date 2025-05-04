@@ -32,6 +32,13 @@ interface CompanyInfo {
     companyPresentation: string | null;
     logoImagePath: string | null;
     logoImageContentType: string | null;
+    // Add service list to the interface
+    serviceList?: {
+        pCompId: number;
+        serviceId: number;
+        companyName: string;
+        serviceName: string;
+    }[] | null;
 }
 
 // --- Colors ---
@@ -42,6 +49,9 @@ const COLORS = {
     // Removed button colors
     retryButtonBg: '#696969',
     buttonText: '#FFFFFF', // For retry button
+    serviceSectionTitle: '#333333',
+    serviceText: '#666666',
+    viewMoreText: '#007AFF', // Blue for "View more" text
 };
 
 export default function UrgentJobListScreen() {
@@ -99,37 +109,73 @@ export default function UrgentJobListScreen() {
   );
 
   // --- Render List Item ---
-  const renderCompanyItem = ({ item }: { item: CompanyInfo }) => (
-    <View style={styles.companyCard}>
-        <View style={styles.logoContainer}>
-            {item.logoImagePath ? (
-                <Image source={{ uri: item.logoImagePath }} style={styles.logo} resizeMode="contain" />
-            ) : (
-                <View style={styles.logoPlaceholder}>
-                    <Ionicons name="business" size={24} color={COLORS.textSecondary} />
-                </View>
-            )}
-        </View>
-        <View style={styles.companyDetails}>
-            <Text style={styles.companyName}>{item.companyName || t('unknowncompany')}</Text>
-            {item.contactPerson && <Text style={styles.contactPerson}>{t('contact')} {item.contactPerson}</Text>}
-            {/* Display Contact Info as Text */}
-            {item.mobileNumber && (
-                <View style={styles.contactRow}>
-                    <MaterialCommunityIcons name="phone" size={16} color={COLORS.textSecondary} style={styles.contactIcon}/>
-                    <Text style={styles.contactText}>{item.mobileNumber}</Text>
-                </View>
-            )}
-            {item.emailId && (
-                 <View style={styles.contactRow}>
-                    <MaterialCommunityIcons name="email" size={16} color={COLORS.textSecondary} style={styles.contactIcon}/>
-                    <Text style={styles.contactText}>{item.emailId}</Text>
-                 </View>
-            )}
-            {/* Removed Action Buttons Container */}
+  const renderCompanyItem = ({ item }: { item: CompanyInfo }) => {
+    // Handle service display with a maximum of 3 visible services
+    const hasServices = item.serviceList && item.serviceList.length > 0;
+    const serviceCount = item.serviceList?.length || 0;
+    const displayServices = item.serviceList?.slice(0, 3) || [];
+    const hasMoreServices = serviceCount > 3;
+    
+    return (
+        <View style={styles.companyCard}>
+            <View style={styles.logoContainer}>
+                {item.logoImagePath ? (
+                    <Image source={{ uri: item.logoImagePath }} style={styles.logo} resizeMode="contain" />
+                ) : (
+                    <View style={styles.logoPlaceholder}>
+                        <Ionicons name="business" size={24} color={COLORS.textSecondary} />
+                    </View>
+                )}
+            </View>
+            <View style={styles.companyDetails}>
+                <Text style={styles.companyName}>{item.companyName || t('unknowncompany')}</Text>
+                {item.contactPerson && <Text style={styles.contactPerson}>{t('contact')} {item.contactPerson}</Text>}
+                
+                {/* Display Contact Info as Text */}
+                {item.mobileNumber && (
+                    <View style={styles.contactRow}>
+                        <MaterialCommunityIcons name="phone" size={16} color={COLORS.textSecondary} style={styles.contactIcon}/>
+                        <Text style={styles.contactText}>{item.mobileNumber}</Text>
+                    </View>
+                )}
+                {item.emailId && (
+                     <View style={styles.contactRow}>
+                        <MaterialCommunityIcons name="email" size={16} color={COLORS.textSecondary} style={styles.contactIcon}/>
+                        <Text style={styles.contactText}>{item.emailId}</Text>
+                     </View>
+                )}
+                
+                {/* Add Services Section */}
+                {hasServices && (
+                    <View style={styles.servicesSection}>
+                        <View style={styles.sectionTitleRow}>
+                            <MaterialCommunityIcons name="tools" size={16} color={COLORS.serviceSectionTitle} style={styles.sectionIcon} />
+                            <Text style={styles.servicesSectionTitle}>{t('services')}</Text>
+                        </View>
+                        {displayServices.map((service, index) => (
+                            <View key={index} style={styles.serviceItemRow}>
+                                <MaterialCommunityIcons 
+                                    name="circle-small" 
+                                    size={16} 
+                                    color={COLORS.serviceText} 
+                                    style={styles.serviceItemIcon} 
+                                />
+                                <Text style={styles.serviceItem}>{service.serviceName}</Text>
+                            </View>
+                        ))}
+                        {hasMoreServices && (
+                            <TouchableOpacity>
+                                <Text style={styles.viewMoreServices}>
+                                    {t('viewmore')} ({serviceCount - 3})
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                )}
+             </View>
          </View>
-     </View>
-  );
+    );
+  };
 
   // --- Render Loading State ---
   if (isLoading) {
@@ -253,6 +299,46 @@ const styles = StyleSheet.create({
       fontSize: 14,
       color: COLORS.textPrimary, // Use primary color for text
       flexShrink: 1, // Allow text to wrap if needed
+  },
+  servicesSection: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderColor,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  sectionIcon: {
+    marginRight: 8,
+  },
+  servicesSectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.serviceSectionTitle,
+  },
+  serviceItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 3,
+    paddingLeft: 2,
+  },
+  serviceItemIcon: {
+    marginRight: 4,
+  },
+  serviceItem: {
+    fontSize: 14,
+    color: COLORS.serviceText,
+    flex: 1,
+  },
+  viewMoreServices: {
+    fontSize: 13,
+    color: COLORS.viewMoreText,
+    marginTop: 4,
+    textAlign: 'right',
+    paddingRight: 4,
   },
   // Removed actionButtonsContainer, actionButton, actionButtonText styles
 });
