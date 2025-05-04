@@ -120,9 +120,20 @@ interface FilterModalProps {
     supportedMunicipalities: PartnerMunicipality[];
     isLoadingProfile: boolean; // Loading state passed from parent
     profileError: string | null; // Error state passed from parent
+    isUserView?: boolean; // Add flag to indicate user view
 }
 // FilterModal implementation remains the same internally, relying on props passed down
-const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilters, initialFilters, supportedCounties, supportedMunicipalities, isLoadingProfile, profileError }) => {
+const FilterModal: React.FC<FilterModalProps> = ({ 
+    visible, 
+    onClose, 
+    onApplyFilters, 
+    initialFilters, 
+    supportedCounties, 
+    supportedMunicipalities, 
+    isLoadingProfile, 
+    profileError,
+    isUserView = false 
+}) => {
     const [tempStatus, setTempStatus] = useState<string | null>(initialFilters.status);
     const [tempCountyId, setTempCountyId] = useState<string | null>(initialFilters.countyId);
     const [tempMunicipalityId, setTempMunicipalityId] = useState<string | null>(initialFilters.municipalityId);
@@ -159,7 +170,23 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilt
        }
     }, [visible, initialFilters]);
 
-    const handleApply = () => { onApplyFilters({ status: tempStatus, countyId: tempCountyId, municipalityId: tempMunicipalityId }); onClose(); };
+    const handleApply = () => { 
+      // For users, we only care about status
+      if (isUserView) {
+        onApplyFilters({ 
+          status: tempStatus, 
+          countyId: null, 
+          municipalityId: null 
+        }); 
+      } else {
+        onApplyFilters({ 
+          status: tempStatus, 
+          countyId: tempCountyId, 
+          municipalityId: tempMunicipalityId 
+        });
+      }
+      onClose(); 
+    };
     const getStatusName = (id: string | null) => jobStatuses.find(s => s.id === id)?.name || t('select_status');
     const getCountyName = (id: string | null) => supportedCounties.find(c => c.id === id)?.name || t('select_county');
     const getMunicipalityName = (id: string | null) => municipalitiesForSelectedCounty.find(m => m.id === id)?.name || t('select_municipality');
@@ -174,7 +201,99 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilt
     const municipalityPlaceholder = !tempCountyId ? t('select_county_first') : (isLoadingProfile || !!profileError) ? '...' : municipalitiesForSelectedCounty.length === 0 ? t('no_supported_municipalities') : t('select_municipality');
 
     // JSX for the modal remains the same
-    return ( <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}><View style={styles.filterModalBackdrop}><View style={styles.filterModalContent}><View style={styles.filterModalHeader}><Text style={styles.filterModalTitle}>{t('filter_jobs')}</Text><TouchableOpacity onPress={onClose}><Ionicons name="close" size={28} color={COLORS.textSecondary} /></TouchableOpacity></View><TouchableOpacity style={styles.filterSelector} onPress={() => setIsStatusModalVisible(true)}><Text style={tempStatus === null || tempStatus === undefined ? styles.filterPlaceholder : styles.filterValue}>{getStatusName(tempStatus)}</Text><Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} /></TouchableOpacity><TouchableOpacity style={[styles.filterSelector, isCountyDisabled && styles.filterSelectorDisabled]} onPress={() => !isCountyDisabled && setIsCountyModalVisible(true)} disabled={isCountyDisabled}><Text style={!tempCountyId ? styles.filterPlaceholder : styles.filterValue}>{isLoadingProfile ? t('loading') : profileError ? t('error_profile') : getCountyName(tempCountyId) || countyPlaceholder}</Text>{isLoadingProfile ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />}</TouchableOpacity>{profileError && <Text style={styles.filterErrorText}>{profileError}</Text>}<TouchableOpacity style={[styles.filterSelector, isMunicipalityDisabled && styles.filterSelectorDisabled]} onPress={() => !isMunicipalityDisabled && setIsMunicipalityModalVisible(true)} disabled={isMunicipalityDisabled}><Text style={!tempMunicipalityId ? styles.filterPlaceholder : styles.filterValue}>{getMunicipalityName(tempMunicipalityId) || municipalityPlaceholder}</Text><Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} /></TouchableOpacity><TouchableOpacity style={styles.filterApplyButton} onPress={handleApply}><Text style={styles.filterApplyButtonText}>{t('ok')}</Text></TouchableOpacity></View></View><SelectModal mode="single" visible={isStatusModalVisible} title={t('select_status')} data={jobStatuses} initialSelectedId={tempStatus} onClose={() => setIsStatusModalVisible(false)} onConfirmSingle={(id) => setTempStatus(id)} /><SelectModal mode="single" visible={isCountyModalVisible} title={t('select_county')} data={supportedCounties} initialSelectedId={tempCountyId} onClose={() => setIsCountyModalVisible(false)} onConfirmSingle={(id) => setTempCountyId(id) } /><SelectModal mode="single" visible={isMunicipalityModalVisible} title={t('select_municipality')} data={municipalitiesForSelectedCounty} initialSelectedId={tempMunicipalityId} onClose={() => setIsMunicipalityModalVisible(false)} onConfirmSingle={(id) => setTempMunicipalityId(id)} /></Modal> );
+    return ( 
+      <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}>
+        <View style={styles.filterModalBackdrop}>
+          <View style={styles.filterModalContent}>
+            <View style={styles.filterModalHeader}>
+              <Text style={styles.filterModalTitle}>{t('filter_jobs')}</Text>
+              <TouchableOpacity onPress={onClose}>
+                <Ionicons name="close" size={28} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity 
+              style={styles.filterSelector} 
+              onPress={() => setIsStatusModalVisible(true)}
+            >
+              <Text style={tempStatus === null || tempStatus === undefined ? styles.filterPlaceholder : styles.filterValue}>
+                {getStatusName(tempStatus)}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+            
+            {/* Only show county and municipality filters for partners */}
+            {!isUserView && (
+              <>
+                <TouchableOpacity 
+                  style={[styles.filterSelector, isCountyDisabled && styles.filterSelectorDisabled]} 
+                  onPress={() => !isCountyDisabled && setIsCountyModalVisible(true)} 
+                  disabled={isCountyDisabled}
+                >
+                  <Text style={!tempCountyId ? styles.filterPlaceholder : styles.filterValue}>
+                    {isLoadingProfile ? t('loading') : profileError ? t('error_profile') : getCountyName(tempCountyId) || countyPlaceholder}
+                  </Text>
+                  {isLoadingProfile ? 
+                    <ActivityIndicator size="small" color={COLORS.textSecondary}/> : 
+                    <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
+                  }
+                </TouchableOpacity>
+                
+                {profileError && <Text style={styles.filterErrorText}>{profileError}</Text>}
+                
+                <TouchableOpacity 
+                  style={[styles.filterSelector, isMunicipalityDisabled && styles.filterSelectorDisabled]} 
+                  onPress={() => !isMunicipalityDisabled && setIsMunicipalityModalVisible(true)} 
+                  disabled={isMunicipalityDisabled}
+                >
+                  <Text style={!tempMunicipalityId ? styles.filterPlaceholder : styles.filterValue}>
+                    {getMunicipalityName(tempMunicipalityId) || municipalityPlaceholder}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              </>
+            )}
+            
+            <TouchableOpacity style={styles.filterApplyButton} onPress={handleApply}>
+              <Text style={styles.filterApplyButtonText}>{t('ok')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        
+        <SelectModal 
+          mode="single" 
+          visible={isStatusModalVisible} 
+          title={t('select_status')} 
+          data={jobStatuses} 
+          initialSelectedId={tempStatus} 
+          onClose={() => setIsStatusModalVisible(false)} 
+          onConfirmSingle={(id) => setTempStatus(id)} 
+        />
+        
+        {!isUserView && (
+          <>
+            <SelectModal 
+              mode="single" 
+              visible={isCountyModalVisible} 
+              title={t('select_county')} 
+              data={supportedCounties} 
+              initialSelectedId={tempCountyId} 
+              onClose={() => setIsCountyModalVisible(false)} 
+              onConfirmSingle={(id) => setTempCountyId(id) } 
+            />
+            
+            <SelectModal 
+              mode="single" 
+              visible={isMunicipalityModalVisible} 
+              title={t('select_municipality')} 
+              data={municipalitiesForSelectedCounty} 
+              initialSelectedId={tempMunicipalityId} 
+              onClose={() => setIsMunicipalityModalVisible(false)} 
+              onConfirmSingle={(id) => setTempMunicipalityId(id)} 
+            />
+          </>
+        )}
+      </Modal> 
+    );
 };
 
 
@@ -243,10 +362,32 @@ export default function BookingsScreen() {
     const headers: HeadersInit = { 'accept': 'text/plain' };
     let fetchPromises: Promise<Booking[]>[] = [];
     if (session.type === 'user') {
-        if (!session.name) { setError("User name not found."); setIsLoadingData(false); setIsRefreshing(false); return; }
-        const url = `${BASE_URL}/api/IssueTicket/GetTicketsByUser?Username=${encodeURIComponent(session.name)}`;
+        if (!session.id) { setError("User ID not found."); setIsLoadingData(false); setIsRefreshing(false); return; }
+        
+        // Build URL with the status filter for users
+        let url = `${BASE_URL}/api/IssueTicket/GetTicketsByUser?UserId=${session.id}`;
+        
+        // Only add status if specific filter is selected (not 'All')
+        if (currentFilters.status && currentFilters.status !== ALL_STATUSES_FILTER_ID) {
+          url += `&Status=${currentFilters.status}`;
+        }
+        
         console.log(`User Bookings: Fetching jobs from ${url}`);
-        fetchPromises.push(fetch(url, { headers }).then(async r => { if (!r.ok) { const et = await r.text(); throw new Error(`User fetch failed (${r.status}): ${et}`); } return r.json() as Promise<Booking[]>; }).catch(e => { console.error("User fetch failed:", e); setError(p => p ? `${p}\n${e.message}` : e.message); return []; }));
+        fetchPromises.push(
+          fetch(url, { headers })
+            .then(async r => { 
+              if (!r.ok) { 
+                const et = await r.text(); 
+                throw new Error(`User fetch failed (${r.status}): ${et}`); 
+              } 
+              return r.json() as Promise<Booking[]>; 
+            })
+            .catch(e => { 
+              console.error("User fetch failed:", e); 
+              setError(p => p ? `${p}\n${e.message}` : e.message); 
+              return []; 
+            })
+        );
     } else { // Partner fetch logic
         if (!session.id) { setError("Partner ID not found."); setIsLoadingData(false); setIsRefreshing(false); return; }
         const baseParams = new URLSearchParams();
@@ -360,11 +501,9 @@ export default function BookingsScreen() {
           headerTitleAlign: 'center',
           headerTitle: t('bookings'),
           headerRight: () => (
-            session?.type === 'partner' ? (
-              <TouchableOpacity onPress={() => setIsFilterModalVisible(true)} style={{ marginRight: 15 }}>
-                <Ionicons name="filter" size={24} color={COLORS.accent} />
-              </TouchableOpacity>
-            ) : null
+            <TouchableOpacity onPress={() => setIsFilterModalVisible(true)} style={{ marginRight: 15 }}>
+              <Ionicons name="filter" size={24} color={COLORS.accent} />
+            </TouchableOpacity>
           ),
         }}
       />
@@ -378,6 +517,7 @@ export default function BookingsScreen() {
         supportedMunicipalities={partnerMunicipalities as PartnerMunicipality[]}
         isLoadingProfile={isLoadingPartnerProfile}
         profileError={partnerProfileError}
+        isUserView={session?.type === 'user'}
       />
     </SafeAreaView>
   );

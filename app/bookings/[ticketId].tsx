@@ -78,7 +78,36 @@ interface ReviewApiResponse { //
 
 
 // --- Colors ---
-const COLORS = { background: '#FFFFFF', textPrimary: '#333333', textSecondary: '#555555', accent: '#696969', headerBg: '#FFFFFF', headerText: '#333333', error: '#D9534F', borderColor: '#E0E0E0', cardBg: '#F8F8F8', buttonBg: '#696969', buttonText: '#FFFFFF', iconPlaceholder: '#CCCCCC', labelColor: '#666666', statusCreated: '#007BFF', statusAccepted: '#28A745', statusInProgress: '#FFC107', statusCompleted: '#6C757D', statusDefault: '#6C757D', modalInputBg: '#FFFFFF', actionRowDisabled: '#EFEFEF', starColor: '#FFC107', buttonDisabledBg: '#AAAAAA'}; //
+const COLORS = { 
+  background: '#FFFFFF', 
+  textPrimary: '#333333', 
+  textSecondary: '#555555', 
+  accent: '#696969', 
+  headerBg: '#FFFFFF', 
+  headerText: '#333333', 
+  error: '#D9534F', 
+  borderColor: '#E0E0E0', 
+  cardBg: '#F8F8F8', 
+  buttonBg: '#696969', 
+  buttonText: '#FFFFFF', 
+  iconPlaceholder: '#CCCCCC', 
+  labelColor: '#666666', 
+  statusCreated: '#007BFF', 
+  statusAccepted: '#28A745', 
+  statusInProgress: '#FFC107', 
+  statusCompleted: '#6C757D', 
+  statusDefault: '#6C757D', 
+  modalInputBg: '#FFFFFF', 
+  actionRowDisabled: '#EFEFEF', 
+  starColor: '#FFC107', 
+  buttonDisabledBg: '#AAAAAA',
+  filterBg: '#F2F2F2',
+  filterActiveBg: '#696969',
+  filterActiveText: '#FFFFFF',
+  filterText: '#555555',
+  filterIndicatorBg: '#EFEFEF',
+  loadingOverlayBg: 'rgba(255,255,255,0.7)',
+}; //
 
 // --- Helper Functions ---
 const formatDate = (dateString: string | null | undefined): string => { //
@@ -131,7 +160,7 @@ export default function BookingDetailScreen() {
   const [selectedRating, setSelectedRating] = useState<number>(0); //
   const [reviewCommentText, setReviewCommentText] = useState<string>(''); //
   const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false); //
-
+  
   const headerHeight = useHeaderHeight(); //
 
   // --- Fetch Booking Details ---
@@ -270,10 +299,13 @@ export default function BookingDetailScreen() {
       <Stack.Screen
         options={{
           title: bookingData.reportingDescription || t('bookingdetails'),
-          headerBackTitle: '', headerTitleAlign: 'center',
-          headerStyle: { backgroundColor: COLORS.headerBg }, headerTintColor: COLORS.headerText,
+          headerBackTitle: '', 
+          headerTitleAlign: 'center',
+          headerStyle: { backgroundColor: COLORS.headerBg }, 
+          headerTintColor: COLORS.headerText
         }}
       />
+      
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         {/* Status Header & Actions */}
         <View style={styles.statusHeader}>
@@ -433,7 +465,7 @@ export default function BookingDetailScreen() {
                 </View>
                 <Text style={styles.sectionLabel}>{t('review_comment_label')}</Text>
                 <TextInput style={[styles.reviewTextInput, isSubmittingReview && styles.disabledInput]} placeholder={t('review_comment_placeholder')} value={reviewCommentText} onChangeText={setReviewCommentText} multiline numberOfLines={4} placeholderTextColor={COLORS.textSecondary} editable={!isSubmittingReview} />
-                <TouchableOpacity style={[styles.submitButton, (isSubmittingReview || selectedRating === 0) && styles.buttonDisabledBg]} onPress={handleSubmitReview} disabled={isSubmittingReview || selectedRating === 0} >
+                <TouchableOpacity style={[styles.submitButton, (isSubmittingReview || selectedRating === 0) && styles.buttonDisabled]} onPress={handleSubmitReview} disabled={isSubmittingReview || selectedRating === 0} >
                     {isSubmittingReview ? <ActivityIndicator color={COLORS.buttonText} /> : <Text style={styles.submitButtonText}>{t('review_submit_button')}</Text> }
                 </TouchableOpacity>
             </View>
