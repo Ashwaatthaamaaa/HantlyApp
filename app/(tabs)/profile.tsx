@@ -291,10 +291,22 @@ export default function ProfileScreen() {
           headerTintColor: COLORS.headerText, 
           headerTitleStyle: { fontWeight: 'bold' }, 
           headerTitleAlign: 'center', 
-          headerRight: () => ( 
-            <TouchableOpacity onPress={handleOpenLanguageModal} style={{ marginRight: 15 }} disabled={isUpdatingStatus}>
-              <Ionicons name="settings-outline" size={24} color={COLORS.iconColor} />
-            </TouchableOpacity> 
+          headerRight: () => (
+            <View style={{ flexDirection: 'row', marginRight: 10 }}>
+              <TouchableOpacity 
+                onPress={() => router.push('/edit-profile')} 
+                style={{ marginRight: 15 }} 
+                disabled={isUpdatingStatus}
+              >
+                <Ionicons name="create-outline" size={24} color={COLORS.iconColor} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={handleOpenLanguageModal} 
+                disabled={isUpdatingStatus}
+              >
+                <Ionicons name="settings-outline" size={24} color={COLORS.iconColor} />
+              </TouchableOpacity>
+            </View>
           ), 
         }}
       />
