@@ -293,21 +293,23 @@ export default function ProfileScreen() {
           headerTitleAlign: 'center', 
           headerRight: () => (
             <View style={{ flexDirection: 'row', marginRight: 10 }}>
-              <TouchableOpacity 
-                onPress={() => router.push('/edit-profile')} 
-                style={{ marginRight: 15 }} 
-                disabled={isUpdatingStatus}
-              >
-               <Ionicons name="create-outline" size={24} color={COLORS.iconColor} />
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                onPress={() => router.push('/edit-company')} 
-                style={{ marginRight: 15 }} 
-                disabled={isUpdatingStatus}
-              >
-               <Ionicons name="create-outline" size={24} color={COLORS.iconColor} />
-              </TouchableOpacity>
+              {session.type === 'user' ? (
+                <TouchableOpacity 
+                  onPress={() => router.push('/edit-profile')} 
+                  style={{ marginRight: 15 }} 
+                  disabled={isUpdatingStatus}
+                >
+                  <Ionicons name="create-outline" size={24} color={COLORS.iconColor} />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity 
+                  onPress={() => router.push('/edit-company')} 
+                  style={{ marginRight: 15 }} 
+                  disabled={isUpdatingStatus}
+                >
+                  <Ionicons name="create-outline" size={24} color={COLORS.iconColor} />
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity 
                 onPress={handleOpenLanguageModal} 

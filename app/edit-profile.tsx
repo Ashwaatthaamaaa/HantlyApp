@@ -22,6 +22,21 @@ export default function EditProfileScreen() {
   const router = useRouter();
   const { session } = useAuth();
 
+  // Ensure only users can access this screen
+  useEffect(() => {
+    if (!session) {
+      Alert.alert("Access Denied", "Please login to access your profile settings.");
+      router.replace('/login');
+      return;
+    }
+    
+    if (session.type !== 'user') {
+      Alert.alert("Access Denied", "This page is only accessible to users.");
+      router.back();
+      return;
+    }
+  }, [session, router]);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 

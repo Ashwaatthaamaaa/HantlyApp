@@ -23,6 +23,21 @@ export default function EditCompanyScreen() {
   const router = useRouter();
   const { session } = useAuth();
 
+  // Ensure only partners can access this screen
+  useEffect(() => {
+    if (!session) {
+      Alert.alert("Access Denied", "Please login to access your company settings.");
+      router.replace('/login');
+      return;
+    }
+    
+    if (session.type !== 'partner') {
+      Alert.alert("Access Denied", "This page is only accessible to partner accounts.");
+      router.back();
+      return;
+    }
+  }, [session, router]);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
