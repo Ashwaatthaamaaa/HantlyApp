@@ -150,6 +150,7 @@ const InitialLayout = () => {
       <Stack.Screen name="categories" /> {/* [cite: 44] */}
       <Stack.Screen name="urgentJobList" /> {/* [cite: 44] */}
       <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+      <Stack.Screen name="edit-company" options={{ headerShown: false }} />
     </Stack>
   );
 }; // [cite: 44]
