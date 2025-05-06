@@ -308,7 +308,7 @@ export default function EditProfileScreen() {
           >
             <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
             <Text style={[styles.input, { paddingVertical: 12, color: '#999' }]}>
-              {contactPerson || 'Not available'}
+              {username || 'Not available'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -336,7 +336,7 @@ export default function EditProfileScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.inputGroup}>
+          {/* <View style={styles.inputGroup}>
             <Text style={styles.label}>Location ID</Text>
             <View style={styles.inputContainer}>
               <Ionicons name="location-outline" size={20} color="#666" style={styles.inputIcon} />
@@ -348,7 +348,7 @@ export default function EditProfileScreen() {
                 placeholder="Enter location ID" 
               />
             </View>
-          </View>
+          </View> */}
 
           {/* -- Save Button -- */}
           <TouchableOpacity 

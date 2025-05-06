@@ -92,11 +92,11 @@ export default function EditCompanyScreen() {
         const res = await fetch(`${BASE_URL}/api/Company/GetCompanyDetail?EmailId=${encodeURIComponent(session?.email ?? '')}`);
         const data = await res.json();
 
-        setCompanyId(data.companyId ?? 0);
+        setCompanyId(data.pCompId ?? 0);
         setCompanyName(data.companyName ?? '');
         setCompanyRegistrationNumber(data.companyRegistrationNumber ?? '');
         setMobileNumber(data.mobileNumber ?? '');
-        setContactPerson(data.contactPerson ?? '');
+        setContactPerson(data.companyName ?? '');
         setEmailId(data.emailId ?? session?.email ?? '');
         setIs24x7(data.is24X7 ?? false);
         setCompanyPresentation(data.companyPresentation ?? '');
@@ -221,58 +221,75 @@ export default function EditCompanyScreen() {
 
   const handleSave = async () => {
     setSaving(true);
-
-    if (!emailId || companyId === 0) {
-      Alert.alert("Validation Failed", "Missing required fields.");
+  
+    console.log("=== FORM VALIDATION ===");
+    console.log("pCompId:", companyId);
+    console.log("LocationId:", locationId);
+    console.log("MobileNumber:", mobileNumber);
+    console.log("ContactPerson:", contactPerson);
+    console.log("EmailId:", emailId);
+    console.log("Is24X7:", is24x7);
+    console.log("CompanyName:", companyName);
+    console.log("CompanyRegistrationNumber:", companyRegistrationNumber);
+    console.log("CompanyPresentation:", companyPresentation);
+    console.log("CompetenceDescription:", competenceDescription);
+    console.log("CompanyReferences:", companyReferences);
+    console.log("LogoImageName:", logoImageName);
+    console.log("LogoImagePath:", logoImagePath);
+    console.log("CountyIdList:", countyIdList);
+    console.log("MunicipalityIdList:", municipalityIdList);
+    console.log("ServiceIdList:", serviceIdList);
+    console.log("======================");
+  
+    const missingFields = [];
+  
+    if (!companyId) missingFields.push("pCompId");
+    if (!locationId) missingFields.push("LocationId");
+    if (!mobileNumber) missingFields.push("MobileNumber");
+    if (!contactPerson) missingFields.push("ContactPerson");
+    if (!emailId) missingFields.push("EmailId");
+    if (!companyName) missingFields.push("CompanyName");
+  
+    if (missingFields.length > 0) {
+      console.log("❌ Missing required fields:", missingFields.join(", "));
+      Alert.alert("Missing Fields", `Please fill: ${missingFields.join(", ")}`);
       setSaving(false);
       return;
     }
-
+  
     try {
       const formData = new FormData();
-      
-      // Add basic company data
+  
       formData.append('pCompId', companyId.toString());
-      formData.append('LocationId', locationId);
+      formData.append('LocationId', parseInt(locationId).toString());
       formData.append('MobileNumber', mobileNumber);
-      formData.append('ContactPerson', contactPerson);
+      formData.append('ContactPerson', companyName); // Force contact person = company name
       formData.append('EmailId', emailId);
-      formData.append('Is24X7', is24x7.toString());
+      formData.append('Is24X7', is24x7 ? 'true' : 'false');
       formData.append('CompanyName', companyName);
       formData.append('CompanyRegistrationNumber', companyRegistrationNumber);
       formData.append('CompanyPresentation', companyPresentation);
       formData.append('CompetenceDescription', competenceDescription);
       formData.append('CompanyReferences', companyReferences);
-      
-      // Handle logo image
+  
       if (logoImage) {
-        // On native platforms, we need to create a blob or file
         const file = {
           uri: logoImage,
           name: logoImageName,
-          type: 'image/jpeg', // Assume JPEG for simplicity
+          type: 'image/jpeg',
         };
         formData.append('LogoImage', file as any);
       }
-      
+  
       formData.append('LogoImageName', logoImageName);
       formData.append('LogoImagePath', logoImagePath);
-      
-      // Add lists
-      countyIdList.forEach(id => {
-        formData.append('CountyIdList', id);
-      });
-      
-      municipalityIdList.forEach(id => {
-        formData.append('MunicipalityIdList', id);
-      });
-      
-      serviceIdList.forEach(id => {
-        formData.append('ServiceIdList', id);
-      });
-
-      console.log("Sending form data to API...");
-      
+  
+      countyIdList.forEach(id => formData.append('CountyIdList', id));
+      municipalityIdList.forEach(id => formData.append('MunicipalityIdList', id));
+      serviceIdList.forEach(id => formData.append('ServiceIdList', id));
+  
+      console.log("📤 Sending form data to API...");
+  
       const res = await fetch(`${BASE_URL}/api/Company/UpdateCompany`, {
         method: 'POST',
         headers: {
@@ -280,16 +297,16 @@ export default function EditCompanyScreen() {
         },
         body: formData,
       });
-
+  
       const responseText = await res.text();
       let responseData;
-      
+  
       try {
         responseData = JSON.parse(responseText);
       } catch (e) {
         responseData = { statusMessage: responseText };
       }
-
+  
       if (res.ok) {
         Alert.alert("Success", "Company profile updated successfully!");
         router.back();
@@ -297,12 +314,13 @@ export default function EditCompanyScreen() {
         throw new Error(responseData.statusMessage || responseData.detail || "Update failed");
       }
     } catch (err: any) {
-      console.log("Error saving company profile:", err.message);
+      console.log("❌ Error saving company profile:", err.message);
       Alert.alert("Error", err.message);
     } finally {
       setSaving(false);
     }
   };
+  
 
   const showBottomSheet = (type: 'county' | 'municipality' | 'service') => {
     if (type === 'county') {
@@ -432,33 +450,36 @@ export default function EditCompanyScreen() {
 
           <Text style={styles.sectionTitle}>Company Information</Text>
 
-          {/* -- Company Name -- */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Company Name</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="business-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput 
-                style={styles.input} 
-                value={companyName} 
-                onChangeText={setCompanyName} 
-                placeholder="Enter company name" 
-              />
-            </View>
-          </View>
+{/* -- Company Name -- */}
+<View style={styles.inputGroup}>
+  <Text style={styles.label}>Company Name</Text>
+  <View style={[styles.inputContainer, styles.disabledInput]}>
+    <Ionicons name="business-outline" size={20} color="#AAA" style={styles.inputIcon} />
+    <TextInput 
+      style={[styles.input, styles.disabledText]} 
+      value={companyName} 
+      editable={false}
+      placeholder="Enter company name" 
+      placeholderTextColor="#AAA"
+    />
+  </View>
+</View>
 
-          {/* -- Registration Number -- */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Registration Number</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="document-text-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput 
-                style={styles.input} 
-                value={companyRegistrationNumber} 
-                onChangeText={setCompanyRegistrationNumber} 
-                placeholder="Enter registration number" 
-              />
-            </View>
-          </View>
+{/* -- Registration Number -- */}
+<View style={styles.inputGroup}>
+  <Text style={styles.label}>Registration Number</Text>
+  <View style={[styles.inputContainer, styles.disabledInput]}>
+    <Ionicons name="document-text-outline" size={20} color="#AAA" style={styles.inputIcon} />
+    <TextInput 
+      style={[styles.input, styles.disabledText]} 
+      value={companyRegistrationNumber} 
+      editable={false}
+      placeholder="Enter registration number" 
+      placeholderTextColor="#AAA"
+    />
+  </View>
+</View>
+
 
           {/* -- Mobile -- */}
           <View style={styles.inputGroup}>
@@ -468,23 +489,14 @@ export default function EditCompanyScreen() {
               <TextInput 
                 style={styles.input} 
                 value={mobileNumber} 
-                onChangeText={setMobileNumber} 
+                onChangeText={(text) => {
+                  // Remove any non-digit characters and limit to 10 digits
+                  const cleaned = text.replace(/\D/g, '').slice(0, 10);
+                  setMobileNumber(cleaned);
+                }} 
                 keyboardType="phone-pad"
+                maxLength={10}
                 placeholder="Enter mobile number" 
-              />
-            </View>
-          </View>
-
-          {/* -- Contact Person -- */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Contact Person</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput 
-                style={styles.input} 
-                value={contactPerson} 
-                onChangeText={setContactPerson}
-                placeholder="Enter contact person name" 
               />
             </View>
           </View>
@@ -498,22 +510,6 @@ export default function EditCompanyScreen() {
               trackColor={{ false: "#d1d1d1", true: "#81b0ff" }}
               thumbColor={is24x7 ? "#4A90E2" : "#f4f3f4"}
             />
-          </View>
-
-          {/* -- Company Presentation -- */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Company Presentation</Text>
-            <View style={[styles.inputContainer, styles.textAreaContainer]}>
-              <TextInput 
-                style={[styles.input, styles.textArea]} 
-                value={companyPresentation} 
-                onChangeText={setCompanyPresentation}
-                placeholder="Enter company presentation"
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-            </View>
           </View>
 
           {/* -- Competence Description -- */}
@@ -532,38 +528,8 @@ export default function EditCompanyScreen() {
             </View>
           </View>
 
-          {/* -- Company References -- */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Company References</Text>
-            <View style={[styles.inputContainer, styles.textAreaContainer]}>
-              <TextInput 
-                style={[styles.input, styles.textArea]} 
-                value={companyReferences} 
-                onChangeText={setCompanyReferences}
-                placeholder="Enter company references"
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-            </View>
-          </View>
-
           {/* -- Location Section -- */}
           <Text style={styles.sectionTitle}>Location</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Location ID</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="location-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput 
-                style={styles.input} 
-                value={locationId} 
-                onChangeText={setLocationId} 
-                keyboardType="number-pad"
-                placeholder="Enter location ID" 
-              />
-            </View>
-          </View>
 
           {/* -- Counties -- */}
           <View style={styles.inputGroup}>
@@ -1000,5 +966,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 16
-  }
+  },
+  disabledInput: {
+    backgroundColor: '#F0F0F0',
+    borderColor: '#CCCCCC',
+  },
+  
+  disabledText: {
+    color: '#999999',
+  },
+  
 });
