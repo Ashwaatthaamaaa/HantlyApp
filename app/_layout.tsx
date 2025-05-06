@@ -149,6 +149,7 @@ const InitialLayout = () => {
       <Stack.Screen name="create-job-card" /> {/* [cite: 44] */}
       <Stack.Screen name="categories" /> {/* [cite: 44] */}
       <Stack.Screen name="urgentJobList" /> {/* [cite: 44] */}
+      <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
     </Stack>
   );
 }; // [cite: 44]
