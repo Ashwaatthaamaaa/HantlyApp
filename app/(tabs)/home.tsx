@@ -288,6 +288,7 @@ export default function HomeScreen() {
         columnWrapperStyle={styles.serviceGridRow}
         scrollEnabled={false}
         contentContainerStyle={styles.servicesGridContainer}
+        //....
       />
     );
   };
