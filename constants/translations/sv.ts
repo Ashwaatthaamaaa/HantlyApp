@@ -95,6 +95,9 @@ export const sv = {
     selectcounty: "Välj Län *",
     selectmunicipality: "Välj Kommun *",
     selectcountyfirst: "Välj Län Först",
+    municipality: "Kommun",
+    personalIngo: "Personal Information",
+    county: "Län",
     loadingmunicipalities: "Laddar Kommuner...",
     errormunicipalities: "Fel vid laddning",
     nomunicipalities: "Inga Kommuner Hittades",
@@ -115,6 +118,7 @@ export const sv = {
     back: "Tillbaka",
     
     // Urgent Job List Screen
+    urgentjob247: "Akutjobb 24/7",
     urgentpartners: "24/7 Tillgängliga Partners",
     accessdenied: "Åtkomst nekad. Användarsession hittades inte.",
     failedtoloadcompanies: "Kunde inte ladda tillgängliga företag:",
@@ -160,6 +164,10 @@ export const sv = {
 
     // Login Screen Placeholders (Swedish)
     passwordPlaceholder: "Lösenord",
+    resetpassword: "Återställ lösenord",
+    didntfindyourservice: "Hittade du inte din tjänst?",
+    dontworry: "Oroa dig inte, du kan lägga upp ditt behov",
+    newjobrequest: "Ny Jobbförfrågan",
 
     // User Registration Screen (Swedish - New Keys)
     countyloadfailed: "Kunde inte ladda län: {message}",

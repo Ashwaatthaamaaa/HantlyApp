@@ -60,6 +60,16 @@ export default function EditProfileScreen() {
   const bottomSheetAnim = useRef(new Animated.Value(0)).current;
   const loadingAnim = useRef(new Animated.Value(0)).current;
 
+  const isFormValid = () => {
+    return (
+      mobileNumber.trim().length === 10 &&
+      emailId.trim() !== '' &&
+      userId !== 0 &&
+      countyId !== '' &&
+      municipalityId !== ''
+    );
+  };  
+
   useEffect(() => {
     Animated.loop(
       Animated.timing(loadingAnim, {
@@ -129,16 +139,14 @@ export default function EditProfileScreen() {
   }, [countyId]);
 
   const handleSave = async () => {
-    Alert.alert("Debug", "Save button tapped ✅"); // 🔍 Step 1 check
-
     setSaving(true);
-
-    if (!emailId || userId === 0 || isNaN(Number(locationId))) {
-      Alert.alert("Validation Failed", "Missing or invalid required fields.");
+  
+    if (!isFormValid()) {
+      Alert.alert("Incomplete Form", "Please complete all required fields before saving.");
       setSaving(false);
       return;
     }
-
+  
     const payload = {
       userId,
       locationId: parseInt(locationId),
@@ -148,32 +156,27 @@ export default function EditProfileScreen() {
       countyId: parseInt(countyId),
       municipalityId: parseInt(municipalityId),
     };
-
-    console.log("📦 Payload to send:", payload);
-    Alert.alert("Payload", JSON.stringify(payload, null, 2).slice(0, 300)); // 🔍 Fallback to debug
-
+  
     try {
       const res = await fetch(`${BASE_URL}/api/User/UpdateUser`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
-      const text = await res.text();
-      console.log("📨 Response status:", res.status);
-      console.log("📨 Response text:", text);
-
-      if (!res.ok) throw new Error(text || 'Update failed');
-
-      Alert.alert("✅ Success", "Profile updated successfully!");
+  
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || 'Update failed');
+      }
+  
+      Alert.alert("Success", "Profile updated successfully!");
       router.back();
     } catch (err: any) {
-      console.log("❌ Error saving profile:", err.message);
-      Alert.alert("❌ Error", err.message);
+      Alert.alert("Error", err.message);
     } finally {
       setSaving(false);
     }
-  };
+  };  
 
   const showBottomSheet = (type: 'county' | 'municipality') => {
     if (type === 'county') {
@@ -286,7 +289,8 @@ export default function EditProfileScreen() {
                 value={mobileNumber} 
                 onChangeText={setMobileNumber} 
                 keyboardType="phone-pad"
-                placeholder="Enter mobile number" 
+                placeholder="Enter mobile number"
+                maxLength={10} // <-- limit to 10 digits
               />
             </View>
           </View>

@@ -321,8 +321,8 @@ export default function HomeScreen() {
         <View style={styles.sectionHeader}>
           <ThemedText style={styles.sectionTitle}>{t('services')}</ThemedText>
           <TouchableOpacity onPress={handleUrgentJobPress}>
-             <ThemedText style={styles.urgentJobText}>{t('urgentjob247')}</ThemedText>
-           </TouchableOpacity>
+              <ThemedText style={styles.urgentJobText}>{t('urgentjob247')}</ThemedText>
+          </TouchableOpacity>
           <TouchableOpacity onPress={handleViewAllServicesPress}>
              <ThemedText style={styles.viewAllText}>{t('viewall')}</ThemedText>
            </TouchableOpacity>

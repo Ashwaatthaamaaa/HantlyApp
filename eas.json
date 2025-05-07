@@ -16,6 +16,15 @@
         "buildType": "apk"
       },
       "autoIncrement": true
+    },
+    "ad-hoc": {
+      "distribution": "internal",
+      "ios": {
+        "enterpriseProvisioning": "adhoc"
+      },
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
