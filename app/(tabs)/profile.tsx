@@ -244,7 +244,7 @@ export default function ProfileScreen() {
                                onValueChange={() => handleToggle24x7(partner?.is24X7 ?? false)}
                                disabled={isUpdatingStatus || isLoadingProfile}
                            />
-                           <Text style={styles.statusText}> 24x7</Text>
+                           <Text style={styles.statusText}>{t('twenty_four_seven')}</Text>
                            {isUpdatingStatus && <ActivityIndicator size="small" color={COLORS.accent} style={{marginLeft: 5}}/>}
                        </View>
                    </View>
