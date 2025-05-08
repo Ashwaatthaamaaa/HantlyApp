@@ -86,7 +86,7 @@ const CompanyCard: React.FC<CompanyCardProps> = React.memo(({ item }) => { // Ad
                 {item.logoImagePath ? ( <Image source={{ uri: item.logoImagePath }} style={styles.logo} resizeMode="contain" /> ) : ( <View style={styles.logoPlaceholder}><Ionicons name="business" size={24} color={COLORS.textSecondary} /></View> )}
             </View>
             <View style={styles.companyDetails}>
-                <Text style={styles.companyName}>{item.companyName || t('unknowncompany')}</Text>
+                <Text style={styles.companyName}>{item.companyName || t('unknown_company')}</Text>
                 {item.contactPerson && <Text style={styles.contactPerson}>{t('contact')} {item.contactPerson}</Text>}
                 {item.mobileNumber && ( <View style={styles.contactRow}><MaterialCommunityIcons name="phone" size={16} color={COLORS.textSecondary} style={styles.contactIcon}/><Text style={styles.contactText}>{item.mobileNumber}</Text></View> )}
                 {item.emailId && ( <View style={styles.contactRow}><MaterialCommunityIcons name="email" size={16} color={COLORS.textSecondary} style={styles.contactIcon}/><Text style={styles.contactText}>{item.emailId}</Text></View> )}
@@ -105,7 +105,7 @@ const CompanyCard: React.FC<CompanyCardProps> = React.memo(({ item }) => { // Ad
                         {(showViewMoreButton || showViewLessButton) && (
                              <TouchableOpacity onPress={toggleExpansion}>
                                 <Text style={styles.viewMoreServices}>
-                                    {showViewMoreButton ? `${t('viewmore')} (${serviceCount - 3})` : t('viewless')}
+                                    {showViewMoreButton ? `${t('view_more')} (${serviceCount - 3})` : t('view_less')}
                                 </Text>
                             </TouchableOpacity>
                         )}
@@ -207,7 +207,7 @@ export default function UrgentJobListScreen() {
             <Stack.Screen options={{ title: t('error') }}/>
             <View style={styles.centered}>
                 <Ionicons name="alert-circle-outline" size={40} color={COLORS.error} style={{ marginBottom: 15 }}/>
-                <Text style={styles.errorText}>{error}</Text>
+                <Text style={styles.errorText}>{t('failedloadurgentcompanies', { message: error })}</Text>
                 <TouchableOpacity onPress={() => fetchUrgentCompanies(true)} style={styles.retryButton}>
                    <Text style={styles.retryButtonText}>{t('retry')}</Text>
                 </TouchableOpacity>
