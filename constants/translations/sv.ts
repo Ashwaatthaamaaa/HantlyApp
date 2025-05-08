@@ -9,6 +9,7 @@ export const sv = {
     loading: "Laddar...",
     services: "Tjänster",
     contact: "Kontakt:",
+    changes: "Ändringar",
     
     // Filter and Service Selection
     all_services: "Alla Tjänster",
@@ -248,4 +249,73 @@ export const sv = {
         partner_view_comment_prefix: "Kommentar:", // Can be same as user view or different if needed
         partner_view_no_comment: "Kunden lämnade ingen kommentar.", // Message when comment is empty/null
     
-};
+    // Newly Added Keys
+    access_denied: "Åtkomst nekad",
+    login_access_profile: "Vänligen logga in för att komma åt dina profilinställningar.",
+    user_only_page: "Denna sida är endast tillgänglig för användare.",
+    could_not_fetch_profile: "Kunde inte hämta profil.",
+    incomplete_form: "Ofullständigt formulär",
+    complete_all_fields: "Vänligen fyll i alla obligatoriska fält innan du sparar.",
+    profile_updated: "Profilen uppdaterades framgångsrikt!",
+    select_county_required: "Vänligen välj ett län först",
+    enter_mobile_number: "Ange mobilnummer",
+    enter_location_id: "Ange plats-ID",
+    
+    // Edit Company Screen
+    partner_only_page: "Denna sida är endast tillgänglig för partnerkonton.",
+    could_not_fetch_company: "Kunde inte hämta företagsprofil.",
+    could_not_fetch_data: "Kunde inte hämta nödvändig data.",
+    could_not_fetch_municipalities: "Kunde inte hämta kommuner.",
+    missing_fields: "Saknade fält",
+    please_fill: "Vänligen fyll i: {fields}",
+    company_updated: "Företagsprofilen uppdaterades framgångsrikt!",
+    enter_company_name: "Ange företagsnamn",
+    enter_registration_number: "Ange registreringsnummer",
+    enter_competence_description: "Ange kompetensbeskrivning",
+    
+    // Chat Screen
+    cannot_determine_recipient: "Kan inte bestämma mottagarens partner-ID.",
+    enter_chat_message: "Skriv meddelande",
+    
+    // Error Notifications
+    notification_token_error: "Kunde inte hämta aviseringstoken.",
+    
+    // OTP Input
+    otp_placeholder: "----",
+    
+    // Generic Error
+    fetch_details_error: "Kunde inte hämta användar-/företagsuppgifter: {message}",
+    unexpected_setup_error: "Ett oväntat nätverks- eller installationsfel inträffade: {message}",
+    about:'Om oss',
+    servicecategory:'Tjänstekategori',
+    regno:'Reg.nr',
+    viewall:'Visa alla',
+    urgentjob:'Akutjobb',
+    urgentjobtext:'Jobb som kräver snabbare svar',
+    urgentjobtext2:'Jobb som kräver snabbare svar',
+    urgentjobtext3:'Jobb som kräver snabbare svar',
+    actionnotallowed:'Åtgärd nekad',
+    onlyuserscancreate:'Endast användare kan skapa jobb',
+    apply:'Tillämpa',
+    filter_by_status:'Filtrera efter status',
+    filter_by_county:'Filtrera efter län',
+    filter_by_municipality:'Filtrera efter kommun',
+    location:'Plats',
+    personalinfo:'Personlig information',
+    jobdescription:'Jobb beskrivning',
+    createjobcard:'Skapa jobb kort',
+    allservices:'Alla tjänster',
+    enterjobdescription:'Ange jobb beskrivning',
+    chooseimages: "Välj Bilder",
+    chooseservicecategory: "Välj Tjänstekategori",
+    limitreached: "Gräns nådd",
+    max3images: "Du kan välja upp till 3 bilder.",
+    permissionrequired: "Behörighet krävs",
+    cameraaccessneeded: "Kameratillgång krävs.",
+    library: "Bibliotek",
+    camera: "Kamera",
+    remove: "Ta bort",
+    save: "Spara",
+    jobcardcreated: "Jobbkortet har skapats!",
+    errorcreatingjobcard: "Fel vid skapande av jobbkort",
+}
