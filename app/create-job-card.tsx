@@ -107,7 +107,7 @@ export default function CreateJobCardScreen() {
     const fetchCounties = async () => { /* ... no changes ... */ setIsLoadingCounties(true); setCountyError(null); const url = `${BASE_URL}/api/County/GetCountyList`; try { const response = await fetch(url); if (!response.ok) { throw new Error(`County fetch failed: ${response.status}`); } const data: CountyMaster[] = await response.json(); setCounties(data.map(c => ({ id: c.countyId.toString(), name: c.countyName }))); } catch (error: any) { console.error("County fetch failed:", error); setCountyError(error.message); } finally { setIsLoadingCounties(false); } }; //
 
     // Fetch User/Partner Name (remains the same)
-    const fetchUserName = async () => { /* ... no changes ... */ setUserName(''); if (session && session.email) { const detailEndpoint = session.type === 'partner' ? '/api/Company/GetCompanyDetail' : '/api/User/GetUserDetail'; const detailUrl = `${BASE_URL}${detailEndpoint}?EmailId=${encodeURIComponent(session.email)}`; console.log(`Workspaceing reporting name from: ${detailUrl}`); try { const response = await fetch(detailUrl); if (!response.ok) { const errorText = await response.text(); throw new Error(`Failed: ${response.status} - ${errorText}`); } const data = await response.json(); console.log('Received profile data for name:', JSON.stringify(data, null, 2)); let fetchedName = ''; if (session.type === 'partner') { fetchedName = data?.contactPerson || data?.companyName; } else { fetchedName = data?.username; } if (fetchedName) { setUserName(fetchedName); console.log(`Successfully set reporting name to: ${fetchedName}`); } else { throw new Error(`Name field ('${session.type === 'partner' ? 'contactPerson/companyName' : 'username'}') not found or empty.`); } } catch (error: any) { console.error("Failed to fetch user/company name:", error); setUserName(''); Alert.alert("Error Fetching Details", `Could not fetch user/company details: ${error.message}`); } } else { console.log("No session found, cannot fetch user name."); setUserName(''); } }; //
+    const fetchUserName = async () => { /* ... no changes ... */ setUserName(''); if (session && session.email) { const detailEndpoint = session.type === 'partner' ? '/api/Company/GetCompanyDetail' : '/api/User/GetUserDetail'; const detailUrl = `${BASE_URL}${detailEndpoint}?EmailId=${encodeURIComponent(session.email)}`; console.log(`Workspaceing reporting name from: ${detailUrl}`); try { const response = await fetch(detailUrl); if (!response.ok) { const errorText = await response.text(); throw new Error(`Failed: ${response.status} - ${errorText}`); } const data = await response.json(); console.log('Received profile data for name:', JSON.stringify(data, null, 2)); let fetchedName = ''; if (session.type === 'partner') { fetchedName = data?.contactPerson || data?.companyName; } else { fetchedName = data?.username; } if (fetchedName) { setUserName(fetchedName); console.log(`Successfully set reporting name to: ${fetchedName}`); } else { throw new Error(`Name field ('${session.type === 'partner' ? 'contactPerson/companyName' : 'username'}') not found or empty.`); } } catch (error: any) { console.error("Failed to fetch user/company name:", error); setUserName(''); Alert.alert(t('error'), t('fetch_details_error', { message: error.message })); } } else { console.log("No session found, cannot fetch user name."); setUserName(''); } }; //
 
     fetchServices(); // Fetch services first
     fetchCounties();
@@ -274,7 +274,7 @@ export default function CreateJobCardScreen() {
             try { const errorData = JSON.parse(responseText); if (errorData.errors && typeof errorData.errors === 'object') { errorMessage = errorData.title || "Validation Errors:\n"; errorMessage += Object.entries(errorData.errors).map(([field, messages]) => `- ${field}: ${(messages as string[]).join(', ')}`).join('\n'); } else { errorMessage = errorData?.statusMessage || errorData?.title || errorData?.detail || responseText || errorMessage; } } catch (e) { errorMessage = responseText || errorMessage; } //
             Alert.alert(t('errorcreatingjobcard'), errorMessage); //
         }
-    } catch (error: any) { console.error("Save Job Card Error:", error); Alert.alert('Error', `An unexpected network or setup error occurred: ${error.message}`); } //
+    } catch (error: any) { console.error("Save Job Card Error:", error); Alert.alert(t('error'), t('unexpected_setup_error', { message: error.message })); } //
     finally { setIsSaving(false); } //
   };
   // --- End Save Handler ---
@@ -365,7 +365,7 @@ export default function CreateJobCardScreen() {
          {/* --- County Selector --- */}
          <TouchableOpacity style={[styles.selectorContainer, (isLoadingCounties || !!countyError || isSaving) && styles.disabledSelector]} onPress={() => !isLoadingCounties && !countyError && !isSaving && setIsCountyModalVisible(true)} disabled={isLoadingCounties || !!countyError || isSaving}>
             <Text style={[styles.selectorText, !selectedCountyId && styles.placeholderText]}>
-                 {getSelectedNames([selectedCountyId ?? ''], counties)[0] || t('selectcounty')}
+                 {getSelectedNames([selectedCountyId ?? ''], counties)[0] || t('select_county')}
              </Text>
             {isLoadingCounties ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
@@ -376,7 +376,7 @@ export default function CreateJobCardScreen() {
          {/* --- Municipality Selector --- */}
         <TouchableOpacity style={[styles.selectorContainer, (isMunicipalityDisabled || isSaving) && styles.disabledSelector]} onPress={() => !isMunicipalityDisabled && !isSaving && setIsMunicipalityModalVisible(true)} disabled={isMunicipalityDisabled || isSaving}>
              <Text style={[styles.selectorText, !selectedMunicipalityId && styles.placeholderText]}>
-                {selectedCountyId && !isLoadingMunicipalities && !municipalityError && municipalities.length === 0 ? t('nomunicipalities') : getSelectedNames([selectedMunicipalityId ?? ''], municipalities)[0] || (!selectedCountyId ? t('selectcountyfirst') : t('selectmunicipality'))}
+                {selectedCountyId && !isLoadingMunicipalities && !municipalityError && municipalities.length === 0 ? t('nomunicipalities') : getSelectedNames([selectedMunicipalityId ?? ''], municipalities)[0] || (!selectedCountyId ? t('selectcountyfirst') : t('select_municipality'))}
              </Text>
              {isLoadingMunicipalities ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
@@ -386,7 +386,7 @@ export default function CreateJobCardScreen() {
 
         {/* --- Save Button --- */}
         <TouchableOpacity style={[styles.saveButton, isSaving && styles.buttonDisabled]} onPress={handleSave} disabled={isSaving}>
-           {isSaving ? <ActivityIndicator color={COLORS.buttonText} /> : <Text style={styles.saveButtonText}>Save</Text>}
+           {isSaving ? <ActivityIndicator color={COLORS.buttonText} /> : <Text style={styles.saveButtonText}>{t('save')}</Text>}
         </TouchableOpacity>
          {/* --- End Save Button --- */}
 
