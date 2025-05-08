@@ -596,7 +596,7 @@ export default function BookingDetailScreen() {
             <View style={styles.otpModalContent}>
                 <Text style={styles.otpModalTitle}>{t('enterotpfromuser')}</Text>
                  <Text style={styles.otpModalSubtitle}>{t('askcustomerotp')}</Text>
-                 <TextInput style={styles.otpInput} placeholder="----" placeholderTextColor={COLORS.iconPlaceholder} keyboardType="number-pad" maxLength={4} value={enteredOtp} onChangeText={setEnteredOtp} autoFocus={true} selectionColor={COLORS.accent} />
+                 <TextInput style={styles.otpInput} placeholder={t('otp_placeholder')} placeholderTextColor={COLORS.iconPlaceholder} keyboardType="number-pad" maxLength={4} value={enteredOtp} onChangeText={setEnteredOtp} autoFocus={true} selectionColor={COLORS.accent} />
                  {otpError ? <Text style={styles.otpErrorText}>{otpError}</Text> : null}
                  <View style={styles.otpModalActions}>
                      <TouchableOpacity style={[styles.otpModalButton, styles.otpCloseButton]} onPress={() => setOtpModalVisible(false)} disabled={isSubmittingStatus}><Text style={styles.otpCloseButtonText}>{t('close')}</Text></TouchableOpacity>
@@ -610,7 +610,7 @@ export default function BookingDetailScreen() {
             <View style={styles.otpModalContent}>
                 <Text style={styles.otpModalTitle}>{t('enter_acceptance_otp')}</Text>
                  <Text style={styles.otpModalSubtitle}>{t('get_otp_from_user_accept')}</Text>
-                 <TextInput style={styles.otpInput} placeholder="----" placeholderTextColor={COLORS.iconPlaceholder} keyboardType="number-pad" maxLength={4} value={enteredAcceptOtp} onChangeText={setEnteredAcceptOtp} autoFocus={true} selectionColor={COLORS.accent} />
+                 <TextInput style={styles.otpInput} placeholder={t('otp_placeholder')} placeholderTextColor={COLORS.iconPlaceholder} keyboardType="number-pad" maxLength={4} value={enteredAcceptOtp} onChangeText={setEnteredAcceptOtp} autoFocus={true} selectionColor={COLORS.accent} />
                  {acceptOtpError ? <Text style={styles.otpErrorText}>{acceptOtpError}</Text> : null}
                  <View style={styles.otpModalActions}>
                      <TouchableOpacity style={[styles.otpModalButton, styles.otpCloseButton]} onPress={() => setIsAcceptOtpModalVisible(false)} disabled={isSubmittingStatus}>
