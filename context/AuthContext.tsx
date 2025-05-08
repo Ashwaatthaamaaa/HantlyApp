@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 import { Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { BASE_URL } from '@/constants/Api';
+import { t } from '@/config/i18n';
 
 // Use the updated BASE_URL
 const SESSION_STORAGE_KEY = 'userSession';
@@ -150,7 +151,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.error("Sign in error:", error);
           let alertMessage = error.message;
           if (error.message?.toLowerCase().includes("invalid user") || error.message?.toLowerCase().includes("invalid credentials")) { alertMessage = "Please check your email or password."; }
-          Alert.alert('Sign In Failed', alertMessage);
+          Alert.alert(t('error'), alertMessage);
           await SecureStore.deleteItemAsync(SESSION_STORAGE_KEY);
           setSession(null);
           setIsLoading(false);
@@ -170,7 +171,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log("Sign out successful, session cleared.");
     } catch (error: any) {
         console.error("Sign out error:", error);
-        Alert.alert('Sign Out Failed', error.message);
+        Alert.alert(t('error'), error.message);
     } finally {
         setIsLoading(false);
     }
