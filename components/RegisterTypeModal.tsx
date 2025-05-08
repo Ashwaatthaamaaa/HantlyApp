@@ -8,6 +8,7 @@ import {
   SafeAreaView, // Use SafeAreaView for better handling on different devices
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; // Optional: for a close icon if needed
+import { t } from '@/config/i18n';
 
 // Approximate Colors - Adjust based on your theme/design system
 const COLORS = {
@@ -50,22 +51,22 @@ const RegisterTypeModal: React.FC<RegisterTypeModalProps> = ({
             <Ionicons name="close-circle" size={28} color={COLORS.closeButton} />
           </TouchableOpacity> */}
 
-          <Text style={styles.title}>Register</Text>
-          <Text style={styles.subtitle}>Register as a</Text>
+          <Text style={styles.title}>{t('rtm_title')}</Text>
+          <Text style={styles.subtitle}>{t('rtm_subtitle')}</Text>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={[styles.button, { backgroundColor: COLORS.buttonPartnerBg }]} // Example color
               onPress={onSelectPartner}
             >
-              <Text style={styles.buttonText}>PARTNER</Text>
+              <Text style={styles.buttonText}>{t('rtm_partner_button')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.button, { backgroundColor: COLORS.buttonUserBg }]} // Example color
               onPress={onSelectUser}
             >
-              <Text style={styles.buttonText}>USER</Text>
+              <Text style={styles.buttonText}>{t('rtm_user_button')}</Text>
             </TouchableOpacity>
           </View>
         </View>
