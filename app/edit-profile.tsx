@@ -13,6 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import { BlurView } from 'expo-blur';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { t } from '@/config/i18n';
 
 export const screenOptions = {
   headerShown: false,
@@ -25,13 +26,13 @@ export default function EditProfileScreen() {
   // Ensure only users can access this screen
   useEffect(() => {
     if (!session) {
-      Alert.alert("Access Denied", "Please login to access your profile settings.");
+      Alert.alert(t('access_denied'), t('login_access_profile'));
       router.replace('/login');
       return;
     }
     
     if (session.type !== 'user') {
-      Alert.alert("Access Denied", "This page is only accessible to users.");
+      Alert.alert(t('access_denied'), t('user_only_page'));
       router.back();
       return;
     }
@@ -111,7 +112,7 @@ export default function EditProfileScreen() {
           if (municipality) setSelectedMunicipalityName(municipality.municipalityName);
         }
       } catch (err) {
-        Alert.alert("Error", "Could not fetch profile.");
+        Alert.alert(t('error'), t('could_not_fetch_profile'));
       } finally {
         setLoading(false);
       }
@@ -142,7 +143,7 @@ export default function EditProfileScreen() {
     setSaving(true);
   
     if (!isFormValid()) {
-      Alert.alert("Incomplete Form", "Please complete all required fields before saving.");
+      Alert.alert(t('incomplete_form'), t('complete_all_fields'));
       setSaving(false);
       return;
     }
@@ -169,10 +170,10 @@ export default function EditProfileScreen() {
         throw new Error(errorText || 'Update failed');
       }
   
-      Alert.alert("Success", "Profile updated successfully!");
+      Alert.alert(t('success'), t('profile_updated'));
       router.back();
     } catch (err: any) {
-      Alert.alert("Error", err.message);
+      Alert.alert(t('error'), err.message);
     } finally {
       setSaving(false);
     }
@@ -183,7 +184,7 @@ export default function EditProfileScreen() {
       setShowCountyModal(true);
     } else {
       if (!countyId) {
-        Alert.alert("Required", "Please select a county first");
+        Alert.alert(t('required'), t('select_county_required'));
         return;
       }
       setShowMunicipalityModal(true);
@@ -238,7 +239,7 @@ export default function EditProfileScreen() {
         }}>
           <Ionicons name="sync-outline" size={50} color="#4A90E2" />
         </Animated.View>
-        <Text style={styles.loadingText}>Loading profile...</Text>
+        <Text style={styles.loadingText}>{t('loading_profile')}</Text>
       </SafeAreaView>
     );
   }
@@ -252,7 +253,7 @@ export default function EditProfileScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Profile</Text>
+          <Text style={styles.headerTitle}>{t('edit')} {t('profile')}</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -277,11 +278,11 @@ export default function EditProfileScreen() {
             <Text style={styles.emailDisplay}>{emailId}</Text>
           </View>
 
-          <Text style={styles.sectionTitle}>Personal Information</Text>
+          <Text style={styles.sectionTitle}>{t('personalIngo')}</Text>
 
           {/* -- Mobile -- */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Mobile Number</Text>
+            <Text style={styles.label}>{t('phonenumber')}</Text>
             <View style={styles.inputContainer}>
               <Ionicons name="call-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput 
@@ -289,7 +290,7 @@ export default function EditProfileScreen() {
                 value={mobileNumber} 
                 onChangeText={setMobileNumber} 
                 keyboardType="phone-pad"
-                placeholder="Enter mobile number"
+                placeholder={t('enter_mobile_number')}
                 maxLength={10} // <-- limit to 10 digits
               />
             </View>
@@ -297,7 +298,7 @@ export default function EditProfileScreen() {
 
           {/* -- Contact Person -- */}
           <View style={styles.inputGroup}>
-          <Text style={styles.label}>Contact Person</Text>
+          <Text style={styles.label}>{t('name')}</Text>
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() =>
@@ -312,36 +313,36 @@ export default function EditProfileScreen() {
           >
             <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
             <Text style={[styles.input, { paddingVertical: 12, color: '#999' }]}>
-              {username || 'Not available'}
+              {username || t('not_available')}
             </Text>
           </TouchableOpacity>
         </View>
 
           {/* -- Location Section -- */}
-          <Text style={styles.sectionTitle}>Location</Text>
+          <Text style={styles.sectionTitle}>{t('location')}</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>County</Text>
+            <Text style={styles.label}>{t('county')}</Text>
             <TouchableOpacity style={styles.pickerButton} onPress={() => showBottomSheet('county')}>
               <Text style={selectedCountyName ? styles.pickerValueText : styles.pickerPlaceholderText}>
-                {selectedCountyName || "Select County"}
+                {selectedCountyName || t('select_county')}
               </Text>
               <Ionicons name="chevron-down" size={20} color="#666" />
             </TouchableOpacity>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Municipality</Text>
+            <Text style={styles.label}>{t('municipality')}</Text>
             <TouchableOpacity style={styles.pickerButton} onPress={() => showBottomSheet('municipality')}>
               <Text style={selectedMunicipalityName ? styles.pickerValueText : styles.pickerPlaceholderText}>
-                {selectedMunicipalityName || "Select Municipality"}
+                {selectedMunicipalityName || t('select_municipality')}
               </Text>
               <Ionicons name="chevron-down" size={20} color="#666" />
             </TouchableOpacity>
           </View>
 
           {/* <View style={styles.inputGroup}>
-            <Text style={styles.label}>Location ID</Text>
+            <Text style={styles.label}>{t('location_id')}</Text>
             <View style={styles.inputContainer}>
               <Ionicons name="location-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput 
@@ -349,7 +350,7 @@ export default function EditProfileScreen() {
                 value={locationId} 
                 onChangeText={setLocationId} 
                 keyboardType="number-pad"
-                placeholder="Enter location ID" 
+                placeholder={t('enter_location_id')} 
               />
             </View>
           </View> */}
@@ -365,7 +366,7 @@ export default function EditProfileScreen() {
             ) : (
               <>
                 <Ionicons name="save-outline" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-                <Text style={styles.buttonText}>Save Changes</Text>
+                <Text style={styles.buttonText}>{t('save')} {t('changes')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -386,7 +387,7 @@ export default function EditProfileScreen() {
                 <Animated.View style={[styles.bottomSheet, { transform: [{ translateY: bottomSheetTranslateY }] }]}>
                   <View style={styles.bottomSheetHeader}>
                     <Text style={styles.bottomSheetTitle}>
-                      {showCountyModal ? "Select County" : "Select Municipality"}
+                      {showCountyModal ? t('select_county') : t('select_municipality')}
                     </Text>
                     <TouchableOpacity onPress={hideBottomSheet}>
                       <Ionicons name="close" size={24} color="#333" />
