@@ -88,7 +88,7 @@ const InitialLayout = () => {
       } catch (tokenError) {
           console.error("❌ Error getting Expo push token:", tokenError);
           // Handle cases where token generation itself fails
-          Alert.alert(t('error'), 'Could not retrieve notification token.');
+          Alert.alert(t('error'), t('notification_token_error'));
       }
 
     } else { // [cite: 39]
