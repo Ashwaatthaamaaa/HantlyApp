@@ -205,7 +205,7 @@ export default function ChatScreen() {
     // Ensure companyIdForApi is defined before proceeding
     if (companyIdForApi === undefined) {
         console.error("Cannot send message: companyIdForApi is undefined.");
-        Alert.alert("Error", "Cannot determine the recipient partner ID.");
+        Alert.alert(t('error'), t('cannot_determine_recipient'));
         return;
     }
 
@@ -347,7 +347,7 @@ export default function ChatScreen() {
         <View style={styles.inputArea}>
           <TextInput
             style={styles.textInput}
-            placeholder={t('enterchatmessage_placeholder')} // Use t()
+            placeholder={t('enter_chat_message')}
             value={newMessage}
             onChangeText={setNewMessage}
             multiline
