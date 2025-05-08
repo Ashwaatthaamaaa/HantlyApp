@@ -472,130 +472,89 @@ export default function BookingsScreen() {
       }
   }, [session]); // Re-run if session changes
 
-  // Function to fetch bookings based on current active filters
   const fetchData = useCallback(async (showLoadingIndicator = true) => {
-    // Don't fetch if auth is still loading or no session exists
     if (isAuthLoading || !session) {
-        setBookings([]);
-        setError(null);
-        if (!session && !isAuthLoading) { // Ensure loading stops if logged out
-            setIsLoadingData(false);
-            setIsRefreshing(false);
-        }
+        setBookings([]); setError(null);
+        if (!session && !isAuthLoading) { setIsLoadingData(false); setIsRefreshing(false); }
         return;
     }
 
-    const currentFilters = activeFilters; // Use the current state
-    if (showLoadingIndicator) setIsLoadingData(true); // Show loading indicator if requested
-    setError(null); // Clear previous errors
+    const currentFilters = activeFilters;
+    if (showLoadingIndicator) setIsLoadingData(true);
+    setError(null);
     const headers: HeadersInit = { 'accept': 'text/plain' };
-    let fetchPromises: Promise<Booking[]>[] = []; // Array to hold all fetch promises
+    let url: string; // Will hold the final URL
 
-    // --- User Fetch Logic ---
+    // --- User Fetch Logic (remains the same) ---
     if (session.type === 'user') {
-        if (!session.id) {
-            setError("User ID not found."); setIsLoadingData(false); setIsRefreshing(false); return;
-        }
-        // Construct URL for user bookings
-        let url = `${BASE_URL}/api/IssueTicket/GetTicketsByUser?UserId=${session.id}`;
-        // Add status filter if not "All"
+        if (!session.id) { setError("User ID not found."); setIsLoadingData(false); setIsRefreshing(false); return; }
+        let userUrl = `${BASE_URL}/api/IssueTicket/GetTicketsByUser?UserId=${session.id}`;
         if (currentFilters.status && currentFilters.status !== ALL_STATUSES_FILTER_ID) {
-          url += `&Status=${currentFilters.status}`;
+          userUrl += `&Status=${currentFilters.status}`;
         }
-        console.log(`User Bookings: Fetching jobs from ${url}`);
-        // Add the fetch promise to the array
-        fetchPromises.push(
-          fetch(url, { headers })
-            .then(async r => {
-              if (!r.ok) { const et = await r.text(); throw new Error(`User fetch failed (${r.status}): ${et}`); }
-              return r.json() as Promise<Booking[]>; // Parse JSON response
-            })
-            .catch(e => { // Handle errors for this specific fetch
-              console.error("User fetch failed:", e);
-              setError(p => p ? `${p}\n${e.message}` : e.message); // Append error message
-              return []; // Return empty array on error
-            })
-        );
+        console.log(`User Bookings: Fetching jobs from ${userUrl}`);
+        url = userUrl; // Set URL for user fetch
     }
-    // --- Partner Fetch Logic ---
+    // --- Partner Fetch Logic (Modified) ---
     else {
-        if (!session.id) {
-            setError("Partner ID not found."); setIsLoadingData(false); setIsRefreshing(false); return;
-        }
-        // Base parameters for partner fetch
-        const baseParams = new URLSearchParams();
-        baseParams.append('CompanyId', session.id.toString());
-        // Add county and municipality filters if they are selected
-        if (currentFilters.countyId !== null) { baseParams.append('CountyId', currentFilters.countyId); }
-        if (currentFilters.municipalityId !== null) { baseParams.append('MunicipalityId', currentFilters.municipalityId); }
+        if (!session.id) { setError("Partner ID not found."); setIsLoadingData(false); setIsRefreshing(false); return; }
 
-        // Determine which statuses to fetch
+        // Base parameters
+        const params = new URLSearchParams();
+        params.append('CompanyId', session.id.toString());
+        if (currentFilters.countyId !== null) { params.append('CountyId', currentFilters.countyId); }
+        if (currentFilters.municipalityId !== null) { params.append('MunicipalityId', currentFilters.municipalityId); }
+
+        // Check if fetching all or a specific status
         const isFetchingAllStatuses = currentFilters.status === ALL_STATUSES_FILTER_ID || currentFilters.status === null;
-        // If "All" is selected, fetch all predefined statuses; otherwise, fetch only the selected one
-        const targetStatuses = isFetchingAllStatuses ? FETCH_STATUSES : (currentFilters.status ? [currentFilters.status] : []);
 
-        console.log(`Partner Bookings: Fetching for statuses: [${targetStatuses.join(', ')}] with filters:`, currentFilters);
-
-        // If no valid status is selected (and not fetching all), don't make API calls
-        if (targetStatuses.length === 0 && !isFetchingAllStatuses) {
-            console.warn("No valid status selected for specific fetch, skipping API calls.");
-            setBookings([]); setIsLoadingData(false); setIsRefreshing(false); return;
+        if (isFetchingAllStatuses) {
+            // Fetching ALL: Do NOT add the Status parameter
+             console.log(`Partner Bookings: Fetching All Statuses with filters:`, currentFilters);
+        } else if (currentFilters.status) {
+            // Fetching SPECIFIC status: Add the Status parameter
+            params.append('Status', currentFilters.status);
+             console.log(`Partner Bookings: Fetching status '${currentFilters.status}' with filters:`, currentFilters);
+        } else {
+            // Edge case: Filter status is invalid somehow, don't fetch
+             console.warn("Partner Bookings: Invalid status filter, skipping fetch.");
+             setBookings([]); setIsLoadingData(false); setIsRefreshing(false); return;
         }
 
-        // Create a fetch promise for each target status
-        targetStatuses.forEach(status => {
-             const statusParams = new URLSearchParams(baseParams); // Copy base params
-             statusParams.append('Status', status); // Add the specific status
-             const url = `${BASE_URL}/api/IssueTicket/GetTicketsForCompany?${statusParams.toString()}`;
-             fetchPromises.push(
-                 fetch(url, { headers })
-                 .then(async response => {
-                     if (!response.ok) {
-                         const errorText = await response.text();
-                         console.error(`Partner fetch failed for status '${status}' (${response.status}): ${errorText}`);
-                         setError(prev => prev ? `${prev}\nFailed fetch for ${status}` : `Failed fetch for ${status}`);
-                         return []; // Return empty array on error for this status
-                     }
-                     return response.json() as Promise<Booking[]>; // Parse JSON
-                 })
-                 .catch(err => { // Handle network errors
-                     console.error(`Partner fetch network error for status '${status}':`, err);
-                     setError(prev => prev ? `${prev}\nNetwork error for ${status}` : `Network error for ${status}`);
-                     return []; // Return empty array on error
-                 })
-             );
-        });
+        // Construct the final URL for the single partner API call
+        url = `${BASE_URL}/api/IssueTicket/GetTicketsForCompany?${params.toString()}`;
     }
 
-    // --- Process all fetch promises ---
+    // --- Single Fetch Execution ---
     try {
-        const results = await Promise.all(fetchPromises); // Wait for all fetches to complete
-        const fetchedBookings = results.flat(); // Combine results from all fetches
+        console.log(`Executing fetch: ${url}`);
+        const response = await fetch(url, { headers });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            // Distinguish error source for clarity
+            const fetchType = session.type === 'user' ? 'User' : 'Partner';
+            console.error(`${fetchType} fetch failed (${response.status}): ${errorText}`);
+            throw new Error(`${fetchType} fetch failed (${response.status}): ${errorText}`);
+        }
+
+        const fetchedBookings: Booking[] = await response.json();
         // Sort bookings by creation date (newest first)
         fetchedBookings.sort((a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime());
         setBookings(fetchedBookings); // Update the bookings state
+        setError(null); // Clear error on successful fetch
+        console.log(`Workspaceed ${fetchedBookings.length} bookings successfully.`);
 
-        // Clear the main error state only if some data was fetched successfully
-        // OR if there was no error to begin with. This prevents clearing
-        // an error message if all fetches failed but one returned empty.
-        if (fetchedBookings.length > 0 || !error) {
-            if (error) { console.warn("Partial fetch errors occurred, but showing results:", error); }
-            setError(null); // Clear error if successful fetch or no prior error
-        } else {
-            // If fetches completed but bookings array is empty AND there was an error, keep the error.
-             console.error("All ticket fetches failed or returned empty with errors:", error);
-        }
-    } catch (overallError: any) {
-        // Catch any unexpected errors during Promise.all or sorting
-        console.error("Overall ticket fetch error (unexpected):", overallError);
-        setError(`Failed to load bookings: ${overallError.message}`);
-        setBookings([]); // Clear bookings on major error
+    } catch (err: any) {
+        console.error("Error during booking fetch:", err);
+        setError(err.message || `Failed to load bookings`); // Set specific error message
+        setBookings([]); // Clear bookings on error
     } finally {
         // Stop loading indicators
         if (showLoadingIndicator) setIsLoadingData(false);
         setIsRefreshing(false);
     }
-  }, [session, isAuthLoading, activeFilters]); // Dependencies: session, auth loading state, and active filters
+  }, [session, isAuthLoading, activeFilters]);// Dependencies: session, auth loading state, and active filters
 
   // Effect to fetch data when the screen gains focus or dependencies change
   useFocusEffect(
