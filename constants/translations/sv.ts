@@ -318,4 +318,5 @@ export const sv = {
     save: "Spara",
     jobcardcreated: "Jobbkortet har skapats!",
     errorcreatingjobcard: "Fel vid skapande av jobbkort",
+    nobookingsfound: "Inga bokningar hittades",
 }

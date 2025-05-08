@@ -295,5 +295,5 @@ export const en = {
     twenty_four_seven: "24x7",
     personalinfo: "Personal Info",
     allservices: "All Services",
-    
+    nobookingsfound: "No bookings found",
 };
