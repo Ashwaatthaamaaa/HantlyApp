@@ -14,6 +14,8 @@ export const en = {
     success: "Success",
     warning: "Warning",
     information: "Information",
+    changes: "Changes",
+    about:'About',
 
     // Navigation & Sections
     home: "Home",
@@ -71,12 +73,12 @@ export const en = {
     status_completed: "Completed",
     all_statuses: "All Statuses",
     select_status: "Select Status",
-    select_county: "Select County", // Removed duplicate
-    select_municipality: "Select Municipality", // Removed duplicate
+    select_county: "Select County",
+    select_municipality: "Select Municipality",
     loading_profile: "Loading Profile",
     error_loading_profile: "Error Loading Profile",
     no_supported_counties: "No Supported Counties",
-    select_county_first: "Select County First", // Removed duplicate
+    select_county_first: "Select County First",
     no_supported_municipalities: "No Supported Municipalities",
     error_profile: "Error Profile",
 
@@ -104,7 +106,6 @@ export const en = {
     registeruser: "Register User",
     createyouraccount: "Create your account here",
     name: "Name",
-    // selectcounty, selectmunicipality, selectcountyfirst moved to Booking Status section
     loadingmunicipalities: "Loading Municipalities...",
     errormunicipalities: "Error Loading",
     nomunicipalities: "No Municipalities Found",
@@ -121,20 +122,20 @@ export const en = {
     unexpectederror: "An unexpected error occurred:",
     couldnotloadcounties: "Could not load counties. Please try again later.",
     termsandprivacy: "I agree to the Terms of Service & Privacy Policy",
-    termslinktext: "Terms of Service & Privacy Policy", // Specific key for the link part
+    termslinktext: "Terms of Service & Privacy Policy",
     countyloadfailed: "Failed to load Counties: {message}",
     municipalityloadfailed: "Failed municipalities: {message}",
     signuperrorwithstatus: "An error occurred (Status: {status}).",
 
     // Home Screen & Categories
-    chooseservicecategory: "Choose Service Category *",
+    chooseservicecategory: "Select Service Category",
     companydescription: "Company Description",
     companyname:"Company Name",
     selectlogo: "Select Logo",
     dontworry: "Don't worry, You can post your Requirement",
     didntfindyourservice: "Didn't find your Service?",
     newjobrequest: "New Job Request",
-    urgentjob: "Urgent Job", // Might be obsolete if urgentjob247 is used
+    urgentjob: "Urgent Job",
     urgentjob247: "Urgent Job 24/7",
     viewall: "View All", // Consider if different from 'viewmore'
     register: "Register",
@@ -155,7 +156,6 @@ export const en = {
     resetpassword: "Reset Password",
     logoutconfirm: "Confirm Logout",
     logoutmessage: "Are you sure?",
-    about: "About",
     servicecategory: "Service Category",
     county: "County",
     municipality: "Municipality",
@@ -182,7 +182,7 @@ export const en = {
     libraryerror: "Library Error",
     limitreached: "Limit Reached",
     max3images: "You can select up to 3 images.",
-    selectservice: "Select Service", // Duplicate removed from filter section
+    selectservice: "Select Service",
     description: "Description",
     notloggedin: "Not Logged In",
     logintocreate: "Please log in to create a job request.",
@@ -248,121 +248,52 @@ export const en = {
     nopartnersmessage: "No partners have messaged about this job yet.",
     contactuserquote: "CONTACT USER (Send Quote)",
     chat: "CHAT",
-    aboutprovider: "About Your Provider",
-    aboutcustomer: "About Customer",
-    serviceproof: "Service Proof",
-    partnercomment: "Partner Comment:",
-    proofimages: "Proof Images:",
-    viewupdateserviceproof: "View/Update Service Proof",
-    uploadserviceproof: "Upload Service Proof",
-    yourreview: "Your Review",
-    ratingdisplay: "Rating: {stars}",
-    commentdisplay: "Comment: {comment}", // Kept for potential direct use
-    providerresponse: "Provider Response:",
-    notratedyet: "You haven't rated this service yet.",
-    enterotpfromuser: "Enter OTP From User",
-    askcustomerotp: "Ask the customer for the 4-digit code.",
-    invalidotp: "Please enter a valid 4-digit OTP.",
-    submitcomplete: "Submit & Complete",
 
-    // Update Booking Status Screen
-    updateserviceproof: "Update Service Proof",
-    cannotupdate: "Cannot Update",
-    updateonlyinprogress: "Service proof can only be uploaded or updated when the job status is 'In Progress'.",
-    updatesonlyinprogressinfo: "Updates only allowed when job is In Progress.",
-    currentproofimages: "Current Proof Images:",
-    addimagesinfo: "Selecting new images below will be added (API might replace/add depending on backend logic).",
-    addimagesbutton: "Add Images ({count}/{max}) *",
-    maximagesalert: "Max {max} images.",
-    descriptionworkdone: "Description of work done *",
-    enterjobdetailsplaceholder: "Enter details about the job completed...",
-    cannotsubmit: "Cannot Submit",
-    invalidsessionorticketid: "Invalid session or Ticket ID.",
-    enterdescriptionalert: "Please enter a description of the work done.",
-    uploadoneimagealert: "Please upload at least one service proof image.",
-    submitreport: "Submit Report",
-    reportsubmittedsuccess: "Report submitted successfully.",
-    errorsubmittingreport: "Error Submitting Report",
-    unexpectednetworkerrorwithmessage: "An unexpected network error occurred: {message}",
+    // Newly Added Keys
+    access_denied: "Access Denied",
+    login_access_profile: "Please login to access your profile settings.",
+    user_only_page: "This page is only accessible to users.",
+    could_not_fetch_profile: "Could not fetch profile.",
+    incomplete_form: "Incomplete Form",
+    complete_all_fields: "Please complete all required fields before saving.",
+    profile_updated: "Profile updated successfully!",
+    select_county_required: "Please select a county first",
+    enter_mobile_number: "Enter mobile number",
+    enter_location_id: "Enter location ID",
 
-    // Login Screen Placeholders
-    passwordPlaceholder: "Password",
-
-    // _layout.tsx Alerts
-    permissionrequired_title: "Permission required",
-    permissionrequired_message: "Enable notifications to receive job updates.",
-    physicaldevice_title: "Physical device required",
-    physicaldevice_message: "Notifications only work on physical devices.",
-    jobalert_title: "Job Alert",
-    jobalert_message: "You have a new update.",
-
-    // Partner Registration Screen
-    alreadyhaveaccount: "Already have a partner account?", // Might be same as alreadyhavepartneraccount
-    itemsSelected: "{count} items selected",
-    emailAlreadyRegistered: "Email: Already registered. Try signing in.",
-    companylogo: "Company Logo",
-    available24x7label: "Available 24x7?",
-    registrationnumberplaceholder: "Registration Number",
-    passwordmin8chars: "Password (min 8 chars)",
-    alreadyhavepartneraccount: "Already have a partner account?",
+    // Edit Company Screen
+    partner_only_page: "This page is only accessible to partner accounts.",
+    could_not_fetch_company: "Could not fetch company profile.",
+    could_not_fetch_data: "Could not fetch necessary data.",
+    could_not_fetch_municipalities: "Could not fetch municipalities.",
+    missing_fields: "Missing Fields",
+    please_fill: "Please fill: {fields}",
+    company_updated: "Company profile updated successfully!",
+    enter_company_name: "Enter company name",
+    enter_registration_number: "Enter registration number",
+    enter_competence_description: "Enter competence description",
 
     // Chat Screen
-    enterchatmessage_placeholder: "Enter Message",
-    couldnotsendmessage: "Could not send message: {message}", // Added translation
+    cannot_determine_recipient: "Cannot determine the recipient partner ID.",
+    enter_chat_message: "Write message",
 
-    // Find Partners Screen
-    chatwithcompanies_title: "Chat with companies",
-    failedloadpartners: "Failed to load partners: {message}",
-    nopartnersfound: "No matching partners found for this job's criteria.",
+    // Error Notifications
+    notification_token_error: "Could not retrieve notification token.",
 
-    // ForgotPasswordModal
-    fpm_enteremail_subtitle: "Enter your email address",
-    fpm_email_placeholder: "Email Address",
-    fpm_partneraccount_label: "Partner account",
-    fpm_step1_infotext: "Password reset instructions will be sent to your email address if the account exists.",
-    fpm_otp_placeholder: "Enter Otp",
-    fpm_newpassword_placeholder: "New Password (min 8 chars)",
-    fpm_step2_infotext: "Enter the OTP sent to your email and set a new password.",
-    fpm_emailrequired_title: "Email Required",
-    fpm_emailrequired_message: "Please enter your email address.",
-    fpm_invalidemailformat_title: "Invalid Email Format",
-    fpm_noaccountfound_message: "No account found for this email address.",
-    fpm_otpsent_message: "OTP successfully sent to the registered email.",
-    fpm_sendresetfailed_message: "Failed to send password reset request (Status: {status})",
-    fpm_genericerror_message: "An error occurred. Please check your connection and try again.",
-    fpm_missingotpnewpassword_message: "Please enter the OTP and your new password.",
-    fpm_newpasswordtooshort_message: "New password must be at least 8 characters.",
-    fpm_resetsuccess_message: "Your password has been reset successfully.",
-    fpm_resetfailed_message: "Password reset failed (Status: {status})",
-    fpm_resetexception_message: "Could not reset password. Please try again. {message}",
-    confirmSelection: "Confirm Selection",
-    applyfilter: "Apply Filter", // Added translation
+    // OTP Input
+    otp_placeholder: "----",
 
-    // Alerts
-    alertTitle: "Alert",
-
-    // Register Type Modal
-    rtm_title: "Register",
-    rtm_subtitle: "Register as a",
-    rtm_partner_button: "PARTNER",
-    rtm_user_button: "USER",
-
-    // Errors
-    error_title: "Error", // Generic error title
-
-    // Review Feature Keys
-    review_section_title: "Rate this Service",
-    review_rating_label: "Your Rating:",
-    review_comment_label: "Your Comment (Optional):",
-    review_comment_placeholder: "Tell us about your experience...",
-    review_submit_button: "Submit Review",
-    review_select_rating_alert: "Please select a star rating.",
-    // review_enter_comment_alert: "Please enter a comment.", // Uncomment if comment becomes mandatory
-    review_submit_success_default: "Review submitted successfully!",
-    review_submit_error: "Could not submit review",
-    missinginfo: "Missing Information", // Can reuse this if appropriate
-    commentdisplay_prefix: "Comment:", // Prefix for displaying submitted comment
-    partner_view_review_title: "Customer Review",
-    partner_view_comment_prefix: "Comment:", // Can be same as user view or different if needed
-    partner_view_no_comment: "Customer did not leave a comment.", // Message when comment is empty/null
+    // Generic Error
+    fetch_details_error: "Could not fetch user/company details: {message}",
+    unexpected_setup_error: "An unexpected network or setup error occurred: {message}",
+    location_id: "Location ID",
+    save_changes: "Save Changes",
+    done: "Done",
+    select_counties: "Select Counties",
+    select_municipalities: "Select Municipalities",
+    select_services: "Select Services",
+    twenty_four_seven: "24x7",
+    personalinfo: "Personal Info",
+    allservices: "All Services",
+    
 };
