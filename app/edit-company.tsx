@@ -14,6 +14,7 @@ import { BlurView } from 'expo-blur';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import Toast from 'react-native-toast-message';
 import * as ImagePicker from 'expo-image-picker';
+import { t } from '@/config/i18n';
 
 export const screenOptions = {
   headerShown: false,
@@ -26,13 +27,13 @@ export default function EditCompanyScreen() {
   // Ensure only partners can access this screen
   useEffect(() => {
     if (!session) {
-      Alert.alert("Access Denied", "Please login to access your company settings.");
+      Alert.alert(t('access_denied'), t('login_access_profile'));
       router.replace('/login');
       return;
     }
     
     if (session.type !== 'partner') {
-      Alert.alert("Access Denied", "This page is only accessible to partner accounts.");
+      Alert.alert(t('access_denied'), t('partner_only_page'));
       router.back();
       return;
     }
@@ -119,7 +120,7 @@ export default function EditCompanyScreen() {
           setServiceIdList(data.serviceIdList.map((id: number) => id.toString()));
         }
       } catch (err) {
-        Alert.alert("Error", "Could not fetch company profile.");
+        Alert.alert(t('error'), t('could_not_fetch_company'));
       } finally {
         setLoading(false);
       }
@@ -137,7 +138,7 @@ export default function EditCompanyScreen() {
         const serviceData = await serviceRes.json();
         setServices(serviceData);
       } catch (error) {
-        Alert.alert("Error", "Could not fetch necessary data.");
+        Alert.alert(t('error'), t('could_not_fetch_data'));
       }
     };
 
@@ -158,7 +159,7 @@ export default function EditCompanyScreen() {
           const allMunicipalities = results.flat();
           setMunicipalities(allMunicipalities);
         } catch (error) {
-          Alert.alert("Error", "Could not fetch municipalities.");
+          Alert.alert(t('error'), t('could_not_fetch_municipalities'));
         }
       };
       
@@ -252,7 +253,7 @@ export default function EditCompanyScreen() {
   
     if (missingFields.length > 0) {
       console.log("❌ Missing required fields:", missingFields.join(", "));
-      Alert.alert("Missing Fields", `Please fill: ${missingFields.join(", ")}`);
+      Alert.alert(t('missing_fields'), t('please_fill', { fields: missingFields.join(", ") }));
       setSaving(false);
       return;
     }
@@ -308,14 +309,14 @@ export default function EditCompanyScreen() {
       }
   
       if (res.ok) {
-        Alert.alert("Success", "Company profile updated successfully!");
+        Alert.alert(t('success'), t('company_updated'));
         router.back();
       } else {
         throw new Error(responseData.statusMessage || responseData.detail || "Update failed");
       }
     } catch (err: any) {
       console.log("❌ Error saving company profile:", err.message);
-      Alert.alert("Error", err.message);
+      Alert.alert(t('error'), err.message);
     } finally {
       setSaving(false);
     }
@@ -327,7 +328,7 @@ export default function EditCompanyScreen() {
       setShowCountyModal(true);
     } else if (type === 'municipality') {
       if (countyIdList.length === 0) {
-        Alert.alert("Required", "Please select at least one county first");
+        Alert.alert(t('required'), t('select_county_required'));
         return;
       }
       setShowMunicipalityModal(true);
@@ -400,7 +401,7 @@ export default function EditCompanyScreen() {
         }}>
           <Ionicons name="sync-outline" size={50} color="#4A90E2" />
         </Animated.View>
-        <Text style={styles.loadingText}>Loading company profile...</Text>
+        <Text style={styles.loadingText}>{t('loading_profile')}</Text>
       </SafeAreaView>
     );
   }
@@ -414,7 +415,7 @@ export default function EditCompanyScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Company</Text>
+          <Text style={styles.headerTitle}>{t('edit')} {t('companyname')}</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -448,18 +449,18 @@ export default function EditCompanyScreen() {
             <Text style={styles.emailDisplay}>{emailId}</Text>
           </View>
 
-          <Text style={styles.sectionTitle}>Company Information</Text>
+          <Text style={styles.sectionTitle}>{t('companydescription')}</Text>
 
 {/* -- Company Name -- */}
 <View style={styles.inputGroup}>
-  <Text style={styles.label}>Company Name</Text>
+  <Text style={styles.label}>{t('companyname')}</Text>
   <View style={[styles.inputContainer, styles.disabledInput]}>
     <Ionicons name="business-outline" size={20} color="#AAA" style={styles.inputIcon} />
     <TextInput 
       style={[styles.input, styles.disabledText]} 
       value={companyName} 
       editable={false}
-      placeholder="Enter company name" 
+      placeholder={t('enter_company_name')} 
       placeholderTextColor="#AAA"
     />
   </View>
@@ -467,14 +468,14 @@ export default function EditCompanyScreen() {
 
 {/* -- Registration Number -- */}
 <View style={styles.inputGroup}>
-  <Text style={styles.label}>Registration Number</Text>
+  <Text style={styles.label}>{t('regno')}</Text>
   <View style={[styles.inputContainer, styles.disabledInput]}>
     <Ionicons name="document-text-outline" size={20} color="#AAA" style={styles.inputIcon} />
     <TextInput 
       style={[styles.input, styles.disabledText]} 
       value={companyRegistrationNumber} 
       editable={false}
-      placeholder="Enter registration number" 
+      placeholder={t('enter_registration_number')} 
       placeholderTextColor="#AAA"
     />
   </View>
@@ -483,7 +484,7 @@ export default function EditCompanyScreen() {
 
           {/* -- Mobile -- */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Mobile Number</Text>
+            <Text style={styles.label}>{t('phonenumber')}</Text>
             <View style={styles.inputContainer}>
               <Ionicons name="call-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput 
@@ -496,14 +497,14 @@ export default function EditCompanyScreen() {
                 }} 
                 keyboardType="phone-pad"
                 maxLength={10}
-                placeholder="Enter mobile number" 
+                placeholder={t('enter_mobile_number')} 
               />
             </View>
           </View>
 
           {/* -- 24x7 Switch -- */}
           <View style={styles.switchGroup}>
-            <Text style={styles.label}>Available 24/7</Text>
+            <Text style={styles.label}>{t('changeavailability')}</Text>
             <Switch
               value={is24x7}
               onValueChange={setIs24x7}
@@ -514,13 +515,13 @@ export default function EditCompanyScreen() {
 
           {/* -- Competence Description -- */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Competence Description</Text>
+            <Text style={styles.label}>{t('companydescription')}</Text>
             <View style={[styles.inputContainer, styles.textAreaContainer]}>
               <TextInput 
                 style={[styles.input, styles.textArea]} 
                 value={competenceDescription} 
                 onChangeText={setCompetenceDescription}
-                placeholder="Enter competence description"
+                placeholder={t('enter_competence_description')}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -529,14 +530,14 @@ export default function EditCompanyScreen() {
           </View>
 
           {/* -- Location Section -- */}
-          <Text style={styles.sectionTitle}>Location</Text>
+          <Text style={styles.sectionTitle}>{t('location')}</Text>
 
           {/* -- Counties -- */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Counties</Text>
+            <Text style={styles.label}>{t('county')}</Text>
             <TouchableOpacity style={styles.pickerButton} onPress={() => showBottomSheet('county')}>
               <Text style={selectedCountyNames.length ? styles.pickerValueText : styles.pickerPlaceholderText}>
-                {selectedCountyNames.length ? `${selectedCountyNames.length} counties selected` : "Select Counties"}
+                {selectedCountyNames.length ? `${selectedCountyNames.length} ${t('county')}` : t('select_county')}
               </Text>
               <Ionicons name="chevron-down" size={20} color="#666" />
             </TouchableOpacity>
@@ -553,14 +554,14 @@ export default function EditCompanyScreen() {
 
           {/* -- Municipalities -- */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Municipalities</Text>
+            <Text style={styles.label}>{t('municipality')}</Text>
             <TouchableOpacity 
               style={[styles.pickerButton, countyIdList.length === 0 && styles.disabledButton]} 
               onPress={() => showBottomSheet('municipality')}
               disabled={countyIdList.length === 0}
             >
               <Text style={selectedMunicipalityNames.length ? styles.pickerValueText : styles.pickerPlaceholderText}>
-                {selectedMunicipalityNames.length ? `${selectedMunicipalityNames.length} municipalities selected` : "Select Municipalities"}
+                {selectedMunicipalityNames.length ? `${selectedMunicipalityNames.length} ${t('municipality')}` : t('select_municipality')}
               </Text>
               <Ionicons name="chevron-down" size={20} color="#666" />
             </TouchableOpacity>
@@ -577,10 +578,10 @@ export default function EditCompanyScreen() {
 
           {/* -- Services -- */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Services</Text>
+            <Text style={styles.label}>{t('services')}</Text>
             <TouchableOpacity style={styles.pickerButton} onPress={() => showBottomSheet('service')}>
               <Text style={selectedServiceNames.length ? styles.pickerValueText : styles.pickerPlaceholderText}>
-                {selectedServiceNames.length ? `${selectedServiceNames.length} services selected` : "Select Services"}
+                {selectedServiceNames.length ? `${selectedServiceNames.length} ${t('services')}` : t('select_service')}
               </Text>
               <Ionicons name="chevron-down" size={20} color="#666" />
             </TouchableOpacity>
@@ -606,7 +607,7 @@ export default function EditCompanyScreen() {
             ) : (
               <>
                 <Ionicons name="save-outline" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-                <Text style={styles.buttonText}>Save Changes</Text>
+                <Text style={styles.buttonText}>{t('save_changes')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -627,8 +628,8 @@ export default function EditCompanyScreen() {
                 <Animated.View style={[styles.bottomSheet, { transform: [{ translateY: bottomSheetTranslateY }] }]}>
                   <View style={styles.bottomSheetHeader}>
                     <Text style={styles.bottomSheetTitle}>
-                      {showCountyModal ? "Select Counties" : 
-                       showMunicipalityModal ? "Select Municipalities" : "Select Services"}
+                      {showCountyModal ? t('select_counties') : 
+                       showMunicipalityModal ? t('select_municipalities') : t('select_services')}
                     </Text>
                     <TouchableOpacity onPress={hideBottomSheet}>
                       <Ionicons name="close" size={24} color="#333" />
@@ -683,7 +684,7 @@ export default function EditCompanyScreen() {
                     style={styles.doneButton} 
                     onPress={hideBottomSheet}
                   >
-                    <Text style={styles.doneButtonText}>Done</Text>
+                    <Text style={styles.doneButtonText}>{t('done')}</Text>
                   </TouchableOpacity>
                 </Animated.View>
               </TouchableWithoutFeedback>
