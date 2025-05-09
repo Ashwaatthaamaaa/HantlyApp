@@ -407,9 +407,8 @@ export default function EditCompanyScreen() {
   }
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.container}>
-        <StatusBar style="auto" />
+    <SafeAreaView style={styles.container}>
+    <StatusBar style="auto" />
         
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -615,86 +614,115 @@ export default function EditCompanyScreen() {
         </KeyboardAvoidingView>
 
         {/* -- Modal for County/Municipality/Service Selection -- */}
+        {(showCountyModal || showMunicipalityModal || showServiceModal) && (
         <Modal
-          visible={showCountyModal || showMunicipalityModal || showServiceModal}
+          visible
           transparent
-          animationType="none"
+          animationType="fade"
           onRequestClose={hideBottomSheet}
         >
-          <TouchableWithoutFeedback onPress={hideBottomSheet}>
-            <View style={styles.modalOverlay}>
-              <BlurView intensity={50} style={StyleSheet.absoluteFill} />
-              <TouchableWithoutFeedback>
-                <Animated.View style={[styles.bottomSheet, { transform: [{ translateY: bottomSheetTranslateY }] }]}>
-                  <View style={styles.bottomSheetHeader}>
-                    <Text style={styles.bottomSheetTitle}>
-                      {showCountyModal ? t('select_counties') : 
-                       showMunicipalityModal ? t('select_municipalities') : t('select_services')}
-                    </Text>
-                    <TouchableOpacity onPress={hideBottomSheet}>
-                      <Ionicons name="close" size={24} color="#333" />
+          <View style={StyleSheet.absoluteFill}>
+            <BlurView intensity={30} tint="light" style={StyleSheet.absoluteFill} />
+
+            {/* Dismiss backdrop */}
+            <TouchableWithoutFeedback onPress={hideBottomSheet}>
+              <View style={{ flex: 1 }} />
+            </TouchableWithoutFeedback>
+
+            {/* Bottom Sheet */}
+            <Animated.View
+              style={[
+                styles.bottomSheet,
+                {
+                  transform: [{ translateY: bottomSheetTranslateY }],
+                },
+              ]}
+            >
+              <View style={styles.bottomSheetHeader}>
+                <Text style={styles.bottomSheetTitle}>
+                  {showCountyModal
+                    ? t('select_counties')
+                    : showMunicipalityModal
+                    ? t('select_municipalities')
+                    : t('select_services')}
+                </Text>
+                <TouchableOpacity onPress={hideBottomSheet}>
+                  <Ionicons name="close" size={24} color="#333" />
+                </TouchableOpacity>
+              </View>
+
+              {/* ✅ FIX: Use ScrollView and give fixed height constraint */}
+              <ScrollView
+                style={{ maxHeight: 350 }}
+                contentContainerStyle={{ paddingBottom: 30 }}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                {(showCountyModal
+                  ? counties
+                  : showMunicipalityModal
+                  ? municipalities.filter((m) =>
+                      countyIdList.includes(m.countyId.toString())
+                    )
+                  : services
+                ).map((item: any) => {
+                  const id = showCountyModal
+                    ? item.countyId.toString()
+                    : showMunicipalityModal
+                    ? item.municipalityId.toString()
+                    : item.serviceId.toString();
+
+                  const name = showCountyModal
+                    ? item.countyName
+                    : showMunicipalityModal
+                    ? item.municipalityName
+                    : item.serviceName;
+
+                  const isSelected =
+                    (showCountyModal && countyIdList.includes(id)) ||
+                    (showMunicipalityModal &&
+                      municipalityIdList.includes(id)) ||
+                    (showServiceModal && serviceIdList.includes(id));
+
+                  return (
+                    <TouchableOpacity
+                      key={id}
+                      style={styles.optionItem}
+                      onPress={() => {
+                        if (showCountyModal) {
+                          toggleCounty(id, name);
+                        } else if (showMunicipalityModal) {
+                          toggleMunicipality(id, name);
+                        } else {
+                          toggleService(id, name);
+                        }
+                      }}
+                    >
+                      <Text style={styles.optionText}>{name}</Text>
+                      <Ionicons
+                        name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={24}
+                        color={isSelected ? '#4A90E2' : '#CCCCCC'}
+                      />
                     </TouchableOpacity>
-                  </View>
+                  );
+                })}
+              </ScrollView>
 
-                  <FlatList
-                    data={
-                      showCountyModal ? counties : 
-                      showMunicipalityModal ? municipalities.filter(m => 
-                        countyIdList.includes(m.countyId.toString())
-                      ) : services
-                    }
-                    keyExtractor={(item) => 
-                      showCountyModal ? item.countyId.toString() : 
-                      showMunicipalityModal ? item.municipalityId.toString() : 
-                      item.serviceId.toString()
-                    }
-                    renderItem={({ item }) => (
-                      <TouchableOpacity 
-                        style={styles.optionItem}
-                        onPress={() => {
-                          if (showCountyModal) {
-                            toggleCounty(item.countyId.toString(), item.countyName);
-                          } else if (showMunicipalityModal) {
-                            toggleMunicipality(item.municipalityId.toString(), item.municipalityName);
-                          } else {
-                            toggleService(item.serviceId.toString(), item.serviceName);
-                          }
-                        }}
-                      >
-                        <Text style={styles.optionText}>
-                          {showCountyModal ? item.countyName : 
-                           showMunicipalityModal ? item.municipalityName : 
-                           item.serviceName}
-                        </Text>
-                        <View style={styles.checkboxContainer}>
-                          {((showCountyModal && countyIdList.includes(item.countyId.toString())) || 
-                            (showMunicipalityModal && municipalityIdList.includes(item.municipalityId.toString())) ||
-                            (showServiceModal && serviceIdList.includes(item.serviceId.toString()))) ? (
-                            <Ionicons name="checkmark-circle" size={24} color="#4A90E2" />
-                          ) : (
-                            <Ionicons name="ellipse-outline" size={24} color="#CCCCCC" />
-                          )}
-                        </View>
-                      </TouchableOpacity>
-                    )}
-                    ItemSeparatorComponent={() => <View style={styles.separator} />}
-                  />
-
-                  <TouchableOpacity 
-                    style={styles.doneButton} 
-                    onPress={hideBottomSheet}
-                  >
-                    <Text style={styles.doneButtonText}>{t('done')}</Text>
-                  </TouchableOpacity>
-                </Animated.View>
-              </TouchableWithoutFeedback>
-            </View>
-          </TouchableWithoutFeedback>
+              <TouchableOpacity
+                style={styles.doneButton}
+                onPress={hideBottomSheet}
+              >
+                <Text style={styles.doneButtonText}>{t('done')}</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
         </Modal>
+      )}
+
 
         <Toast />
       </SafeAreaView>
-    </TouchableWithoutFeedback>
   );
 }
 

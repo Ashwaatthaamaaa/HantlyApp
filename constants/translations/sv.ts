@@ -191,6 +191,7 @@ export const sv = {
     // Partner Registration Screen (Placeholders - Swedish)
     registrationnumberplaceholder: "Ange Registreringsnummer",
     interestedpartners: "Intresserade Partner",
+    available24x7label: "Tillgänglig 24/7",
 
     passwordmin8chars: "Lösenord (minst 8 tecken)",
     alreadyhavepartneraccount: "Har du redan ett partnerkonto?",

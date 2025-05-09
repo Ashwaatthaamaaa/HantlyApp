@@ -245,7 +245,6 @@ export default function EditProfileScreen() {
   }
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <SafeAreaView style={styles.container}>
         <StatusBar style="auto" />
         
@@ -425,7 +424,6 @@ export default function EditProfileScreen() {
           </TouchableWithoutFeedback>
         </Modal>
       </SafeAreaView>
-    </TouchableWithoutFeedback>
   );
 }
 
