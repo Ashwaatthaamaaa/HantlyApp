@@ -333,4 +333,5 @@ export const en = {
     addimagesbutton: "Add Images",
     descriptionworkdone: "Description of Work Done",
     enterjobdetailsplaceholder: "Enter job details",
+    selectmunicipality: "Select Municipality *",
 };
