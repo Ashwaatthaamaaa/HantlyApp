@@ -189,7 +189,9 @@ export const sv = {
     jobalert_message: "Du har en ny uppdatering.",
 
     // Partner Registration Screen (Placeholders - Swedish)
-    registrationnumberplaceholder: "Registreringsnummer",
+    registrationnumberplaceholder: "Ange Registreringsnummer",
+    interestedpartners: "Intresserade Partner",
+
     passwordmin8chars: "Lösenord (minst 8 tecken)",
     alreadyhavepartneraccount: "Har du redan ett partnerkonto?",
 
@@ -319,4 +321,6 @@ export const sv = {
     jobcardcreated: "Jobbkortet har skapats!",
     errorcreatingjobcard: "Fel vid skapande av jobbkort",
     nobookingsfound: "Inga bokningar hittades",
+    view_more: "Visa alla",
+    enter_acceptance_otp: "Ange OTP för godkännande"
 }

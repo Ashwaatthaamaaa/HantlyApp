@@ -68,7 +68,9 @@ export const en = {
     no_description: "No description",
     not_available: "Not available",
     status_created: "Created",
+    aboutcustomer: "About customer",
     status_accepted: "Accepted",
+    available24x7label: "Available 24x7",
     status_in_progress: "In Progress",
     status_completed: "Completed",
     all_statuses: "All Statuses",
@@ -296,4 +298,13 @@ export const en = {
     personalinfo: "Personal Info",
     allservices: "All Services",
     nobookingsfound: "No bookings found",
+    view_more: "View All",
+    uploadserviceproof: "Upload service proof",
+    selectcountyfirst: "Select County First",
+    selectcounty: "Select County *",
+    passwordmin8chars: "Password (minimum 8 characters)",
+    alreadyhavepartneraccount: "Already have a partner account?",
+    aboutprovider: "About Your Provider",
+    registrationnumberplaceholder: "Enter Registration Number",
+
 };
