@@ -17,6 +17,10 @@ export const en = {
     changes: "Changes",
     about:'About',
 
+    // MultiSelectModal Translations
+    multi_select_confirm: "Confirm Selection",
+    multi_select_init_log: "Modal \"{title}\" - Initializing selection.",
+
     // Navigation & Sections
     home: "Home",
     profile: "Profile",
@@ -139,7 +143,7 @@ export const en = {
     newjobrequest: "New Job Request",
     urgentjob: "Urgent Job",
     urgentjob247: "Urgent Job 24/7",
-    viewall: "View All", // Consider if different from 'viewmore'
+    viewall: "View All",
     register: "Register",
     loginsrequired: "Login Required",
     logintoproceed: "Please login or register to continue.",
@@ -253,27 +257,27 @@ export const en = {
 
     // Newly Added Keys
     access_denied: "Access Denied",
-    login_access_profile: "Please login to access your profile settings.",
+    login_access_profile: "Login to access your profile",
     user_only_page: "This page is only accessible to users.",
     could_not_fetch_profile: "Could not fetch profile.",
     incomplete_form: "Incomplete Form",
-    complete_all_fields: "Please complete all required fields before saving.",
+    complete_all_fields: "Complete all fields",
     profile_updated: "Profile updated successfully!",
     select_county_required: "Please select a county first",
     enter_mobile_number: "Enter mobile number",
     enter_location_id: "Enter location ID",
 
     // Edit Company Screen
-    partner_only_page: "This page is only accessible to partner accounts.",
-    could_not_fetch_company: "Could not fetch company profile.",
-    could_not_fetch_data: "Could not fetch necessary data.",
+    partner_only_page: "This page is only accessible to partners.",
+    could_not_fetch_company: "Could not fetch company.",
+    could_not_fetch_data: "Could not fetch data.",
     could_not_fetch_municipalities: "Could not fetch municipalities.",
     missing_fields: "Missing Fields",
     please_fill: "Please fill: {fields}",
-    company_updated: "Company profile updated successfully!",
+    company_updated: "Company updated",
     enter_company_name: "Enter company name",
     enter_registration_number: "Enter registration number",
-    enter_competence_description: "Enter competence description",
+    enter_competence_description: "Enter Competence Description",
 
     // Chat Screen
     cannot_determine_recipient: "Cannot determine the recipient partner ID.",
@@ -306,5 +310,27 @@ export const en = {
     alreadyhavepartneraccount: "Already have a partner account?",
     aboutprovider: "About Your Provider",
     registrationnumberplaceholder: "Enter Registration Number",
-
+    personalInfo: "Personal Info",
+    savechanges: "Save Changes",
+    save_button: "Save",
+    reset_password: "Reset Password",
+    no_data_available: "No data available",
+    contact_support: "Contact Support",
+    invalid_email: "Invalid email address.",
+    password_too_short: "Password must be at least 8 characters.",
+    enterotpfromuser: "Enter OTP from user",
+    enterotpfromprovider: "Enter OTP from provider",
+    otp: "OTP",
+    askcustomerotp: "Ask customer for OTP",
+    askproviderotp: "Ask provider for OTP",
+    submitcomplete: "Submit",
+    serviceproof: "Service Proof",
+    partnercomment: "Partner Comment",
+    proofimages: "Proof Images",
+    viewupdateserviceproof: "View/Update Service Proof",
+    submitreport: "Submit Report",
+    updateserviceproof: "Update Service Proof",
+    addimagesbutton: "Add Images",
+    descriptionworkdone: "Description of Work Done",
+    enterjobdetailsplaceholder: "Enter job details",
 };

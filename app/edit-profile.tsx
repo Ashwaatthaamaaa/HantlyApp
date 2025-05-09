@@ -277,7 +277,7 @@ export default function EditProfileScreen() {
             <Text style={styles.emailDisplay}>{emailId}</Text>
           </View>
 
-          <Text style={styles.sectionTitle}>{t('personalIngo')}</Text>
+          <Text style={styles.sectionTitle}>{t('personalInfo')}</Text>
 
           {/* -- Mobile -- */}
           <View style={styles.inputGroup}>

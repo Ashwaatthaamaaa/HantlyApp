@@ -62,7 +62,7 @@ export default function SelectModal({
     if (visible) {
         // Only initialize on the first render after becoming visible
         if (isInitialMount.current) {
-            console.log(`Modal "${title}" - Initializing selection.`);
+            console.log(t('multi_select_init_log', { title }));
             const initialSet = mode === 'single' && initialSelectedId
                                 ? new Set([initialSelectedId])
                                 : new Set(initialSelectedIds || []); // Use || [] for safety if prop could be undefined
@@ -110,16 +110,8 @@ export default function SelectModal({
       return confirmButtonText;
     }
     
-    // Otherwise, check current locale and use hardcoded translations
-    const currentLocale = i18n.locale;
-    console.log('Current locale in MultiSelectModal:', currentLocale);
-    
-    if (currentLocale === 'sv') {
-      return 'Bekräfta val'; // Swedish translation
-    }
-    
-    // Default to English
-    return 'Confirm Selection';
+    // Use translation key
+    return t('multi_select_confirm');
   };
 
   // Render list item

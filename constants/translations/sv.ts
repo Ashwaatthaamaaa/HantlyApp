@@ -20,8 +20,10 @@ export const sv = {
     viewmore: "Visa mer",
     nopartnersavailable: "Inga partners är för närvarande tillgängliga 24/7.",
     
-    // Paste the Swedish translations here, ensuring keys are lowercase
+    // Common UI Elements
     nodata: "Ingen data tillgänglig",
+    multi_select_confirm: "Bekräfta val",
+    multi_select_init_log: "Modal \"{title}\" - Initierar val.",
     logout: "Logga ut",
     welcomemessage: "Välkommen till portalen",
     update: "Uppdatera",
@@ -254,27 +256,45 @@ export const sv = {
     
     // Newly Added Keys
     access_denied: "Åtkomst nekad",
-    login_access_profile: "Vänligen logga in för att komma åt dina profilinställningar.",
-    user_only_page: "Denna sida är endast tillgänglig för användare.",
+    login_access_profile: "Vänligen logga in för att komma åt din profil",
+    partner_only_page: "Denna sida är endast tillgänglig för partnerkonton.",
     could_not_fetch_profile: "Kunde inte hämta profil.",
     incomplete_form: "Ofullständigt formulär",
-    complete_all_fields: "Vänligen fyll i alla obligatoriska fält innan du sparar.",
+    complete_all_fields: "Vänligen fyll i alla obligatoriska fält.",
     profile_updated: "Profilen uppdaterades framgångsrikt!",
     select_county_required: "Vänligen välj ett län först",
     enter_mobile_number: "Ange mobilnummer",
     enter_location_id: "Ange plats-ID",
     
     // Edit Company Screen
-    partner_only_page: "Denna sida är endast tillgänglig för partnerkonton.",
     could_not_fetch_company: "Kunde inte hämta företagsprofil.",
     could_not_fetch_data: "Kunde inte hämta nödvändig data.",
-    could_not_fetch_municipalities: "Kunde inte hämta kommuner.",
+    companyname: "Företagsnamn",
+    regno: "Registreringsnummer",
+    companydescription: "Företagsbeskrivning",
+    enter_competence_description: "Ange kompetensbeskrivning",
     missing_fields: "Saknade fält",
     please_fill: "Vänligen fyll i: {fields}",
-    company_updated: "Företagsprofilen uppdaterades framgångsrikt!",
+    company_updated: "Företagsprofilen har uppdaterats.",
     enter_company_name: "Ange företagsnamn",
     enter_registration_number: "Ange registreringsnummer",
-    enter_competence_description: "Ange kompetensbeskrivning",
+    
+    // Urgent Job List Screen
+
+    // Update Booking Status Screen (Swedish)
+
+    // Urgent Job List Screen (Swedish)
+
+    // Errors
+
+
+        // Review Feature Keys (Swedish)
+        // review_enter_comment_alert: "Vänligen skriv en kommentar.", // Uncomment if comment becomes mandatory
+    
+    // Newly Added Keys
+    user_only_page: "Denna sida är endast tillgänglig för användare.",
+    
+    // Edit Company Screen
     
     // Chat Screen
     cannot_determine_recipient: "Kan inte bestämma mottagarens partner-ID.",
@@ -291,7 +311,6 @@ export const sv = {
     unexpected_setup_error: "Ett oväntat nätverks- eller installationsfel inträffade: {message}",
     about:'Om oss',
     servicecategory:'Tjänstekategori',
-    regno:'Reg.nr',
     viewall:'Visa alla',
     urgentjob:'Akutjobb',
     urgentjobtext:'Jobb som kräver snabbare svar',
@@ -323,5 +342,18 @@ export const sv = {
     errorcreatingjobcard: "Fel vid skapande av jobbkort",
     nobookingsfound: "Inga bokningar hittades",
     view_more: "Visa alla",
-    enter_acceptance_otp: "Ange OTP för godkännande"
+    enter_acceptance_otp: "Ange OTP för godkännande",
+    personalInfo: "Personlig information",
+    savechanges: "Spara ändringar",
+    done: "Klart",
+    save_button: "Spara",
+    reset_password: "Återställ lösenord",
+    no_data_available: "Ingen data tillgänglig",
+    contact_support: "Kontakta support",
+    invalid_email: "Ogiltig e-postadress.",
+    password_too_short: "Lösenordet måste vara minst 8 tecken.",
+    register: "Registrera",
+    selectlogo: "Välj logotyp",
+    changelogo: "Ändra logotyp",
+    uploadlogo: "Ladda upp logotyp",
 }
