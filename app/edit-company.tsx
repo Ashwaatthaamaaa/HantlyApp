@@ -2,7 +2,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { 
   View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, 
-  Keyboard, TouchableWithoutFeedback, ScrollView, Modal, FlatList, Animated, Switch 
+  Keyboard, TouchableWithoutFeedback, ScrollView, Modal, FlatList, Animated, Switch,
+  Image // Add this import
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -399,7 +400,7 @@ export default function EditCompanyScreen() {
             outputRange: ['0deg', '360deg']
           })}]
         }}>
-          <Ionicons name="sync-outline" size={50} color="#4A90E2" />
+          <Ionicons name="sync-outline" size={50} color="#696969" />
         </Animated.View>
         <Text style={styles.loadingText}>{t('loading_profile')}</Text>
       </SafeAreaView>
@@ -408,7 +409,7 @@ export default function EditCompanyScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-    <StatusBar style="auto" />
+    <StatusBar style="dark" />
         
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -431,23 +432,31 @@ export default function EditCompanyScreen() {
           {/* -- Company Info -- */}
           <View style={styles.profileSection}>
             <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
-              {logoImage || logoImagePath ? (
-                <View style={styles.avatarPlaceholder}>
-                  {/* If we have a local image selected or a path to an existing image */}
-                  <Text style={styles.avatarText}>{companyName.charAt(0).toUpperCase()}</Text>
-                  <Ionicons name="camera" size={24} color="#FFFFFF" style={styles.cameraIcon} />
-                </View>
+              {logoImage ? (
+                <Image 
+                  source={{ uri: logoImage }} 
+                  style={styles.avatarImage}
+                />
+              ) : logoImagePath ? (
+                <Image 
+                  source={{ uri: logoImagePath }} 
+                  style={styles.avatarImage}
+                />
               ) : (
                 <View style={styles.avatarPlaceholder}>
                   <Text style={styles.avatarText}>{companyName.charAt(0).toUpperCase()}</Text>
-                  <Ionicons name="camera" size={24} color="#FFFFFF" style={styles.cameraIcon} />
                 </View>
               )}
+              <Ionicons 
+                name="camera" 
+                size={24} 
+                color="#FFFFFF" 
+                style={styles.cameraIcon} 
+              />
             </TouchableOpacity>
             <Text style={styles.usernameDisplay}>{companyName}</Text>
             <Text style={styles.emailDisplay}>{emailId}</Text>
           </View>
-
           <Text style={styles.sectionTitle}>{t('companydescription')}</Text>
 
           {/* -- Company Name -- */}
@@ -507,8 +516,8 @@ export default function EditCompanyScreen() {
             <Switch
               value={is24x7}
               onValueChange={setIs24x7}
-              trackColor={{ false: "#d1d1d1", true: "#81b0ff" }}
-              thumbColor={is24x7 ? "#4A90E2" : "#f4f3f4"}
+              trackColor={{ false: "#d1d1d1", true: "#D1D1D1" }}
+              thumbColor={is24x7 ? "#696969" : "#f4f3f4"}
             />
           </View>
 
@@ -702,7 +711,7 @@ export default function EditCompanyScreen() {
                       <Ionicons
                         name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
                         size={24}
-                        color={isSelected ? '#4A90E2' : '#CCCCCC'}
+                        color={isSelected ? '#696969' : '#CCCCCC'}
                       />
                     </TouchableOpacity>
                   );
@@ -768,7 +777,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#696969',
     justifyContent: 'center',
     alignItems: 'center'
   },
@@ -902,20 +911,20 @@ const styles = StyleSheet.create({
     marginBottom: 8
   },
   selectedItemText: {
-    color: '#4A90E2',
+    color: '#696969',
     fontSize: 14
   },
   saveButton: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#696969',
     borderRadius: 12,
     paddingVertical: 15,
     marginVertical: 20
   },
   savingButton: {
-    backgroundColor: '#7AADEB'
+    backgroundColor: '#696969'
   },
   buttonIcon: {
     marginRight: 10
@@ -984,7 +993,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEEEEE'
   },
   doneButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#696969',
     marginHorizontal: 20,
     paddingVertical: 15,
     borderRadius: 12,
@@ -1004,5 +1013,10 @@ const styles = StyleSheet.create({
   disabledText: {
     color: '#999999',
   },
-  
+
+  avatarImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  }
 });

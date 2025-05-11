@@ -224,9 +224,9 @@ export default function ProfileScreen() {
                <>
                    <View style={styles.userInfoSection}>
                        {partner?.logoImagePath ? ( 
-                         <Image source={{ uri: partner.logoImagePath }} style={styles.partnerLogo} resizeMode="contain" /> 
+                         <Image source={{ uri: partner.logoImagePath }} style={styles.avatarImage} resizeMode="contain" /> 
                        ) : ( 
-                         <View style={[styles.profilePicPlaceholder, styles.partnerLogoPlaceholder]}>
+                         <View style={[styles.profilePicPlaceholder, styles.avatarPlaceholder]}>
                            <Ionicons name="business" size={30} color={COLORS.textSecondary} />
                          </View> 
                        )}
@@ -345,5 +345,22 @@ export default function ProfileScreen() {
 
 // --- Styles ---
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: COLORS.background, }, scrollView: { flex: 1, }, container: { flex: 1, paddingHorizontal: 20, paddingVertical: 20, }, containerCentered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background, padding: 20, }, loggedOutMessage: { fontSize: 16, color: COLORS.textSecondary, textAlign: 'center', marginBottom: 30, lineHeight: 24, }, loginButton: { backgroundColor: COLORS.buttonBg, paddingVertical: 15, paddingHorizontal: 50, borderRadius: 8, alignItems: 'center', }, loginButtonText: { color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold', }, userInfoSection: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 30, }, profilePicPlaceholder: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.locationBg, justifyContent: 'center', alignItems: 'center', marginRight: 15, }, partnerLogo: { width: 60, height: 60, borderRadius: 8, marginRight: 15, borderWidth: 1, borderColor: COLORS.borderColor }, partnerLogoPlaceholder:{ borderRadius: 8, width: 60, height: 60, backgroundColor: COLORS.locationBg, justifyContent: 'center', alignItems: 'center', marginRight: 15}, userDetails: { flex: 1, justifyContent: 'center' }, userName: { fontSize: 18, fontWeight: 'bold', color: COLORS.textPrimary, marginBottom: 4, }, userEmail: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 4, }, regNumber: { fontSize: 12, color: COLORS.textSecondary }, statusToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginLeft: 10, paddingTop: 4, }, statusText: { fontSize: 12, color: COLORS.textSecondary, marginLeft: 2 }, infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor, }, locationSection: { backgroundColor: COLORS.locationBg, paddingHorizontal: 15, marginHorizontal: -15, alignItems: 'flex-start', paddingVertical: 10, }, locationLabelContainer: { width: 120, marginRight: 10, paddingTop: 2, }, locationLabel: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '500', }, locationValue: { fontSize: 16, color: COLORS.textPrimary, flex: 1, lineHeight: 22, }, infoIcon: { marginRight: 15, }, infoText: { fontSize: 16, color: COLORS.textPrimary, flex: 1, }, actionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor, marginTop: 20, }, actionText: { fontSize: 16, color: COLORS.textPrimary, flex: 1, }, logoutButton: { backgroundColor: COLORS.buttonBg, paddingVertical: 15, borderRadius: 8, alignItems: 'center', marginTop: 40, }, logoutButtonText: { color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold', }, versionText: { textAlign: 'center', marginTop: 20, marginBottom: 10, color: COLORS.versionText, fontSize: 12, }, errorText: { color: COLORS.error, fontSize: 16, textAlign: 'center', }
+    safeArea: { flex: 1, backgroundColor: COLORS.background, }, scrollView: { flex: 1, }, container: { flex: 1, paddingHorizontal: 20, paddingVertical: 20, }, containerCentered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background, padding: 20, }, loggedOutMessage: { fontSize: 16, color: COLORS.textSecondary, textAlign: 'center', marginBottom: 30, lineHeight: 24, }, loginButton: { backgroundColor: COLORS.buttonBg, paddingVertical: 15, paddingHorizontal: 50, borderRadius: 8, alignItems: 'center', }, loginButtonText: { color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold', }, userInfoSection: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 30, }, profilePicPlaceholder: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.locationBg, justifyContent: 'center', alignItems: 'center', marginRight: 15, }, partnerLogo: { width: 60, height: 60, borderRadius: 8, marginRight: 15, borderWidth: 1, borderColor: COLORS.borderColor }, partnerLogoPlaceholder:{ borderRadius: 8, width: 60, height: 60, backgroundColor: COLORS.locationBg, justifyContent: 'center', alignItems: 'center', marginRight: 15}, userDetails: { flex: 1, justifyContent: 'center' }, userName: { fontSize: 18, fontWeight: 'bold', color: COLORS.textPrimary, marginBottom: 4, }, userEmail: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 4, }, regNumber: { fontSize: 12, color: COLORS.textSecondary }, statusToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginLeft: 10, paddingTop: 4, }, statusText: { fontSize: 12, color: COLORS.textSecondary, marginLeft: 2 }, infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor, }, locationSection: { backgroundColor: COLORS.locationBg, paddingHorizontal: 15, marginHorizontal: -15, alignItems: 'flex-start', paddingVertical: 10, }, locationLabelContainer: { width: 120, marginRight: 10, paddingTop: 2, }, locationLabel: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '500', }, locationValue: { fontSize: 16, color: COLORS.textPrimary, flex: 1, lineHeight: 22, }, infoIcon: { marginRight: 15, }, infoText: { fontSize: 16, color: COLORS.textPrimary, flex: 1, }, actionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor, marginTop: 20, }, actionText: { fontSize: 16, color: COLORS.textPrimary, flex: 1, }, logoutButton: { backgroundColor: COLORS.buttonBg, paddingVertical: 15, borderRadius: 8, alignItems: 'center', marginTop: 40, }, logoutButtonText: { color: COLORS.buttonText, fontSize: 16, fontWeight: 'bold', }, versionText: { textAlign: 'center', marginTop: 20, marginBottom: 10, color: COLORS.versionText, fontSize: 12, }, errorText: { color: COLORS.error, fontSize: 16, textAlign: 'center', },// Replace the partnerLogo style with:
+avatarImage: {
+  width: 60,
+  height: 60,
+  borderRadius: 30, // Changed from 8 to 30 for circular shape
+  marginRight: 15,
+  borderWidth: 1,
+  borderColor: COLORS.borderColor,
+},
+avatarPlaceholder: {
+  width: 60,
+  height: 60,
+  borderRadius: 30,
+  backgroundColor: COLORS.locationBg,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginRight: 15,
+}
 });
