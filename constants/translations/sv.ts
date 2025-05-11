@@ -356,4 +356,82 @@ export const sv = {
     selectlogo: "Välj logotyp",
     changelogo: "Ändra logotyp",
     uploadlogo: "Ladda upp logotyp",
+
+    // Add these to the existing sv.ts translations:
+
+// Image Selection & Permissions
+selectimagesource: "Välj bildkälla",
+medialibraryaccessneeded: "Tillgång till mediebibliotek krävs.",
+cameraerror: "Kamerafel",
+libraryerror: "Biblioteksfel",
+
+// Job Card Creation
+notloggedin: "Inte inloggad",
+logintocreate: "Var god logga in för att skapa en jobbförfrågan.",
+loginbutton: "Logga in",
+couldnotretrieveusername: "Kunde inte hämta användarnamn. Försök igen.",
+pleaseselectimage: "Välj minst en bild.",
+pleaseselectservice: "Välj minst en tjänstekategori.",
+pleaseenterdescription: "Ange en beskrivning.",
+pleaseselectcounty: "Välj ett län.",
+pleaseselectmunicipality: "Välj en kommun.",
+
+// Job Card Status
+ticketid: "Biljett ID:",
+unexpectednetworkerror: "Ett oväntat nätverksfel uppstod:",
+
+// Job Details
+enterjobtitle: "Ange jobbtitel",
+enterlocationdetails: "Ange platsdetaljer",
+entercontactnumber: "Ange kontaktnummer",
+enteremailaddress: "Ange e-postadress",
+enterpreferreddate: "Ange önskat datum",
+enterpreferredtime: "Ange önskad tid",
+enterbudget: "Ange budget (valfritt)",
+enteradditionalnotes: "Ange ytterligare anteckningar (valfritt)",
+
+// Booking Details
+invalidticketid: "Ogiltigt biljett-ID.",
+sessionexpired: "Sessionen har löpt ut",
+pleaseloginagain: "Var god logga in igen.",
+failedfetchdetails: "Kunde inte hämta detaljer (Status: {status}). {errorText}",
+failedloadbookingdetails: "Kunde inte ladda bokningsdetaljer: {message}",
+goback: "Gå tillbaka",
+bookingnotfound: "Bokningsdetaljer hittades inte för Biljett ID {ticketId}.",
+unknownstatus: "Okänd",
+
+// Job Status Actions
+acceptjob: "Acceptera jobb",
+startjob: "Påbörja jobb",
+completejob: "Slutför jobb",
+otpdisplay: "OTP: {otp}",
+confirmaction: "Bekräfta åtgärd",
+acceptjobquestion: "Acceptera jobb?",
+startjobquestion: "Påbörja jobb?",
+cannotupdatestatus: "Kan inte uppdatera status.",
+statusupdatedsuccess: "Status uppdaterad",
+errorupdatingstatus: "Fel vid uppdatering av status",
+missingticketid: "Saknar biljett-ID.",
+
+// Phone/Call Features
+cannotmakecall: "Kan inte ringa",
+devicenotsupportcall: "Enheten stöder inte att ringa {phoneNumber}.",
+cannotcall: "Kan inte ringa",
+providerphonenotavailable: "Leverantörens telefonnummer är inte tillgängligt.",
+
+// OTP Handling
+otpcopied: "OTP kopierad",
+couldnotcopyotp: "Kunde inte kopiera OTP.",
+nootp: "Ingen OTP",
+otpnotavailable: "OTP inte tillgänglig.",
+
+// Media/Images
+noimages: "Inga bilder",
+cannotchat: "Kan inte chatta",
+
+// Partner Interaction
+requiredinfomissing: "Nödvändig information saknas.",
+cannotidentifyparticipant: "Kunde inte identifiera den andra deltagaren.",
+errorloadingpartners: "Fel vid laddning av partners: {error}",
+nopartnersmessage: "Inga partners har skickat meddelanden om detta jobb ännu.",
 }

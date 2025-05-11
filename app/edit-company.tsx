@@ -450,35 +450,35 @@ export default function EditCompanyScreen() {
 
           <Text style={styles.sectionTitle}>{t('companydescription')}</Text>
 
-{/* -- Company Name -- */}
-<View style={styles.inputGroup}>
-  <Text style={styles.label}>{t('companyname')}</Text>
-  <View style={[styles.inputContainer, styles.disabledInput]}>
-    <Ionicons name="business-outline" size={20} color="#AAA" style={styles.inputIcon} />
-    <TextInput 
-      style={[styles.input, styles.disabledText]} 
-      value={companyName} 
-      editable={false}
-      placeholder={t('enter_company_name')} 
-      placeholderTextColor="#AAA"
-    />
-  </View>
-</View>
+          {/* -- Company Name -- */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{t('companyname')}</Text>
+            <View style={[styles.inputContainer, styles.disabledInput]}>
+              <Ionicons name="business-outline" size={20} color="#AAA" style={styles.inputIcon} />
+              <TextInput 
+                style={[styles.input, styles.disabledText]} 
+                value={companyName} 
+                editable={false}
+                placeholder={t('enter_company_name')} 
+                placeholderTextColor="#AAA"
+              />
+            </View>
+          </View>
 
-{/* -- Registration Number -- */}
-<View style={styles.inputGroup}>
-  <Text style={styles.label}>{t('regno')}</Text>
-  <View style={[styles.inputContainer, styles.disabledInput]}>
-    <Ionicons name="document-text-outline" size={20} color="#AAA" style={styles.inputIcon} />
-    <TextInput 
-      style={[styles.input, styles.disabledText]} 
-      value={companyRegistrationNumber} 
-      editable={false}
-      placeholder={t('enter_registration_number')} 
-      placeholderTextColor="#AAA"
-    />
-  </View>
-</View>
+          {/* -- Registration Number -- */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{t('regno')}</Text>
+            <View style={[styles.inputContainer, styles.disabledInput]}>
+              <Ionicons name="document-text-outline" size={20} color="#AAA" style={styles.inputIcon} />
+              <TextInput 
+                style={[styles.input, styles.disabledText]} 
+                value={companyRegistrationNumber} 
+                editable={false}
+                placeholder={t('enter_registration_number')} 
+                placeholderTextColor="#AAA"
+              />
+            </View>
+          </View>
 
 
           {/* -- Mobile -- */}

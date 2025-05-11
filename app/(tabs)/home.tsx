@@ -206,28 +206,42 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const fetchServices = async () => {
-      setIsLoading(true); setError(null);
+      setIsLoading(true);
+      setError(null);
       const url = `${BASE_URL}/api/Service/GetServiceList`;
+    
       try {
         const response = await fetch(url);
-        if (!response.ok) { const errorText = await response.text(); throw new Error(`HTTP error! status: ${response.status} - ${errorText || 'Failed to fetch'}`); }
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status} - ${errorText || 'Failed to fetch'}`);
+        }
+    
         const contentType = response.headers.get("content-type");
-        if (!contentType?.includes("application/json")) { const responseText = await response.text(); throw new Error("Received non-JSON response"); }
-
+        if (!contentType?.includes("application/json")) {
+          const responseText = await response.text();
+          throw new Error("Received non-JSON response");
+        }
+    
         const data: Service[] = await response.json();
-        // Include Swedish names with fallback to English if not available
+        console.log('Fetched services:', data); // <-- This will print the fetched data
+    
         const formattedData: ServiceListItem[] = data.map(service => ({
-            id: service.serviceId.toString(),
-            name: service.serviceName,
-            nameSwedish: service.serviceName_Swedish || service.serviceName, // Fallback to English if Swedish not available
-            contentType: service.imageContentType,
-            imageUri: service.imagePath // Directly pass imagePath (or null)
+          id: service.serviceId.toString(),
+          name: service.serviceName,
+          nameSwedish: service.serviceName_Swedish || service.serviceName,
+          contentType: service.imageContentType,
+          imageUri: service.imagePath
         }));
+    
         setServices(formattedData);
-
-      } catch (err: any) { setError(`Failed to load services: ${err.message}`); }
-      finally { setIsLoading(false); }
+      } catch (err: any) {
+        setError(`Failed to load services: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
     };
+    
     fetchServices();
   }, []);
 
