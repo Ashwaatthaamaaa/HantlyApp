@@ -1,0 +1,11 @@
+* [33m2c52086[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mlocalization[m[33m)[m Enhance localization for OTP display and service selection, and update translation keys in English and Swedish
+[31m|[m * [33mb44764b[m[33m ([m[1;31morigin/localization[m[33m)[m updated
+[31m|[m * [33mec65a66[m Updated
+[31m|[m * [33m74e4b8f[m Fixed Cosmatic issue in .sv and .en
+[31m|[m[31m/[m  
+* [33m8740b29[m Add new localization key for municipality selection in English translations
+* [33mb7d1c4c[m Fix translation keys for personal info in English and Swedish, and update logging in MultiSelectModal
+* [33mb47fb61[m Fix the scroller
+* [33mec43fd5[m Fixed Translations in some places
+* [33mf0d8b40[m Enhance localization support in English and Swedish translations
+* [33m6e99709[m Refactor booking data fetching logic in BookingsScreen component
