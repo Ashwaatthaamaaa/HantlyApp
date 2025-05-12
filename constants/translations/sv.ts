@@ -373,4 +373,6 @@ requiredinfomissing: "Nödvändig information saknas.",
 cannotidentifyparticipant: "Kunde inte identifiera den andra deltagaren.",
 errorloadingpartners: "Fel vid laddning av partners: {error}",
 nopartnersmessage: "Inga partners har skickat meddelanden om detta jobb ännu.",
+
+
 }

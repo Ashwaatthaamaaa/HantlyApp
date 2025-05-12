@@ -392,13 +392,13 @@ export default function BookingDetailScreen() {
              {/* OTPs */}
             {userCanSeeAcceptOtp && (
                  <TouchableOpacity style={styles.otpContainer} onPress={handleCopyAcceptOtp}>
-                    <Text style={styles.otpText}>{t('otpdisplay', { otp: bookingData.acceptedOTP })}</Text>
+                    <Text style={styles.otpText}>{`OTP: ${bookingData.acceptedOTP}`}</Text>
                     <Ionicons name="copy-outline" size={16} color={COLORS.textSecondary} style={{ marginLeft: 5 }}/>
                  </TouchableOpacity>
              )}
             {userCanSeeOtp && ( // Closing OTP
                  <TouchableOpacity style={styles.otpContainer} onPress={handleCopyOtp}>
-                     <Text style={styles.otpText}>{t('otpdisplay', { otp: bookingData.closingOTP })}</Text>
+                     <Text style={styles.otpText}>{`OTP: ${bookingData.closingOTP }`}</Text>
                      <Ionicons name="copy-outline" size={16} color={COLORS.textSecondary} style={{ marginLeft: 5 }}/>
                  </TouchableOpacity>
              )}

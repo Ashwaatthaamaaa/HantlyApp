@@ -369,4 +369,9 @@ export const en = {
     // Logo Management (alternative versions)
     changelogo: "Change logo",
     uploadlogo: "Upload logo",
+    rtm_title: "Register",
+    rtm_subtitle: "Select your role",
+    rtm_partner_button: "Partner",
+    rtm_user_button: "User",
+    
 };

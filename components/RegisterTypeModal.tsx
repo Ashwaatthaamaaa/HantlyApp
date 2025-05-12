@@ -7,8 +7,13 @@ import {
   StyleSheet,
   SafeAreaView, // Use SafeAreaView for better handling on different devices
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Optional: for a close icon if needed
-import { t } from '@/config/i18n';
+import { t } from '@/config/i18n'; // Ensure this line is present
+// import { Ionicons } from '@expo/vector-icons'; // Optional: for a close icon if needed
+// import { t } from '@/config/i18n'; // Assuming you have this setup
+
+// Mock t function for example purposes if not available in this environment
+
+
 
 // Approximate Colors - Adjust based on your theme/design system
 const COLORS = {
@@ -88,7 +93,7 @@ const styles = StyleSheet.create({
     padding: 25, // Generous padding
     paddingTop: 30,
     width: '85%', // Adjust width as needed
-    maxWidth: 350,
+    maxWidth: 350, // Maximum width for the modal
     alignItems: 'center', // Center items inside modal
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -108,29 +113,38 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.textPrimary,
     marginBottom: 8,
+    textAlign: 'center', // Ensure title is centered
   },
   subtitle: {
     fontSize: 16,
     color: COLORS.textSecondary,
     marginBottom: 30, // Space before buttons
+    textAlign: 'center', // Ensure subtitle is centered
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around', // Space out buttons
-    width: '100%', // Make container take full width
+    justifyContent: 'space-around', // Distributes space around buttons
+    width: '100%', // Make container take full width of modalContent
   },
   button: {
     paddingVertical: 12,
-    paddingHorizontal: 25, // Adjust padding for button size
+    // MODIFICATION: Reduced horizontal padding to prevent overflow
+    paddingHorizontal: 15, // Was 25
     borderRadius: 6,
-    marginHorizontal: 10, // Add space between buttons
+    // MODIFICATION: Reduced horizontal margin
+    marginHorizontal: 8, // Was 10. This is the margin on each side of a button.
+                         // So, space between buttons will be 2 * 8 = 16px if justifyContent was 'center'.
+                         // With 'space-around', this margin contributes to the button's footprint.
     alignItems: 'center',
     elevation: 2, // Subtle shadow for buttons
+    // Potentially add flexShrink if text can be very long, or consider flex: 1 for equal width
+    // flexShrink: 1,
   },
   buttonText: {
     color: COLORS.buttonText,
     fontSize: 14,
     fontWeight: 'bold',
+    textAlign: 'center', // Ensure button text is centered
   },
 });
 
