@@ -392,13 +392,13 @@ export default function BookingDetailScreen() {
              {/* OTPs */}
             {userCanSeeAcceptOtp && (
                  <TouchableOpacity style={styles.otpContainer} onPress={handleCopyAcceptOtp}>
-                    <Text style={styles.otpText}>{`Accept OTP: ${bookingData.acceptedOTP}`}</Text>
+                    <Text style={styles.otpText}>{t('otpdisplay', { otp: bookingData.acceptedOTP })}</Text>
                     <Ionicons name="copy-outline" size={16} color={COLORS.textSecondary} style={{ marginLeft: 5 }}/>
                  </TouchableOpacity>
              )}
             {userCanSeeOtp && ( // Closing OTP
                  <TouchableOpacity style={styles.otpContainer} onPress={handleCopyOtp}>
-                     <Text style={styles.otpText}>{`Closing OTP: ${bookingData.closingOTP}`}</Text>
+                     <Text style={styles.otpText}>{t('otpdisplay', { otp: bookingData.closingOTP })}</Text>
                      <Ionicons name="copy-outline" size={16} color={COLORS.textSecondary} style={{ marginLeft: 5 }}/>
                  </TouchableOpacity>
              )}
@@ -412,9 +412,9 @@ export default function BookingDetailScreen() {
              </TouchableOpacity>
              <View style={styles.cardTextContainer}>
                  <Text style={styles.cardTitle} numberOfLines={1}>{bookingData.toCraftmanType || 'Request'}</Text>
-                 <Text style={styles.cardDateTime}>Date: {formatDate(bookingData.createdOn)}</Text>
-                 <Text style={styles.cardDateTime}>Time: {formatTime(bookingData.createdOn)}</Text>
-                 <Text style={styles.cardDateTime}>Ticket ID: {bookingData.ticketId}</Text>
+                 <Text style={styles.cardDateTime}>{t('date')}: {formatDate(bookingData.createdOn)}</Text>
+                 <Text style={styles.cardDateTime}>{t('time')}: {formatTime(bookingData.createdOn)}</Text>
+                 <Text style={styles.cardDateTime}>{t('ticketid')} {bookingData.ticketId}</Text>
                  {bookingData.ticketImages && bookingData.ticketImages.length > 1 && (
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.extraThumbnailsContainer}>
                          {bookingData.ticketImages.slice(1).map((image, index) => (
@@ -569,10 +569,6 @@ export default function BookingDetailScreen() {
                  )}
              </View>
         )}
-
-         {/* Logout Button or other actions */}
-         {/* Consider adding logout or other profile actions here if appropriate */}
-
       </ScrollView>
 
        {/* Modals */}

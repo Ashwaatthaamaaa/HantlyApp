@@ -282,78 +282,31 @@ export const sv = {
     // Urgent Job List Screen
 
     // Update Booking Status Screen (Swedish)
-
-    // Urgent Job List Screen (Swedish)
-
-    // Errors
-
-
-        // Review Feature Keys (Swedish)
-        // review_enter_comment_alert: "Vänligen skriv en kommentar.", // Uncomment if comment becomes mandatory
-    
-    // Newly Added Keys
-    user_only_page: "Denna sida är endast tillgänglig för användare.",
-    
-    // Edit Company Screen
-    
-    // Chat Screen
-    cannot_determine_recipient: "Kan inte bestämma mottagarens partner-ID.",
-    enter_chat_message: "Skriv meddelande",
-    
-    // Error Notifications
-    notification_token_error: "Kunde inte hämta aviseringstoken.",
-    
-    // OTP Input
-    otp_placeholder: "----",
-    
-    // Generic Error
-    fetch_details_error: "Kunde inte hämta användar-/företagsuppgifter: {message}",
-    unexpected_setup_error: "Ett oväntat nätverks- eller installationsfel inträffade: {message}",
-    about:'Om oss',
-    servicecategory:'Tjänstekategori',
-    viewall:'Visa alla',
-    urgentjob:'Akutjobb',
-    urgentjobtext:'Jobb som kräver snabbare svar',
-    urgentjobtext2:'Jobb som kräver snabbare svar',
-    urgentjobtext3:'Jobb som kräver snabbare svar',
-    actionnotallowed:'Åtgärd nekad',
-    onlyuserscancreate:'Endast användare kan skapa jobb',
-    apply:'Tillämpa',
-    filter_by_status:'Filtrera efter status',
-    filter_by_county:'Filtrera efter län',
-    filter_by_municipality:'Filtrera efter kommun',
-    location:'Plats',
-    personalinfo:'Personlig information',
-    jobdescription:'Jobb beskrivning',
-    createjobcard:'Skapa jobb kort',
-    allservices:'Alla tjänster',
-    enterjobdescription:'Ange jobb beskrivning',
-    chooseimages: "Välj Bilder",
-    chooseservicecategory: "Välj Tjänstekategori",
-    limitreached: "Gräns nådd",
-    max3images: "Du kan välja upp till 3 bilder.",
-    permissionrequired: "Behörighet krävs",
-    cameraaccessneeded: "Kameratillgång krävs.",
-    library: "Bibliotek",
-    camera: "Kamera",
-    remove: "Ta bort",
-    save: "Spara",
-    jobcardcreated: "Jobbkortet har skapats!",
-    errorcreatingjobcard: "Fel vid skapande av jobbkort",
-    nobookingsfound: "Inga bokningar hittades",
-    view_more: "Visa alla",
+    get_otp_from_user_accept: "Be kunden om den 4-siffriga koden.",
+    submitaccept: "Skicka & Acceptera",
     enter_acceptance_otp: "Ange OTP för godkännande",
-    personalInfo: "Personlig information",
-    savechanges: "Spara ändringar",
-    done: "Klart",
-    save_button: "Spara",
-    reset_password: "Återställ lösenord",
-    no_data_available: "Ingen data tillgänglig",
-    contact_support: "Kontakta support",
-    invalid_email: "Ogiltig e-postadress.",
-    password_too_short: "Lösenordet måste vara minst 8 tecken.",
-    register: "Registrera",
-    selectlogo: "Välj logotyp",
-    changelogo: "Ändra logotyp",
-    uploadlogo: "Ladda upp logotyp",
-}
+    accept_otp_required: "Godkännande-OTP krävs.",
+    closing_otp_required: "Stängnings-OTP krävs.",
+    review_section_title: "Betygsätt denna tjänst",
+    review_rating_label: "Ditt betyg:",
+    review_comment_label: "Din kommentar (Valfritt):",
+    review_comment_placeholder: "Berätta om din upplevelse...",
+    review_submit_button: "Skicka recension",
+    review_select_rating_alert: "Välj ett stjärnbetyg.",
+    review_submit_success_default: "Recension skickad!",
+    review_submit_error: "Kunde inte skicka recension",
+    commentdisplay_prefix: "Kommentar:",
+    partner_view_review_title: "Kundrecension",
+    partner_view_comment_prefix: "Kommentar:", 
+    partner_view_no_comment: "Kunden lämnade ingen kommentar.",
+    loadingtext: "Laddar...",
+    bookingnotfound: "Bokningsdetaljer hittades inte eller är tom för biljett-ID {ticketId}.",
+    enterjobtitle: "Ange jobbtitel",
+    enterjobdescription: "Ange jobbeskrivning",
+    chooseservicecategory: "Välj tjänstekategori",
+    nomunicipalities: "Inga kommuner hittades",
+    itemsselected: "{count} objekt valda",
+    save: "Spara",
+    retry: "Försök igen", 
+    loading: "Laddar...",
+};

@@ -285,7 +285,10 @@ export default function CreateJobCardScreen() {
   const municipalityPlaceholder = !selectedCountyId ? 'Select County First' : isLoadingMunicipalities ? 'Loading...' : municipalityError ? 'Error Loading' : 'Select Municipality'; //
 
   // Get selected service names based on the state `selectedServiceIds`
-  const serviceNamesMap = new Map(services.map(item => [item.id, item.name])); //
+  const selectedServiceNames = selectedServiceIds.map(id => {
+    const service = services.find(s => s.id === id);
+    return service ? service.name : '';
+  }).filter(Boolean);
 
   // Determine if service selection should be disabled (optional, if preselected)
   const isServiceSelectionDisabled = !!preselectedServiceId; // Example: disable if preselected
@@ -325,40 +328,39 @@ export default function CreateJobCardScreen() {
 
          {/* --- Service Category --- */}
         <TouchableOpacity
-          style={styles.selectorButton}
-          onPress={() => !isSaving && setIsServiceModalVisible(true)}
-          disabled={isSaving || isLoadingServices || !!serviceError}
-        >
-          <Text style={styles.selectorText}>
-            {isLoadingServices
-              ? t('loading')
-              : serviceError
-              ? t('errorloading')
-              : selectedServiceIds.length > 0
-              ? `${selectedServiceIds.length} items selected`
-              : t('chooseservicecategory')}
-          </Text>
-          {isLoadingServices ? (
-            <ActivityIndicator size="small" color={COLORS.textSecondary} />
-          ) : (
-            <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
-          )}
+            style={[styles.selectorContainer, (isLoadingServices || !!serviceError || isSaving || isServiceSelectionDisabled) && styles.disabledSelector]}
+            onPress={() => !isLoadingServices && !serviceError && !isSaving && !isServiceSelectionDisabled && setIsServiceModalVisible(true)}
+            disabled={isLoadingServices || !!serviceError || isSaving || isServiceSelectionDisabled}
+            >
+            <Text style={[styles.selectorText, selectedServiceIds.length === 0 && styles.placeholderText]}>
+                {isLoadingServices
+                  ? t('loading')
+                  : serviceError
+                  ? t('errorloading')
+                  : selectedServiceIds.length > 0
+                  ? selectedServiceNames.join(', ')
+                  : t('chooseservicecategory')}
+            </Text>
+            {isLoadingServices ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
-        {serviceError && <Text style={styles.errorText}>{serviceError}</Text>}
+        {serviceError && !isLoadingServices && <Text style={styles.errorTextSmall}>{serviceError}</Text>}
+         {selectedServiceNames.length > 0 && !isServiceSelectionDisabled && (
+            <View style={styles.tagContainer}>
+                {selectedServiceNames.map((name, index) => (
+                    <View key={selectedServiceIds[index]} style={styles.tag}>
+                        <Text style={styles.tagText}>{name}</Text>
+                        <TouchableOpacity onPress={() => { const newIds = selectedServiceIds.filter(id => id !== selectedServiceIds[index]); setSelectedServiceIds(newIds); }} style={styles.tagRemoveIcon} disabled={isSaving} >
+                           <Ionicons name="close-circle-outline" size={16} color={COLORS.tagIcon} />
+                        </TouchableOpacity>
+                    </View>
+                ))}
+             </View>
+        )}
          {/* --- End Service Category --- */}
 
 
         {/* --- Description --- */}
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder={t('enterjobdescription')}
-          placeholderTextColor={COLORS.placeholder}
-          multiline
-          numberOfLines={4}
-          value={description}
-          onChangeText={setDescription}
-          editable={!isSaving}
-        />
+        <TextInput style={[styles.input, styles.textArea]} placeholder={t('enterjobdescription') + " *"} value={description} onChangeText={setDescription} multiline numberOfLines={4} placeholderTextColor={COLORS.placeholder} editable={!isSaving}/>
          {/* --- End Description --- */}
 
 
@@ -376,7 +378,7 @@ export default function CreateJobCardScreen() {
          {/* --- Municipality Selector --- */}
         <TouchableOpacity style={[styles.selectorContainer, (isMunicipalityDisabled || isSaving) && styles.disabledSelector]} onPress={() => !isMunicipalityDisabled && !isSaving && setIsMunicipalityModalVisible(true)} disabled={isMunicipalityDisabled || isSaving}>
              <Text style={[styles.selectorText, !selectedMunicipalityId && styles.placeholderText]}>
-                {selectedCountyId && !isLoadingMunicipalities && !municipalityError && municipalities.length === 0 ? t('nomunicipalities') : getSelectedNames([selectedMunicipalityId ?? ''], municipalities)[0] || (!selectedCountyId ? t('selectcountyfirst') : t('select_municipality'))}
+                {selectedCountyId && !isLoadingMunicipalities && !municipalityError && municipalities.length === 0 ? t('nomunicipalities') : getSelectedNames([selectedMunicipalityId ?? ''], municipalities)[0] || (!selectedCountyId ? t('selectcountyfirst') : t('selectmunicipality'))}
              </Text>
              {isLoadingMunicipalities ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> : <Ionicons name="chevron-down-outline" size={20} color={COLORS.textSecondary} />}
         </TouchableOpacity>
@@ -393,9 +395,9 @@ export default function CreateJobCardScreen() {
       </ScrollView>
 
       {/* --- Modals --- */}
-       <SelectModal mode="multi" visible={isServiceModalVisible && !isServiceSelectionDisabled} title="Select Service Category" data={services} initialSelectedIds={selectedServiceIds} onClose={() => setIsServiceModalVisible(false)} onConfirmMulti={handleServiceConfirm}/>
-       <SelectModal mode="single" visible={isCountyModalVisible} title="Select County" data={counties} initialSelectedId={selectedCountyId} onClose={() => setIsCountyModalVisible(false)} onConfirmSingle={handleCountyConfirm} />
-       <SelectModal mode="single" visible={isMunicipalityModalVisible} title="Select Municipality" data={municipalities} initialSelectedId={selectedMunicipalityId} onClose={() => setIsMunicipalityModalVisible(false)} onConfirmSingle={handleMunicipalityConfirm} />
+       <SelectModal mode="multi" visible={isServiceModalVisible && !isServiceSelectionDisabled} title={t('selectservice')} data={services} initialSelectedIds={selectedServiceIds} onClose={() => setIsServiceModalVisible(false)} onConfirmMulti={handleServiceConfirm}/>
+       <SelectModal mode="single" visible={isCountyModalVisible} title={t('select_county')} data={counties} initialSelectedId={selectedCountyId} onClose={() => setIsCountyModalVisible(false)} onConfirmSingle={handleCountyConfirm} />
+       <SelectModal mode="single" visible={isMunicipalityModalVisible} title={t('select_municipality')} data={municipalities} initialSelectedId={selectedMunicipalityId} onClose={() => setIsMunicipalityModalVisible(false)} onConfirmSingle={handleMunicipalityConfirm} />
         {/* --- End Modals --- */}
 
     </SafeAreaView>
