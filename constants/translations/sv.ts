@@ -237,22 +237,21 @@ export const sv = {
     // Errors
     error_title: "Fel",
 
-
-        // Review Feature Keys (Swedish)
-        review_section_title: "Betygsätt denna tjänst",
-        review_rating_label: "Ditt betyg:",
-        review_comment_label: "Din kommentar (Valfritt):",
-        review_comment_placeholder: "Berätta om din upplevelse...",
-        review_submit_button: "Skicka recension",
-        review_select_rating_alert: "Välj ett stjärnbetyg.",
-        // review_enter_comment_alert: "Vänligen skriv en kommentar.", // Uncomment if comment becomes mandatory
-        review_submit_success_default: "Recension skickad!",
-        review_submit_error: "Kunde inte skicka recension",
-        missinginfo: "Information saknas", // Can reuse this if appropriate
-        commentdisplay_prefix: "Kommentar:",
-        partner_view_review_title: "Kundrecension",
-        partner_view_comment_prefix: "Kommentar:", // Can be same as user view or different if needed
-        partner_view_no_comment: "Kunden lämnade ingen kommentar.", // Message when comment is empty/null
+    // Review Feature Keys (Swedish)
+    review_section_title: "Betygsätt denna tjänst",
+    review_rating_label: "Ditt betyg:",
+    review_comment_label: "Din kommentar (Valfritt):",
+    review_comment_placeholder: "Berätta om din upplevelse...",
+    review_submit_button: "Skicka recension",
+    review_select_rating_alert: "Välj ett stjärnbetyg.",
+    // review_enter_comment_alert: "Vänligen skriv en kommentar.", // Uncomment if comment becomes mandatory
+    review_submit_success_default: "Recension skickad!",
+    review_submit_error: "Kunde inte skicka recension",
+    missinginfo: "Information saknas", // Can reuse this if appropriate
+    commentdisplay_prefix: "Kommentar:",
+    partner_view_review_title: "Kundrecension",
+    partner_view_comment_prefix: "Kommentar:", // Can be same as user view or different if needed
+    partner_view_no_comment: "Kunden lämnade ingen kommentar.", // Message when comment is empty/null
     
     // Newly Added Keys
     access_denied: "Åtkomst nekad",
@@ -279,34 +278,99 @@ export const sv = {
     enter_company_name: "Ange företagsnamn",
     enter_registration_number: "Ange registreringsnummer",
     
-    // Urgent Job List Screen
-
     // Update Booking Status Screen (Swedish)
     get_otp_from_user_accept: "Be kunden om den 4-siffriga koden.",
     submitaccept: "Skicka & Acceptera",
     enter_acceptance_otp: "Ange OTP för godkännande",
-    accept_otp_required: "Godkännande-OTP krävs.",
-    closing_otp_required: "Stängnings-OTP krävs.",
-    review_section_title: "Betygsätt denna tjänst",
-    review_rating_label: "Ditt betyg:",
-    review_comment_label: "Din kommentar (Valfritt):",
-    review_comment_placeholder: "Berätta om din upplevelse...",
-    review_submit_button: "Skicka recension",
-    review_select_rating_alert: "Välj ett stjärnbetyg.",
-    review_submit_success_default: "Recension skickad!",
-    review_submit_error: "Kunde inte skicka recension",
-    commentdisplay_prefix: "Kommentar:",
-    partner_view_review_title: "Kundrecension",
-    partner_view_comment_prefix: "Kommentar:", 
-    partner_view_no_comment: "Kunden lämnade ingen kommentar.",
-    loadingtext: "Laddar...",
-    bookingnotfound: "Bokningsdetaljer hittades inte eller är tom för biljett-ID {ticketId}.",
-    enterjobtitle: "Ange jobbtitel",
-    enterjobdescription: "Ange jobbeskrivning",
-    chooseservicecategory: "Välj tjänstekategori",
-    nomunicipalities: "Inga kommuner hittades",
-    itemsselected: "{count} objekt valda",
-    save: "Spara",
-    retry: "Försök igen", 
-    loading: "Laddar...",
-};
+    personalInfo: "Personlig information",
+    savechanges: "Spara ändringar",
+    done: "Klart",
+    save_button: "Spara",
+    reset_password: "Återställ lösenord",
+    no_data_available: "Ingen data tillgänglig",
+    contact_support: "Kontakta support",
+    invalid_email: "Ogiltig e-postadress.",
+    password_too_short: "Lösenordet måste vara minst 8 tecken.",
+    register: "Registrera",
+    selectlogo: "Välj logotyp",
+    changelogo: "Ändra logotyp",
+    uploadlogo: "Ladda upp logotyp",
+
+    // Add these to the existing sv.ts translations:
+
+// Image Selection & Permissions
+selectimagesource: "Välj bildkälla",
+medialibraryaccessneeded: "Tillgång till mediebibliotek krävs.",
+cameraerror: "Kamerafel",
+libraryerror: "Biblioteksfel",
+
+// Job Card Creation
+notloggedin: "Inte inloggad",
+logintocreate: "Var god logga in för att skapa en jobbförfrågan.",
+loginbutton: "Logga in",
+couldnotretrieveusername: "Kunde inte hämta användarnamn. Försök igen.",
+pleaseselectimage: "Välj minst en bild.",
+pleaseselectservice: "Välj minst en tjänstekategori.",
+pleaseenterdescription: "Ange en beskrivning.",
+pleaseselectcounty: "Välj ett län.",
+pleaseselectmunicipality: "Välj en kommun.",
+
+// Job Card Status
+ticketid: "Biljett ID:",
+unexpectednetworkerror: "Ett oväntat nätverksfel uppstod:",
+
+// Job Details
+enterjobtitle: "Ange jobbtitel",
+enterlocationdetails: "Ange platsdetaljer",
+entercontactnumber: "Ange kontaktnummer",
+enteremailaddress: "Ange e-postadress",
+enterpreferreddate: "Ange önskat datum",
+enterpreferredtime: "Ange önskad tid",
+enterbudget: "Ange budget (valfritt)",
+enteradditionalnotes: "Ange ytterligare anteckningar (valfritt)",
+
+// Booking Details
+invalidticketid: "Ogiltigt biljett-ID.",
+sessionexpired: "Sessionen har löpt ut",
+pleaseloginagain: "Var god logga in igen.",
+failedfetchdetails: "Kunde inte hämta detaljer (Status: {status}). {errorText}",
+failedloadbookingdetails: "Kunde inte ladda bokningsdetaljer: {message}",
+goback: "Gå tillbaka",
+bookingnotfound: "Bokningsdetaljer hittades inte för Biljett ID {ticketId}.",
+unknownstatus: "Okänd",
+
+// Job Status Actions
+acceptjob: "Acceptera jobb",
+startjob: "Påbörja jobb",
+completejob: "Slutför jobb",
+otpdisplay: "OTP: {otp}",
+confirmaction: "Bekräfta åtgärd",
+acceptjobquestion: "Acceptera jobb?",
+startjobquestion: "Påbörja jobb?",
+cannotupdatestatus: "Kan inte uppdatera status.",
+statusupdatedsuccess: "Status uppdaterad",
+errorupdatingstatus: "Fel vid uppdatering av status",
+missingticketid: "Saknar biljett-ID.",
+
+// Phone/Call Features
+cannotmakecall: "Kan inte ringa",
+devicenotsupportcall: "Enheten stöder inte att ringa {phoneNumber}.",
+cannotcall: "Kan inte ringa",
+providerphonenotavailable: "Leverantörens telefonnummer är inte tillgängligt.",
+
+// OTP Handling
+otpcopied: "OTP kopierad",
+couldnotcopyotp: "Kunde inte kopiera OTP.",
+nootp: "Ingen OTP",
+otpnotavailable: "OTP inte tillgänglig.",
+
+// Media/Images
+noimages: "Inga bilder",
+cannotchat: "Kan inte chatta",
+
+// Partner Interaction
+requiredinfomissing: "Nödvändig information saknas.",
+cannotidentifyparticipant: "Kunde inte identifiera den andra deltagaren.",
+errorloadingpartners: "Fel vid laddning av partners: {error}",
+nopartnersmessage: "Inga partners har skickat meddelanden om detta jobb ännu.",
+}

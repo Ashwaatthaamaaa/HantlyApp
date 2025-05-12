@@ -104,31 +104,46 @@ const ServiceItem: React.FC<ServiceItemProps> = ({ item, session, router, curren
 
   useEffect(() => {
     const fetchSvg = async () => {
-        setSvgXml(null); // Reset on item change
-        setFetchError(false); // Reset error
-        // Check if it's likely an SVG based on URI or content type
-        const isSvg = item.contentType === 'image/svg+xml' || item.imageUri?.endsWith('.svg');
+      setSvgXml(null);
+      setFetchError(false);
 
-        if (item.imageUri && isSvg) {
-          try {
-            const res = await fetch(item.imageUri);
-            if (!res.ok) {
-                throw new Error(`Failed to fetch SVG: ${res.status}`);
-            }
-            const text = await res.text();
-            // Basic check if the fetched text looks like SVG
-            if (text.trim().startsWith('<svg')) {
-                setSvgXml(text);
-            } else {
-                console.warn("Fetched content does not look like SVG for:", item.imageUri);
-                setFetchError(true);
-            }
-          } catch (err) {
-            console.error('SVG fetch error for:', item.imageUri, err);
-            setFetchError(true); // Mark as error
-          }
+      const problematicUrl = 'https://apihandyman.programmingtrends.com/CraftManImages/ServiceImages/9fe7f6a5-5303-4557-885d-18c4fe991d40.svg';
+      const fixedSvgUrl = 'https://res.cloudinary.com/dmzp6notl/image/upload/v1746974481/fixed_file_hwuwvw.svg'; // Your new Cloudinary URL
+
+      if (item.imageUri === problematicUrl) {
+        // Directly load the fixed SVG from Cloudinary
+        try {
+          const res = await fetch(fixedSvgUrl);
+          if (!res.ok) throw new Error(`Failed to fetch fixed SVG: ${res.status}`);
+          const text = await res.text();
+          setSvgXml(text); // Set the fetched SVG string
+        } catch (e) {
+          console.error('Failed to load fixed Cloudinary SVG:', e);
+          setFetchError(true);
         }
+        return;
+      }
+
+      // Handle other SVG URLs as needed (keep your previous logic here)
+      const isSvg = item.contentType === 'image/svg+xml' || item.imageUri?.endsWith('.svg');
+      if (item.imageUri && isSvg) {
+        try {
+          const res = await fetch(item.imageUri);
+          if (!res.ok) throw new Error(`Failed to fetch SVG: ${res.status}`);
+          const text = await res.text();
+          if (text.trim().startsWith('<svg')) {
+            setSvgXml(text);
+          } else {
+            console.warn("Fetched content does not look like SVG for:", item.imageUri);
+            setFetchError(true);
+          }
+        } catch (err) {
+          console.error('SVG fetch error for:', item.imageUri, err);
+          setFetchError(true);
+        }
+      }
     };
+
     fetchSvg();
   }, [item.imageUri, item.contentType]);
 
@@ -206,28 +221,42 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const fetchServices = async () => {
-      setIsLoading(true); setError(null);
+      setIsLoading(true);
+      setError(null);
       const url = `${BASE_URL}/api/Service/GetServiceList`;
+    
       try {
         const response = await fetch(url);
-        if (!response.ok) { const errorText = await response.text(); throw new Error(`HTTP error! status: ${response.status} - ${errorText || 'Failed to fetch'}`); }
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status} - ${errorText || 'Failed to fetch'}`);
+        }
+    
         const contentType = response.headers.get("content-type");
-        if (!contentType?.includes("application/json")) { const responseText = await response.text(); throw new Error("Received non-JSON response"); }
-
+        if (!contentType?.includes("application/json")) {
+          const responseText = await response.text();
+          throw new Error("Received non-JSON response");
+        }
+    
         const data: Service[] = await response.json();
-        // Include Swedish names with fallback to English if not available
+        console.log('Fetched services:', data); // <-- This will print the fetched data
+    
         const formattedData: ServiceListItem[] = data.map(service => ({
-            id: service.serviceId.toString(),
-            name: service.serviceName,
-            nameSwedish: service.serviceName_Swedish || service.serviceName, // Fallback to English if Swedish not available
-            contentType: service.imageContentType,
-            imageUri: service.imagePath // Directly pass imagePath (or null)
+          id: service.serviceId.toString(),
+          name: service.serviceName,
+          nameSwedish: service.serviceName_Swedish || service.serviceName,
+          contentType: service.imageContentType,
+          imageUri: service.imagePath
         }));
+    
         setServices(formattedData);
-
-      } catch (err: any) { setError(`Failed to load services: ${err.message}`); }
-      finally { setIsLoading(false); }
+      } catch (err: any) {
+        setError(`Failed to load services: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
     };
+    
     fetchServices();
   }, []);
 

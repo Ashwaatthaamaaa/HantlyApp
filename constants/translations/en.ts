@@ -291,6 +291,24 @@ export const en = {
     save_changes: "Save Changes",
     done: "Done",
     select_counties: "Select Counties",
+    fpm_enteremail_subtitle: "Enter your email address",
+    fpm_email_placeholder: "Email address",
+    fpm_emailrequired_title: "Email required",
+    fpm_emailrequired_message: "Please enter your email address.",
+    fpm_partneraccount_label: "Partner account",
+    fpm_step1_infotext: "Instructions for password reset will be sent to your email address if the account exists.",
+    fpm_step2_infotext: "Enter the OTP sent to your email and choose a new password.",
+    fpm_invalidemailformat_title: "Invalid email format",
+    fpm_noaccountfound_message: "No account was found for this email address.",
+    fpm_otpsent_message: "OTP has been sent to the registered email address.",
+    fpm_sendresetfailed_message: "Failed to send password reset request (Status: {status})",
+    fpm_genericerror_message: "An error occurred. Please check your connection and try again.",
+    fpm_missingotpnewpassword_message: "Please enter the OTP and your new password.",
+    fpm_newpasswordtooshort_message: "New password must be at least 8 characters.",
+    fpm_resetsuccess_message: "Your password has been reset.",
+    fpm_resetfailed_message: "Password reset failed (Status: {status})",
+    fpm_resetexception_message: "Could not reset the password. Please try again. {message}",
+
     select_municipalities: "Select Municipalities",
     select_services: "Select Services",
     twenty_four_seven: "24x7",
@@ -329,28 +347,26 @@ export const en = {
     descriptionworkdone: "Description of Work Done",
     enterjobdetailsplaceholder: "Enter job details",
     selectmunicipality: "Select Municipality *",
-    get_otp_from_user_accept: "Ask the customer for the 4-digit code.",
-    submitaccept: "Submit & Accept",
-    enter_acceptance_otp: "Enter OTP for Acceptance",
-    invalidotp: "Please enter a valid 4-digit OTP.",
-    accept_otp_required: "Acceptance OTP is required.",
-    closing_otp_required: "Closing OTP is required.",
-    yourreview: "Your Review",
-    review_section_title: "Rate This Service",
-    review_rating_label: "Your Rating:",
-    review_comment_label: "Your Comment (Optional):",
-    review_comment_placeholder: "Tell us about your experience...",
-    review_submit_button: "Submit Review",
-    review_select_rating_alert: "Please select a star rating.",
-    review_submit_success_default: "Review submitted successfully!",
-    review_submit_error: "Failed to submit review",
-    commentdisplay_prefix: "Comment:",
-    partner_view_review_title: "Customer Review",
-    partner_view_comment_prefix: "Comment:",
-    partner_view_no_comment: "Customer did not leave a comment.",
-    loadingtext: "Loading...",
-    fpm_emailrequired_title: "Email Required",
-    fpm_emailrequired_message: "Please enter a valid email address.",
-    fpm_invalidemailformat_title: "Invalid Email Format",
+    // Add these to the existing en.ts translations:
 
-    };
+    // UI Actions
+    apply: "Apply",
+    remove: "Remove",
+
+    // Filter Labels
+    filter_by_status: "Filter by status",
+    filter_by_county: "Filter by county",
+    filter_by_municipality: "Filter by municipality",
+
+    // Urgent Job Text
+    urgentjobtext: "Jobs requiring faster response",
+    urgentjobtext2: "Jobs requiring faster response", // Consider consolidating if these are duplicates
+    urgentjobtext3: "Jobs requiring faster response", // Consider consolidating if these are duplicates
+
+    // OTP Handling
+    enter_acceptance_otp: "Enter acceptance OTP",
+
+    // Logo Management (alternative versions)
+    changelogo: "Change logo",
+    uploadlogo: "Upload logo",
+};

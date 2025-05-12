@@ -230,14 +230,14 @@ export default function EditProfileScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
         <Animated.View style={{
           transform: [{ rotate: loadingAnim.interpolate({
             inputRange: [0, 1],
             outputRange: ['0deg', '360deg']
           })}]
         }}>
-          <Ionicons name="sync-outline" size={50} color="#4A90E2" />
+          <Ionicons name="sync-outline" size={50} color="#696969" />
         </Animated.View>
         <Text style={styles.loadingText}>{t('loading_profile')}</Text>
       </SafeAreaView>
@@ -412,7 +412,7 @@ export default function EditProfileScreen() {
                         </Text>
                         {(showCountyModal && countyId === item.countyId.toString()) || 
                          (!showCountyModal && municipalityId === item.municipalityId.toString()) ? (
-                          <Ionicons name="checkmark" size={24} color="#4A90E2" />
+                          <Ionicons name="checkmark" size={24} color="#696969" />
                         ) : null}
                       </TouchableOpacity>
                     )}
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#696969',
     justifyContent: 'center',
     alignItems: 'center'
   },
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#696969',
     borderRadius: 12,
     paddingVertical: 15,
     marginVertical: 20
