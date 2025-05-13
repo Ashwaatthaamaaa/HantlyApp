@@ -376,4 +376,15 @@ errorloadingpartners: "Fel vid laddning av partners: {error}",
 nopartnersmessage: "Inga partners har skickat meddelanden om detta jobb ännu.",
 
 otp_value_is: "OTP : ",
+
+    // ... your existing keys ...
+
+    // Add new keys here:
+    invalid_date_format: "Ogiltigt Datum",
+    error_user_id_not_found: "Användar-ID hittades inte.",
+    error_partner_id_not_found: "Partner-ID hittades inte.",
+    error_failed_to_load_bookings: "Kunde inte ladda bokningar.",
+    error_profile_prefix: "Profilfel: ",
+    notapplicable: "E/T", // Or "Ej tillämplig" if you prefer the full text
+    // If you used 'otp_value_is' from the OTP copy alert fix:
 }

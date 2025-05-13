@@ -393,5 +393,13 @@ export const en = {
         
     yourreview: "Your Review",
     ratingdisplay: "Rating: {stars}",
-    otp_value_is: "OTP : "
+    otp_value_is: "OTP : ",
+
+    
+        // Add new keys here:
+        invalid_date_format: "Invalid Date",
+        error_user_id_not_found: "User ID not found.",
+        error_partner_id_not_found: "Partner ID not found.",
+        error_failed_to_load_bookings: "Failed to load bookings.",
+        error_profile_prefix: "Profile Error: ",
 };
