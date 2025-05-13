@@ -367,6 +367,7 @@ otpnotavailable: "OTP inte tillgänglig.",
 // Media/Images
 noimages: "Inga bilder",
 cannotchat: "Kan inte chatta",
+view_less: "Visa mindre",
 
 // Partner Interaction
 requiredinfomissing: "Nödvändig information saknas.",

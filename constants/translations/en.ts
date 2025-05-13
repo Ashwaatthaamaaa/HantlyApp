@@ -370,8 +370,27 @@ export const en = {
     changelogo: "Change logo",
     uploadlogo: "Upload logo",
     rtm_title: "Register",
+    get_otp_from_user_accept: "Ask the customer for the 4-digit code.",
+    view_less: "View less",
     rtm_subtitle: "Select your role",
     rtm_partner_button: "Partner",
     rtm_user_button: "User",
-    
+
+    review_section_title: "Rate this service",
+    review_rating_label: "Your rating:",
+    review_comment_label: "Your comment (Optional):",
+    review_comment_placeholder: "Tell us about your experience...",
+    review_submit_button: "Submit review",
+    review_select_rating_alert: "Please select a star rating.",
+    // review_enter_comment_alert: "Please write a comment.", // Uncomment if comment becomes mandatory
+    review_submit_success_default: "Review submitted!",
+    review_submit_error: "Could not submit review",
+    missinginfo: "Missing information", // Can reuse this if appropriate
+    commentdisplay_prefix: "Comment:",
+    partner_view_review_title: "Customer Review",
+    partner_view_comment_prefix: "Comment:", // Can be same as user view or different if needed
+    partner_view_no_comment: "The customer left no comment.", // Message when comment is empty/null
+        
+    yourreview: "Your Review",
+    ratingdisplay: "Rating: {stars}",
 };
