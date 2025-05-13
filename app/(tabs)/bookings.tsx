@@ -1,4 +1,4 @@
-// File: app/(tabs)/bookings.tsx (WITH CLEAR BUTTON ADDED TO INLINE FilterModal)
+// File: app/(tabs)/bookings.tsx
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
@@ -12,15 +12,16 @@ import {
   RefreshControl,
   ScrollView,
   Alert,
-  Modal // Keep standard Modal import for the FilterModal structure
+  Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import SelectModal from '@/components/MultiSelectModal'; // Keep this for sub-modals
+import SelectModal from '@/components/MultiSelectModal';
 import { BASE_URL } from '@/constants/Api';
-import { t } from '@/config/i18n'; // Import translation function
+import { t } from '@/config/i18n';
+import * as SecureStore from 'expo-secure-store';
 
 // --- Types ---
 interface TicketImage {
@@ -57,22 +58,21 @@ interface Booking {
 }
 interface PartnerCounty {
     countyId: number;
-    countyName: string | null; // Allow null for consistency
+    countyName: string | null;
 }
 interface PartnerMunicipality {
     municipalityId: number;
-    municipalityName: string | null; // Allow null
+    municipalityName: string | null;
     countyId: number;
     countyName?: string;
 }
 interface PartnerProfileData {
     countyList?: PartnerCounty[] | null;
     municipalityList?: PartnerMunicipality[] | null;
-    // Add other fields if needed
 }
 interface ApiDataItem {
     id: string;
-    name: string | null; // Allows null
+    name: string | null;
 }
 type ActiveFilterType = {
     status: string | null;
@@ -81,10 +81,11 @@ type ActiveFilterType = {
 };
 
 // --- Constants ---
-const ALL_STATUSES_FILTER_ID = ''; // Represents "All Statuses"
-const FETCH_STATUSES = ['Created', 'Accepted', 'InProgress', 'Completed']; // Statuses to fetch for partners when 'All' is selected
+const ALL_STATUSES_FILTER_ID = '';
+const PARTNER_PROFILE_CACHE_KEY_PREFIX = 'partnerProfileCache_';
+const CACHE_EXPIRY_DURATION = 1000 * 60 * 60; // 1 hour
 
-// --- Colors --- (Ensure these match your theme)
+// --- Colors ---
 const COLORS = {
     background: '#F8F8F8',
     textPrimary: '#333333',
@@ -103,16 +104,15 @@ const COLORS = {
     statusInProgress: '#FFC107',
     statusCompleted: '#6C757D',
     statusDefault: '#6C757D',
-    filterButtonBg: '#696969',
-    filterButtonText: '#FFFFFF',
     modalBackdrop: 'rgba(0, 0, 0, 0.5)',
     selectorBg: '#FFFFFF',
     selectorBorder: '#E0E0E0',
     selectorDisabledBg: '#F0F0F0',
     placeholderText: '#AAAAAA',
-    errorTextSmallColor: '#D9534F', // Specific color for small error text
-    resetButtonBg: '#EFEFEF', // Background for Reset button
-    resetButtonText: '#555555', // Text color for Reset button
+    errorTextSmallColor: '#D9534F',
+    resetButtonBg: '#EFEFEF',
+    resetButtonText: '#555555',
+    loadingOverlayBg: 'rgba(248, 248, 248, 0.75)',
 };
 
 // --- Helper Functions ---
@@ -120,7 +120,7 @@ const formatDate = (dateString: string | null): string => {
     if (!dateString) return 'N/A';
     try {
         const date = new Date(dateString);
-        return date.toLocaleDateString('sv-SE'); // Use appropriate locale
+        return date.toLocaleDateString('sv-SE');
     } catch (error) {
         return 'Invalid Date';
     }
@@ -145,17 +145,15 @@ const BookingCard: React.FC<BookingCardProps> = React.memo(({ item }) => {
 
   return (
     <TouchableOpacity style={styles.card} onPress={() => router.push(`/bookings/${item.ticketId}`)}>
-      {/* Image Container */}
       <View style={styles.cardImageContainer}>
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={styles.cardImage} resizeMode="cover" />
         ) : (
-          <View style={styles.cardImagePlaceholder}>
+           <View style={styles.cardImagePlaceholder}>
             <Ionicons name="image-outline" size={30} color={COLORS.iconPlaceholder} />
           </View>
         )}
       </View>
-      {/* Details Container */}
       <View style={styles.cardDetails}>
         <Text style={styles.cardDescription} numberOfLines={1}>
           {description || t('no_description')}
@@ -167,7 +165,6 @@ const BookingCard: React.FC<BookingCardProps> = React.memo(({ item }) => {
           {formatDate(item.createdOn)}
         </Text>
       </View>
-      {/* Status Text */}
       <Text style={[styles.cardStatus, { color: statusColor }]}>
         {item.status || t('not_available')}
       </Text>
@@ -175,13 +172,12 @@ const BookingCard: React.FC<BookingCardProps> = React.memo(({ item }) => {
   );
 });
 
-
-// --- Filter Modal Component (Inline Definition - With Reset Button) ---
+// --- Filter Modal Component ---
 interface FilterModalProps {
     visible: boolean;
     onClose: () => void;
-    onApplyFilters: (filters: ActiveFilterType) => void; // Callback to apply
-    initialFilters: ActiveFilterType; // Current actual filters
+    onApplyFilters: (filters: ActiveFilterType) => void;
+    initialFilters: ActiveFilterType;
     supportedCounties: ApiDataItem[];
     supportedMunicipalities: PartnerMunicipality[];
     isLoadingProfile: boolean;
@@ -200,172 +196,188 @@ const FilterModal: React.FC<FilterModalProps> = ({
     profileError,
     isUserView = false
 }) => {
-    // Temporary state within the modal to hold selections before applying
     const [tempStatus, setTempStatus] = useState<string | null>(initialFilters.status);
     const [tempCountyId, setTempCountyId] = useState<string | null>(initialFilters.countyId);
     const [tempMunicipalityId, setTempMunicipalityId] = useState<string | null>(initialFilters.municipalityId);
-    // State to hold the list of municipalities filtered by the selected county
     const [municipalitiesForSelectedCounty, setMunicipalitiesForSelectedCounty] = useState<ApiDataItem[]>([]);
-
-    // State to control visibility of nested selection modals
     const [isStatusModalVisible, setIsStatusModalVisible] = useState(false);
     const [isCountyModalVisible, setIsCountyModalVisible] = useState(false);
     const [isMunicipalityModalVisible, setIsMunicipalityModalVisible] = useState(false);
 
-    // Available job statuses for the filter
-    const jobStatuses: ApiDataItem[] = useMemo(() => [ // Use useMemo if translations could change
+    const jobStatuses: ApiDataItem[] = useMemo(() => [
       { id: 'Created', name: t('status_created') },
       { id: 'Accepted', name: t('status_accepted') },
       { id: 'InProgress', name: t('status_in_progress') },
       { id: 'Completed', name: t('status_completed') },
-      { id: ALL_STATUSES_FILTER_ID, name: t('all_statuses') }, // "All" option
-    ], []); // Empty dependency array means this runs once
+      { id: ALL_STATUSES_FILTER_ID, name: t('all_statuses') },
+    ], []);
 
-    // Effect to filter municipalities when the temporary county selection changes
-    useEffect(() => {
-      if (tempCountyId && supportedMunicipalities) {
-        const selectedCountyNum = parseInt(tempCountyId, 10);
-        // Filter the supported municipalities based on the selected county ID
-        const filtered = supportedMunicipalities
-            .filter(m => m.countyId === selectedCountyNum)
-            .map(m => ({ id: m.municipalityId.toString(), name: m.municipalityName })); // Map to ApiDataItem format
-        setMunicipalitiesForSelectedCounty(filtered);
-        // Check if the currently selected municipality is still valid within the new list
-        const currentMuniIdIsValid = filtered.some(m => m.id === tempMunicipalityId);
-        // If not valid (e.g., county changed), deselect the municipality
-        if (!currentMuniIdIsValid) {
-            setTempMunicipalityId(null);
-        }
-      } else {
-        // If no county is selected, clear the municipality list and selection
-        setMunicipalitiesForSelectedCounty([]);
-        if (!tempCountyId) { // Ensure municipality is cleared only if county is cleared
-            setTempMunicipalityId(null);
-        }
-      }
-      // This effect depends on the temporary county ID and the list of supported municipalities
-    }, [tempCountyId, supportedMunicipalities]);
-
-    // Effect to reset the temporary filter state when the modal becomes visible
     useEffect(() => {
        if (visible) {
-           // Reset temporary state to match the actual active filters from the parent
+           console.log("FilterModal: Visibility/initialFilters changed. Resetting temp state.", initialFilters);
            setTempStatus(initialFilters.status);
            setTempCountyId(initialFilters.countyId);
            setTempMunicipalityId(initialFilters.municipalityId);
        }
-       // No 'else' needed, state persists while hidden
-    }, [visible, initialFilters]); // Run when visibility or initial filters change
+    }, [visible, initialFilters]);
 
-    // Handler for the "OK" (Apply) button
+    useEffect(() => {
+      console.log(`FilterModal (MuniEffect): Triggered. tempCountyId: ${tempCountyId}, supportedMunicipalities count: ${supportedMunicipalities?.length}`);
+
+      if (tempCountyId && supportedMunicipalities && supportedMunicipalities.length > 0) {
+        const selectedCountyNum = parseInt(tempCountyId, 10);
+        
+        if (isNaN(selectedCountyNum)) {
+            console.error("FilterModal (MuniEffect): tempCountyId is not a valid number string:", tempCountyId);
+            setMunicipalitiesForSelectedCounty([]);
+            if (tempMunicipalityId !== null) setTempMunicipalityId(null);
+            return;
+        }
+
+        const filtered = supportedMunicipalities
+            .filter(m => m.countyId === selectedCountyNum)
+            .map(m => ({ id: m.municipalityId.toString(), name: m.municipalityName || `Municipality ${m.municipalityId}` })); // Added fallback name
+        
+        console.log(`FilterModal (MuniEffect): Filtered municipalities for countyId ${tempCountyId} (${selectedCountyNum}):`, filtered.length > 0 ? filtered : "No municipalities found.");
+        setMunicipalitiesForSelectedCounty(filtered);
+
+        if (tempMunicipalityId !== null) {
+            const currentMuniIdIsValid = filtered.some(m => m.id === tempMunicipalityId);
+            if (!currentMuniIdIsValid) {
+               console.log(`FilterModal (MuniEffect): Resetting tempMunicipalityId ('${tempMunicipalityId}') as it's no longer valid for county '${tempCountyId}'.`);
+               setTempMunicipalityId(null);
+            }
+        }
+      } else {
+        console.log("FilterModal (MuniEffect): Clearing municipalitiesForSelectedCounty (no tempCountyId or empty/no supportedMunicipalities).");
+        setMunicipalitiesForSelectedCounty([]);
+        if (!tempCountyId && tempMunicipalityId !== null) {
+             console.log("FilterModal (MuniEffect): Resetting tempMunicipalityId as tempCountyId is now null.");
+            setTempMunicipalityId(null);
+        }
+      }
+    }, [tempCountyId, supportedMunicipalities]);
+
+
     const handleApply = () => {
-      // Prepare the filter object to be sent back to the parent
+      console.log("FilterModal: Apply clicked.", {tempStatus, tempCountyId, tempMunicipalityId});
       const filtersToApply: ActiveFilterType = {
           status: tempStatus,
-          // For users, location filters are ignored (set to null)
           countyId: isUserView ? null : tempCountyId,
           municipalityId: isUserView ? null : tempMunicipalityId
       };
-      // Call the parent's callback function to apply the filters
       onApplyFilters(filtersToApply);
-      onClose(); // Close the modal
+      onClose();
     };
 
-    // Handler for the "Reset" button
     const handleReset = () => {
-        // Reset temporary state within the modal to defaults
+        console.log("FilterModal: Reset clicked.");
         setTempStatus(ALL_STATUSES_FILTER_ID);
         setTempCountyId(null);
         setTempMunicipalityId(null);
-        setMunicipalitiesForSelectedCounty([]); // Clear derived state as well
+        // setMunicipalitiesForSelectedCounty([]); // This will be handled by the useEffect when tempCountyId becomes null
 
-        // Immediately apply the default/reset filters by calling the parent's callback
         onApplyFilters({
             status: ALL_STATUSES_FILTER_ID,
             countyId: null,
             municipalityId: null
         });
-        onClose(); // Close the modal
+        onClose(); 
+    };
+    
+    const handleCountySelected = (selectedCountyId: string | null) => {
+        console.log("FilterModal: County selected via modal:", selectedCountyId);
+        if (tempCountyId !== selectedCountyId) { // Only reset municipality if county actually changed
+            console.log("FilterModal: County changed, resetting tempMunicipalityId.");
+            setTempMunicipalityId(null);
+        }
+        setTempCountyId(selectedCountyId);
     };
 
-    // Helper functions to get display names for the selected temporary IDs
-    const getStatusName = (id: string | null) => jobStatuses.find(s => s.id === id)?.name || t('select_status');
-    const getCountyName = (id: string | null) => supportedCounties.find(c => c.id === id)?.name || t('select_county');
-    const getMunicipalityName = (id: string | null) => municipalitiesForSelectedCounty.find(m => m.id === id)?.name || t('select_municipality');
+    const handleMunicipalitySelected = (selectedMuniId: string | null) => {
+        console.log("FilterModal: Municipality selected via modal:", selectedMuniId);
+        setTempMunicipalityId(selectedMuniId);
+    };
 
-    // Determine if selectors should be disabled based on loading/error states
+    const getStatusName = (id: string | null) => jobStatuses.find(s => s.id === id)?.name || t('select_status');
+    const getCountyName = (id: string | null) => supportedCounties.find(c => c.id === id)?.name || countyPlaceholder; // Use countyPlaceholder directly
+    
+    const getMunicipalityName = (id: string | null) => {
+        // Use municipalitiesForSelectedCounty for the current display name
+        const muni = municipalitiesForSelectedCounty.find(m => m.id === id);
+        return muni?.name || municipalityPlaceholder; // Use municipalityPlaceholder
+    };
+    
     const isCountyDisabled = isLoadingProfile || !!profileError || supportedCounties.length === 0;
     const countyPlaceholder = isLoadingProfile ? t('loading_profile') : profileError ? t('error_loading_profile') : supportedCounties.length === 0 ? t('no_supported_counties') : t('select_county');
-    const isMunicipalityDisabled = !tempCountyId || isLoadingProfile || !!profileError || municipalitiesForSelectedCounty.length === 0;
-    const municipalityPlaceholder = !tempCountyId ? t('select_county_first') : (isLoadingProfile || !!profileError) ? '...' : municipalitiesForSelectedCounty.length === 0 ? t('no_supported_municipalities') : t('select_municipality');
+    
+    const isMunicipalityDisabled = !tempCountyId || isLoadingProfile || !!profileError || (tempCountyId && municipalitiesForSelectedCounty.length === 0 && !isLoadingProfile && !profileError) ;
+    const municipalityPlaceholder = !tempCountyId 
+        ? t('select_county_first') 
+        : (isLoadingProfile && tempCountyId && !profileError) 
+            ? t('loading') // Show generic loading if county is selected but profile data (which includes municipalities) is still loading
+            : profileError
+                ? t('error_loading_profile') 
+                : (municipalitiesForSelectedCounty.length === 0 && tempCountyId) // County selected, no error, profile loaded, but no munis
+                    ? t('no_supported_municipalities') 
+                    : t('select_municipality');
 
-    // JSX for the Filter Modal
+
     return (
       <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}>
         <View style={styles.filterModalBackdrop}>
           <View style={styles.filterModalContent}>
-            {/* Header */}
             <View style={styles.filterModalHeader}>
               <Text style={styles.filterModalTitle}>{t('filter_jobs')}</Text>
-              <TouchableOpacity onPress={onClose}>
-                  <Ionicons name="close" size={28} color={COLORS.textSecondary} />
+              <TouchableOpacity onPress={onClose}  style={styles.closeButton}>
+                 <Ionicons name="close" size={28} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
-
-            {/* Status Selector */}
             <TouchableOpacity
               style={styles.filterSelector}
-              onPress={() => setIsStatusModalVisible(true)} // Opens the nested SelectModal
+              onPress={() => setIsStatusModalVisible(true)}
             >
               <Text style={tempStatus === null || tempStatus === ALL_STATUSES_FILTER_ID ? styles.filterPlaceholder : styles.filterValue}>
                 {getStatusName(tempStatus)}
               </Text>
               <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
-
-            {/* County & Municipality Selectors (Only shown for Partners) */}
             {!isUserView && (
               <>
-                {/* County Selector */}
                 <TouchableOpacity
                   style={[styles.filterSelector, isCountyDisabled && styles.filterSelectorDisabled]}
                   onPress={() => !isCountyDisabled && setIsCountyModalVisible(true)}
                   disabled={isCountyDisabled}
                 >
                   <Text style={!tempCountyId ? styles.filterPlaceholder : styles.filterValue}>
-                    {isLoadingProfile ? t('loading') : profileError ? t('error_profile') : getCountyName(tempCountyId) || countyPlaceholder}
+                    {getCountyName(tempCountyId)}
                   </Text>
-                  {isLoadingProfile ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> :
+                  {(isLoadingProfile && !profileError) ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> :
                     <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
                   }
                 </TouchableOpacity>
-                {/* Display profile loading error if any */}
                 {profileError && <Text style={styles.filterErrorText}>{profileError}</Text>}
-
-                {/* Municipality Selector */}
                 <TouchableOpacity
                   style={[styles.filterSelector, isMunicipalityDisabled && styles.filterSelectorDisabled]}
                   onPress={() => !isMunicipalityDisabled && setIsMunicipalityModalVisible(true)}
-                  disabled={isMunicipalityDisabled}
+                  disabled={Boolean(isMunicipalityDisabled)}
                 >
                   <Text style={!tempMunicipalityId ? styles.filterPlaceholder : styles.filterValue}>
-                    {getMunicipalityName(tempMunicipalityId) || municipalityPlaceholder}
+                    {getMunicipalityName(tempMunicipalityId)}
                   </Text>
-                  <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
+                  {(isLoadingProfile && tempCountyId && !profileError && municipalitiesForSelectedCounty.length === 0) ? <ActivityIndicator size="small" color={COLORS.textSecondary}/> :
+                    <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
+                  }
                 </TouchableOpacity>
               </>
             )}
-
-            {/* Action Buttons (Reset and Apply/OK) */}
             <View style={styles.filterActionButtonsContainer}>
-                {/* Reset Button */}
                 <TouchableOpacity
                     style={[styles.filterModalButton, styles.filterResetButton]}
                     onPress={handleReset}
-                >
+                 >
                     <Text style={styles.filterResetButtonText}>{t('reset')}</Text>
                 </TouchableOpacity>
-                {/* Apply Button */}
                 <TouchableOpacity
                     style={[styles.filterModalButton, styles.filterApplyButton]}
                     onPress={handleApply}
@@ -373,11 +385,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
                     <Text style={styles.filterApplyButtonText}>{t('ok')}</Text>
                 </TouchableOpacity>
             </View>
-
           </View>
-        </View>
-
-        {/* Nested SelectModals for Status, County, Municipality */}
+         </View>
         <SelectModal
           mode="single"
           visible={isStatusModalVisible}
@@ -385,10 +394,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
           data={jobStatuses}
           initialSelectedId={tempStatus}
           onClose={() => setIsStatusModalVisible(false)}
-          onConfirmSingle={(id) => setTempStatus(id)} // Update temporary state
+          onConfirmSingle={(id) => setTempStatus(id)}
         />
-
-        {!isUserView && ( // Only render these for partners
+        {!isUserView && (
           <>
             <SelectModal
               mode="single"
@@ -397,238 +405,265 @@ const FilterModal: React.FC<FilterModalProps> = ({
               data={supportedCounties}
               initialSelectedId={tempCountyId}
               onClose={() => setIsCountyModalVisible(false)}
-              onConfirmSingle={(id) => setTempCountyId(id) } // Update temporary state
+              onConfirmSingle={handleCountySelected}
             />
             <SelectModal
               mode="single"
               visible={isMunicipalityModalVisible}
               title={t('select_municipality')}
-              data={municipalitiesForSelectedCounty} // Use the filtered list
+              data={municipalitiesForSelectedCounty}
               initialSelectedId={tempMunicipalityId}
               onClose={() => setIsMunicipalityModalVisible(false)}
-              onConfirmSingle={(id) => setTempMunicipalityId(id)} // Update temporary state
+              onConfirmSingle={handleMunicipalitySelected}
             />
           </>
         )}
       </Modal>
     );
 };
-// --- END Filter Modal ---
-
 
 // --- Main BookingsScreen Component ---
 export default function BookingsScreen() {
   const router = useRouter();
-  const { session, isLoading: isAuthLoading } = useAuth(); // Auth context
-  const [bookings, setBookings] = useState<Booking[]>([]); // List of bookings
-  const [isLoadingData, setIsLoadingData] = useState(false); // Loading state for fetching bookings
-  const [error, setError] = useState<string | null>(null); // Error state for fetching bookings
-  const [isRefreshing, setIsRefreshing] = useState(false); // State for pull-to-refresh
-
-  // State for partner-specific profile data (counties, municipalities)
+  const { session, isLoading: isAuthLoading } = useAuth();
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isFetchingBookings, setIsFetchingBookings] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [partnerProfileData, setPartnerProfileData] = useState<PartnerProfileData | null>(null);
-  const [isLoadingPartnerProfile, setIsLoadingPartnerProfile] = useState<boolean>(false);
+  const [isFetchingPartnerProfileForFilters, setIsFetchingPartnerProfileForFilters] = useState<boolean>(false);
   const [partnerProfileError, setPartnerProfileError] = useState<string | null>(null);
-
-  // State for the filter modal visibility
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
-
-  // Default/Initial filter state
-  const defaultFilters: ActiveFilterType = useMemo(() => ({ // Use useMemo if defaults depend on something stable
-      status: ALL_STATUSES_FILTER_ID, // Default to "All Statuses"
-      countyId: null, // Default to no county filter
-      municipalityId: null, // Default to no municipality filter
-  }), []); // Empty dependency array means it's calculated once
-
-  // State to hold the currently active filters
+  
+  const defaultFilters: ActiveFilterType = useMemo(() => ({
+      status: ALL_STATUSES_FILTER_ID,
+      countyId: null,
+      municipalityId: null,
+  }), []);
   const [activeFilters, setActiveFilters] = useState<ActiveFilterType>(defaultFilters);
+  const [isApplyingFilters, setIsApplyingFilters] = useState(false);
 
-  // Function to fetch partner's profile details (counties, municipalities)
-  const fetchPartnerProfile = useCallback(async () => {
-      // Only fetch if it's a partner session
-      if (!session || session.type !== 'partner' || !session.email) {
-          setPartnerProfileData(null);
-          setIsLoadingPartnerProfile(false);
-          setPartnerProfileError(null);
-          return;
-      }
-      setIsLoadingPartnerProfile(true);
-      setPartnerProfileError(null);
-      const detailUrl = `${BASE_URL}/api/Company/GetCompanyDetail?EmailId=${encodeURIComponent(session.email)}`;
-      try {
-          const response = await fetch(detailUrl);
-          if (!response.ok) {
-              const errorText = await response.text();
-              throw new Error(`Failed profile fetch (${response.status}): ${errorText}`);
-          }
-          const data: PartnerProfileData = await response.json();
-          setPartnerProfileData(data);
-      } catch (err: any) {
-          console.error("BookingsScreen: Failed to load partner profile:", err);
-          setPartnerProfileError(`Profile Error: ${err.message}`);
-          setPartnerProfileData(null);
-      } finally {
-          setIsLoadingPartnerProfile(false);
-      }
-  }, [session]); // Re-run if session changes
-
-  const fetchData = useCallback(async (showLoadingIndicator = true) => {
-    if (isAuthLoading || !session) {
-        setBookings([]); setError(null);
-        if (!session && !isAuthLoading) { setIsLoadingData(false); setIsRefreshing(false); }
+  const fetchPartnerProfile = useCallback(async (forceNetwork = false) => {
+    if (!session || !session.email || session.type !== 'partner') {
+        setPartnerProfileData(null);
+        setIsFetchingPartnerProfileForFilters(false);
+        setPartnerProfileError(null);
+        console.log("BookingsScreen/fetchPartnerProfile: Skipping, no valid partner session.");
         return;
     }
 
-    const currentFilters = activeFilters;
-    if (showLoadingIndicator) setIsLoadingData(true);
-    setError(null);
-    const headers: HeadersInit = { 'accept': 'text/plain' };
-    let url: string; // Will hold the final URL
+    const sanitizedEmailForKey = session.email.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const cacheKey = `${PARTNER_PROFILE_CACHE_KEY_PREFIX}${sanitizedEmailForKey}`;
 
-    // --- User Fetch Logic (remains the same) ---
+    if (!forceNetwork) {
+        try {
+            const cachedItem = await SecureStore.getItemAsync(cacheKey);
+            if (cachedItem) {
+                const { data, timestamp } = JSON.parse(cachedItem);
+                if (data && timestamp && (Date.now() - timestamp < CACHE_EXPIRY_DURATION)) {
+                    console.log("BookingsScreen/fetchPartnerProfile: Using cached partner profile. Key:", cacheKey);
+                    setPartnerProfileData(data);
+                    setIsFetchingPartnerProfileForFilters(false);
+                    return; 
+                } else {
+                    console.log("BookingsScreen/fetchPartnerProfile: Cache expired/invalid. Key:", cacheKey);
+                    await SecureStore.deleteItemAsync(cacheKey);
+                }
+            } else {
+                 console.log("BookingsScreen/fetchPartnerProfile: No cache found. Key:", cacheKey);
+            }
+        } catch (e) {
+            console.error("BookingsScreen/fetchPartnerProfile: Error reading cache. Key:", cacheKey, e);
+        }
+    }
+
+    console.log(`BookingsScreen/fetchPartnerProfile: ${forceNetwork ? "Force fetching from network." : "Fetching from network (no valid cache)."} Key:`, cacheKey);
+    setIsFetchingPartnerProfileForFilters(true);
+    setPartnerProfileError(null);
+    const detailUrl = `${BASE_URL}/api/Company/GetCompanyDetail?EmailId=${encodeURIComponent(session.email)}`;
+    try {
+        const response = await fetch(detailUrl);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed profile fetch (${response.status}): ${errorText}`);
+        }
+        const data: PartnerProfileData = await response.json();
+        setPartnerProfileData(data);
+        await SecureStore.setItemAsync(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
+        console.log("BookingsScreen/fetchPartnerProfile: Fetched and cached. Key:", cacheKey);
+    } catch (err: any) {
+        console.error("BookingsScreen/fetchPartnerProfile: Failed to load. Key:", cacheKey, err);
+        setPartnerProfileError(`Profile Error: ${err.message}`);
+        setPartnerProfileData(null);
+    } finally {
+        setIsFetchingPartnerProfileForFilters(false);
+    }
+  }, [session]);
+
+  const fetchData = useCallback(async (isInitialLoadOrRefresh = true) => {
+    if (isAuthLoading || !session) {
+        setBookings([]); setError(null);
+        if (!session && !isAuthLoading) {
+            setIsFetchingBookings(false);
+            setIsRefreshing(false);
+            setIsApplyingFilters(false);
+        }
+        return;
+    }
+
+    if (isInitialLoadOrRefresh && !isApplyingFilters) {
+        console.log("BookingsScreen/fetchData: Setting isFetchingBookings = true (initial/refresh)");
+        setIsFetchingBookings(true);
+    }
+    setError(null);
+
+    const currentFilters = activeFilters;
+    const headers: HeadersInit = { 'accept': 'text/plain' };
+    let url: string;
+
     if (session.type === 'user') {
-        if (!session.id) { setError("User ID not found."); setIsLoadingData(false); setIsRefreshing(false); return; }
+        if (!session.id) { 
+            setError("User ID not found."); 
+            setIsFetchingBookings(false); setIsRefreshing(false); setIsApplyingFilters(false); 
+            return; 
+        }
         let userUrl = `${BASE_URL}/api/IssueTicket/GetTicketsByUser?UserId=${session.id}`;
         if (currentFilters.status && currentFilters.status !== ALL_STATUSES_FILTER_ID) {
           userUrl += `&Status=${currentFilters.status}`;
         }
-        console.log(`User Bookings: Fetching jobs from ${userUrl}`);
-        url = userUrl; // Set URL for user fetch
-    }
-    // --- Partner Fetch Logic (Modified) ---
-    else {
-        if (!session.id) { setError("Partner ID not found."); setIsLoadingData(false); setIsRefreshing(false); return; }
-
-        // Base parameters
+        url = userUrl;
+    } else {
+        if (!session.id) { 
+            setError("Partner ID not found."); 
+            setIsFetchingBookings(false); setIsRefreshing(false); setIsApplyingFilters(false); 
+            return; 
+        }
         const params = new URLSearchParams();
         params.append('CompanyId', session.id.toString());
         if (currentFilters.countyId !== null) { params.append('CountyId', currentFilters.countyId); }
         if (currentFilters.municipalityId !== null) { params.append('MunicipalityId', currentFilters.municipalityId); }
-
-        // Check if fetching all or a specific status
         const isFetchingAllStatuses = currentFilters.status === ALL_STATUSES_FILTER_ID || currentFilters.status === null;
-
-        if (isFetchingAllStatuses) {
-            // Fetching ALL: Do NOT add the Status parameter
-             console.log(`Partner Bookings: Fetching All Statuses with filters:`, currentFilters);
-        } else if (currentFilters.status) {
-            // Fetching SPECIFIC status: Add the Status parameter
+        if (!isFetchingAllStatuses && currentFilters.status) {
             params.append('Status', currentFilters.status);
-             console.log(`Partner Bookings: Fetching status '${currentFilters.status}' with filters:`, currentFilters);
-        } else {
-            // Edge case: Filter status is invalid somehow, don't fetch
-             console.warn("Partner Bookings: Invalid status filter, skipping fetch.");
-             setBookings([]); setIsLoadingData(false); setIsRefreshing(false); return;
         }
-
-        // Construct the final URL for the single partner API call
         url = `${BASE_URL}/api/IssueTicket/GetTicketsForCompany?${params.toString()}`;
     }
 
-    // --- Single Fetch Execution ---
     try {
-        console.log(`Executing fetch: ${url}`);
+        console.log(`BookingsScreen/fetchData: Executing fetch: ${url}`);
         const response = await fetch(url, { headers });
-
         if (!response.ok) {
             const errorText = await response.text();
-            // Distinguish error source for clarity
             const fetchType = session.type === 'user' ? 'User' : 'Partner';
-            console.error(`${fetchType} fetch failed (${response.status}): ${errorText}`);
+            console.error(`BookingsScreen/fetchData: ${fetchType} fetch failed (${response.status}): ${errorText}`);
             throw new Error(`${fetchType} fetch failed (${response.status}): ${errorText}`);
         }
-
         const fetchedBookings: Booking[] = await response.json();
-        // Sort bookings by creation date (newest first)
         fetchedBookings.sort((a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime());
-        setBookings(fetchedBookings); // Update the bookings state
-        setError(null); // Clear error on successful fetch
-        console.log(`Workspaceed ${fetchedBookings.length} bookings successfully.`);
-
+        setBookings(fetchedBookings);
+        setError(null);
+        console.log(`BookingsScreen/fetchData: Fetched ${fetchedBookings.length} bookings successfully.`);
     } catch (err: any) {
-        console.error("Error during booking fetch:", err);
-        setError(err.message || `Failed to load bookings`); // Set specific error message
-        setBookings([]); // Clear bookings on error
+        console.error("BookingsScreen/fetchData: Error during booking fetch:", err);
+        setError(err.message || `Failed to load bookings`);
+        if (!isApplyingFilters) {
+            setBookings([]);
+        }
     } finally {
-        // Stop loading indicators
-        if (showLoadingIndicator) setIsLoadingData(false);
+        if (isInitialLoadOrRefresh) {
+            setIsFetchingBookings(false);
+        }
         setIsRefreshing(false);
+        setIsApplyingFilters(false);
+        console.log("BookingsScreen/fetchData: Fetch finished. isFetchingBookings:", isFetchingBookings, "isApplyingFilters:", isApplyingFilters);
     }
-  }, [session, isAuthLoading, activeFilters]);// Dependencies: session, auth loading state, and active filters
+  }, [session, isAuthLoading, activeFilters, isApplyingFilters]);
 
-  // Effect to fetch data when the screen gains focus or dependencies change
+  useEffect(() => {
+    if (!isAuthLoading && session && !isApplyingFilters) { // Added !isApplyingFilters to prevent loop if activeFilters is object
+         // Check if activeFilters truly changed if it's an object. For primitive parts, direct compare is fine.
+         // This effect is tricky if activeFilters is an object and its reference changes without value change.
+         // However, simple comparison or deep compare might be too much. Assuming new object for new filter state.
+        const prevFiltersString = JSON.stringify(activeFiltersRef.current); // Need a ref for previous filters
+        const currentFiltersString = JSON.stringify(activeFilters);
+        if (prevFiltersString !== currentFiltersString) {
+            console.log("BookingsScreen: activeFilters changed, setting isApplyingFilters=true and calling fetchData.", activeFilters);
+            setIsApplyingFilters(true);
+            fetchData(false); 
+        }
+        activeFiltersRef.current = activeFilters; // Update ref
+    }
+  }, [activeFilters]); // Removed session, isAuthLoading, fetchData
+
+  // Ref for previous activeFilters
+  const activeFiltersRef = React.useRef(activeFilters);
+  useEffect(() => {
+    activeFiltersRef.current = activeFilters;
+  }, [activeFilters]);
+
+
   useFocusEffect(
       useCallback(() => {
-          if (!isAuthLoading) { // Only run if authentication is not loading
-              console.log("Bookings screen focused or dependencies changed.");
-              fetchData(bookings.length === 0); // Fetch bookings (show indicator only if list is empty)
+          if (!isAuthLoading && session) {
+              console.log("BookingsScreen: Screen focused. isApplyingFilters:", isApplyingFilters);
+              if (bookings.length === 0 && !isApplyingFilters) {
+                  console.log("BookingsScreen: Initial fetch on focus (bookings empty, not applying filters).");
+                  fetchData(true);
+              }
               if (session?.type === 'partner') {
-                   fetchPartnerProfile(); // Fetch partner profile if applicable
+                   console.log("BookingsScreen: Fetching partner profile on focus.");
+                   fetchPartnerProfile();
               } else {
-                   // Clear partner profile data if the user is not a partner
                    setPartnerProfileData(null);
-                   setIsLoadingPartnerProfile(false);
+                   setIsFetchingPartnerProfileForFilters(false);
                    setPartnerProfileError(null);
               }
           }
-      }, [fetchData, fetchPartnerProfile, isAuthLoading, bookings.length, session]) // Dependencies
+      }, [isAuthLoading, session, bookings.length, isApplyingFilters, fetchPartnerProfile, fetchData])
   );
 
-  // Handler for pull-to-refresh action
   const handleRefresh = useCallback(() => {
-      if (!isAuthLoading && session) { // Only refresh if logged in and not auth loading
-        setIsRefreshing(true); // Set refreshing state
-        fetchData(false); // Refetch bookings without main loading indicator
+      if (!isAuthLoading && session) {
+        console.log("BookingsScreen: Refresh triggered.");
+        setIsRefreshing(true);
+        fetchData(false); 
         if (session.type === 'partner') {
-            fetchPartnerProfile(); // Refetch partner profile
+            fetchPartnerProfile(true); 
         }
       } else {
-          setIsRefreshing(false); // Ensure refreshing stops if conditions not met
+          setIsRefreshing(false);
       }
-  }, [fetchData, fetchPartnerProfile, isAuthLoading, session]); // Dependencies
+  }, [isAuthLoading, session, fetchPartnerProfile, fetchData]);
 
-  // Handler called by the FilterModal when filters are applied or reset
   const handleApplyFilters = useCallback((newFilters: ActiveFilterType) => {
-      // Compare new filters with current active filters
-      if (newFilters.status !== activeFilters.status ||
+      const filtersHaveChanged =
+          newFilters.status !== activeFilters.status ||
           newFilters.countyId !== activeFilters.countyId ||
-          newFilters.municipalityId !== activeFilters.municipalityId)
-      {
-            // If filters changed, update the activeFilters state
+          newFilters.municipalityId !== activeFilters.municipalityId;
+
+      if (filtersHaveChanged) {
+            console.log("BookingsScreen: Applying new filters via handleApplyFilters:", newFilters);
             setActiveFilters(newFilters);
-            setBookings([]); // Clear current bookings for immediate visual feedback
-            // The useFocusEffect/fetchData will automatically refetch data because activeFilters changed
-            console.log("Applied new filters:", newFilters);
       } else {
-          // If filters didn't change, log it and do nothing
-          console.log("Filters did not change.");
+          console.log("BookingsScreen: Filters did not change in handleApplyFilters.");
       }
-      setIsFilterModalVisible(false); // Close the filter modal
-  }, [activeFilters]); // Depend on current activeFilters to compare
+      setIsFilterModalVisible(false);
+  }, [activeFilters]);
 
-
-  // Memoized formatting of partner counties for the SelectModal
   const formattedSupportedCounties = useMemo(() => {
       const uniqueCounties = new Map<number, string | null>();
-      // Safely iterate over partner profile data
       (partnerProfileData?.countyList || []).forEach(c => {
-          // Ensure county data is valid before adding
           if (c && typeof c.countyId === 'number' && typeof c.countyName === 'string') {
-              if (!uniqueCounties.has(c.countyId)) {
+             if (!uniqueCounties.has(c.countyId)) {
                   uniqueCounties.set(c.countyId, c.countyName);
               }
           }
       });
-      // Map the unique counties to the ApiDataItem format required by SelectModal
       return Array.from(uniqueCounties.entries()).map(([id, name]) => ({ id: id.toString(), name: name }));
-  }, [partnerProfileData?.countyList]); // Recompute only when partner county list changes
+  }, [partnerProfileData?.countyList]);
 
-  // Get the raw list of partner municipalities (used by the inline FilterModal)
   const partnerMunicipalities = partnerProfileData?.municipalityList || [];
 
-  // --- Render Logic ---
-
-  // Show loading indicator if authentication is still in progress
   if (isAuthLoading) {
      return (
        <SafeAreaView style={styles.safeArea}>
@@ -637,8 +672,6 @@ export default function BookingsScreen() {
        </SafeAreaView>
      );
    }
-
-   // Show logged-out message and login button if no session exists
    if (!session) {
      return (
        <SafeAreaView style={styles.safeArea}>
@@ -654,31 +687,26 @@ export default function BookingsScreen() {
      );
    }
 
-  // Determine overall loading state and any errors to display
-  const isOverallLoading = isLoadingData || (session.type === 'partner' && isLoadingPartnerProfile);
-  // Combine potential errors from profile loading and booking fetching
+  const showInitialLoadingIndicator = isFetchingBookings && bookings.length === 0 && !isApplyingFilters;
   const displayError = (session?.type === 'partner' ? partnerProfileError : null) || error;
 
-  // Function to render the main content (list, empty state, or error)
   const renderListContent = () => {
-      // Show main loading indicator if loading and list is empty without error
-      if (isOverallLoading && bookings.length === 0 && !displayError) {
+      if (showInitialLoadingIndicator && !displayError) {
+          console.log("BookingsScreen/render: Showing initial loading indicator.");
           return <View style={styles.centered}><ActivityIndicator size="large" color={COLORS.accent} /></View>;
       }
-      // Show error message if an error occurred and list is empty
-      if (displayError && bookings.length === 0 && !isOverallLoading) {
-           // Allow pull-to-refresh even on the error screen
+      if (displayError && bookings.length === 0 && !isFetchingBookings && !isApplyingFilters) {
+          console.log("BookingsScreen/render: Showing error state (no bookings). Error:", displayError);
           return (<ScrollView contentContainerStyle={styles.centered} refreshControl={ <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={COLORS.accent}/> }><Text style={styles.errorText}>{displayError}</Text></ScrollView>);
       }
-      // Show empty state message if not loading, no error, and list is empty
-      if (!isOverallLoading && !displayError && bookings.length === 0) {
+      if (!isFetchingBookings && !displayError && bookings.length === 0 && !isApplyingFilters) {
+          console.log("BookingsScreen/render: Showing no data state.");
           return (
               <ScrollView
                   contentContainerStyle={styles.centered}
-                  refreshControl={ <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={COLORS.accent}/> } // Allow refresh on empty state
+                  refreshControl={ <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={COLORS.accent}/> }
               >
                   <Text style={styles.noDataText}>{t('nobookingsfound')}</Text>
-                  {/* Show "Create Job" button only for users */}
                   {session?.type === 'user' && (
                       <TouchableOpacity style={styles.createButton} onPress={()=>router.push('/create-job-card')}>
                           <Text style={styles.createButtonText}>{t('newjobrequest')}</Text>
@@ -687,63 +715,68 @@ export default function BookingsScreen() {
               </ScrollView>
           );
       }
-      // Otherwise, render the list of bookings
+      
+      console.log(`BookingsScreen/render: Rendering list. Bookings: ${bookings.length}, isApplyingFilters: ${isApplyingFilters}`);
       return (
-          <>
-            {/* Display partial fetch errors discreetly if they occurred but some data loaded */}
-            {error && <Text style={styles.errorTextSmall}>{t('partialfetcherror', { error: error })}</Text>}
-            {/* The main list of bookings */}
-            <FlatList
-                data={bookings}
-                renderItem={({ item }) => <BookingCard item={item} />} // Uses the memoized BookingCard
-                keyExtractor={(item) => item.ticketId.toString()}
-                contentContainerStyle={styles.listContainer}
-                showsVerticalScrollIndicator={false}
-                // Enable pull-to-refresh
-                refreshControl={ <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={COLORS.accent}/> }
-            />
-          </>
+          <View style={{ flex: 1 }}>
+            {error && bookings.length > 0 && <Text style={styles.errorTextSmall}>{t('partialfetcherror', { error: error })}</Text>}
+            { (bookings.length > 0 || isApplyingFilters) &&
+                <FlatList
+                    data={bookings}
+                    renderItem={({ item }) => <BookingCard item={item} />}
+                    keyExtractor={(item) => item.ticketId.toString()}
+                    contentContainerStyle={styles.listContainer}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={ <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={COLORS.accent}/> }
+                />
+            }
+            {isApplyingFilters && (
+                <View style={styles.loadingOverlay}>
+                    <ActivityIndicator size="large" color={COLORS.accent} />
+                </View>
+            )}
+          </View>
        );
   };
 
-  // --- Final Render ---
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-      {/* Stack Screen Configuration */}
       <Stack.Screen
         options={{
           headerStyle: { backgroundColor: COLORS.headerBg },
           headerTintColor: COLORS.headerText,
           headerTitleAlign: 'center',
           headerTitle: t('bookings'),
-          // Add Filter button to the header right
           headerRight: () => (
-            <TouchableOpacity onPress={() => setIsFilterModalVisible(true)} style={{ marginRight: 15 }}>
+            <TouchableOpacity onPress={() => {
+                if (session?.type === 'partner' && !partnerProfileData && !partnerProfileError && !isFetchingPartnerProfileForFilters) {
+                    console.log("BookingsScreen: Filter icon pressed, partner profile not loaded/loading, fetching now.");
+                    fetchPartnerProfile();
+                }
+                setIsFilterModalVisible(true);
+            }} style={{ marginRight: 15 }}>
               <Ionicons name="filter" size={24} color={COLORS.accent} />
             </TouchableOpacity>
           ),
         }}
       />
-      {/* Render the main content */}
       {renderListContent()}
-      {/* Render the Filter Modal (controlled by isFilterModalVisible state) */}
       <FilterModal
         visible={isFilterModalVisible}
         onClose={() => setIsFilterModalVisible(false)}
-        onApplyFilters={handleApplyFilters} // Pass the handler to apply filters
-        initialFilters={activeFilters} // Pass the current active filters
-        supportedCounties={formattedSupportedCounties} // Pass formatted county list
-        // Pass partner municipalities (ensure type matches or cast carefully)
+        onApplyFilters={handleApplyFilters}
+        initialFilters={activeFilters}
+        supportedCounties={formattedSupportedCounties}
         supportedMunicipalities={partnerMunicipalities as PartnerMunicipality[]}
-        isLoadingProfile={isLoadingPartnerProfile} // Pass profile loading state
-        profileError={partnerProfileError} // Pass profile error state
-        isUserView={session?.type === 'user'} // Indicate if it's a user view
+        isLoadingProfile={isFetchingPartnerProfileForFilters}
+        profileError={partnerProfileError}
+        isUserView={session?.type === 'user'}
       />
     </SafeAreaView>
   );
 }
 
-// --- Styles --- (Complete Styles Object)
+// --- Styles ---
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: COLORS.background, },
     centered: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20, },
@@ -756,7 +789,7 @@ const styles = StyleSheet.create({
     noDataText: { color: COLORS.textSecondary, fontSize: 16, textAlign: 'center', marginBottom: 20, },
     createButton: { backgroundColor: COLORS.accent, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, },
     createButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold', },
-    listContainer: { paddingVertical: 15, paddingHorizontal: 10, },
+    listContainer: { paddingVertical: 15, paddingHorizontal: 10, flexGrow: 1 },
     card: { backgroundColor: COLORS.cardBg, borderRadius: 8, marginBottom: 15, flexDirection: 'row', overflow: 'hidden', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.15, shadowRadius: 2.22, alignItems: 'center' },
     cardImageContainer: { width: 70, height: 70, margin: 10, borderRadius: 8, borderWidth: 1, borderColor: COLORS.borderColor, },
     cardImage: { width: '100%', height: '100%', borderRadius: 8, },
@@ -766,11 +799,11 @@ const styles = StyleSheet.create({
     cardService: { fontSize: 12, color: COLORS.textSecondary, marginBottom: 4, },
     cardDate: { fontSize: 12, color: COLORS.textSecondary, },
     cardStatus: { fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', paddingRight: 10, textAlign: 'right', },
-    // Filter Modal Styles
     filterModalBackdrop: { flex: 1, backgroundColor: COLORS.modalBackdrop, justifyContent: 'center', alignItems: 'center', },
     filterModalContent: { width: '90%', maxWidth: 400, backgroundColor: COLORS.background, borderRadius: 10, padding: 20, elevation: 5, },
     filterModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, },
-    filterModalTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.textPrimary, },
+    filterModalTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.textPrimary, flex: 1, textAlign: 'center' },
+    closeButton: { padding:5 }, // Added for easier tapping on the close icon
     filterSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: COLORS.selectorBg, borderWidth: 1, borderColor: COLORS.selectorBorder, borderRadius: 8, paddingHorizontal: 15, height: 50, marginBottom: 15, },
     filterSelectorDisabled: { backgroundColor: COLORS.selectorDisabledBg, opacity: 0.7 },
     filterPlaceholder: { fontSize: 16, color: COLORS.placeholderText, flex: 1, marginRight: 10, },
@@ -808,9 +841,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
+    loadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: COLORS.loadingOverlayBg,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
+    },
 });
-
-// Add required translation keys if missing:
-// nobookingsfound: "No bookings found matching your criteria."
-// partialfetcherror: "Note: Some data might be missing due to fetch errors. {error}"
-// reset: "Reset"
