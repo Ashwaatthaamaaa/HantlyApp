@@ -393,4 +393,5 @@ export const en = {
         
     yourreview: "Your Review",
     ratingdisplay: "Rating: {stars}",
+    otp_value_is: "OTP : "
 };
