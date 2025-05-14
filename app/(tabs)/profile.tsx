@@ -233,7 +233,7 @@ export default function ProfileScreen() {
                        <View style={styles.userDetails}>
                            <Text style={styles.userName}>{session.name ?? partner?.username ?? 'N/A'}</Text>
                            <Text style={styles.userEmail}>{partner?.emailId ?? session.email}</Text>
-                           <Text style={styles.regNumber}>{t('regno')} {partner?.companyRegistrationNumber ?? 'N/A'}</Text>
+                           <Text style={styles.regNumber}>{t('registrationnumber')} {partner?.companyRegistrationNumber ?? 'N/A'}</Text>
                        </View>
                        <View style={styles.statusToggle}>
                            <Switch

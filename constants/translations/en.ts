@@ -402,4 +402,6 @@ export const en = {
         error_partner_id_not_found: "Partner ID not found.",
         error_failed_to_load_bookings: "Failed to load bookings.",
         error_profile_prefix: "Profile Error: ",
+        registrationnumber: "Reg. no. ",
+        submitaccept: "Submit & Accept",
 };

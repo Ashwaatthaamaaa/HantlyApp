@@ -387,4 +387,17 @@ otp_value_is: "OTP : ",
     error_profile_prefix: "Profilfel: ",
     notapplicable: "E/T", // Or "Ej tillämplig" if you prefer the full text
     // If you used 'otp_value_is' from the OTP copy alert fix:
+    jobdescription: "Jobbeskrivning",
+    location: "Plats",
+    allservices: "Alla tjänster",
+    view_more: "Visa mer",
+    enterjobdescription: "Ange jobbeskrivning",
+    chooseimages: "Välj bilder",
+    viewall: "Visa allt",
+    about: "Om",
+    servicecategory: "Tjänstkategori",
+    registrationnumber: "Reg. no. ",
+    partnerscannotcreate: "Partners kan inte skapa.",
+    actionnotallowed: "Åtgärd inte tillåten.",
+    onlyuserscancreate: "Endast användare kan skapa",
 }

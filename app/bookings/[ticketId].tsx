@@ -297,7 +297,7 @@ export default function BookingDetailScreen() {
    }, [session, ticketId, isSubmittingStatus, fetchBookingDetails]);
 
    const handleAcceptJob = useCallback(() => { setAcceptOtpError(''); setEnteredAcceptOtp(''); setIsAcceptOtpModalVisible(true); }, []);
-   const handleSubmitAcceptOtp = useCallback(() => { const otpValue = parseInt(enteredAcceptOtp, 10); if (!enteredAcceptOtp || isNaN(otpValue) || enteredAcceptOtp.length !== 4) { setAcceptOtpError(t('invalidotp')); return; } setAcceptOtpError(''); updateStatus("Accepted", otpValue); }, [enteredAcceptOtp, updateStatus]);
+   const handleSubmitAcceptOtp = useCallback(() => { const otpValue = parseInt(enteredAcceptOtp, 10); if (!enteredAcceptOtp || isNaN(otpValue) || enteredAcceptOtp.length !== 4) { setAcceptOtpError(t('bsh')); return; } setAcceptOtpError(''); updateStatus("Accepted", otpValue); }, [enteredAcceptOtp, updateStatus]);
    const handleChangeToInProgress = useCallback(() => { Alert.alert( t('confirmaction'), t('startjobquestion'), [ { text: t('cancel'), style: "cancel" }, { text: t('startjob'), onPress: () => updateStatus("Inprogress", 0) } ] ); }, [updateStatus]);
    const handleChangeToComplete = useCallback(() => { setOtpError(''); setEnteredOtp(''); setOtpModalVisible(true); }, []);
    const handleSubmitOtp = useCallback(() => { const otpValue = parseInt(enteredOtp, 10); if (!enteredOtp || isNaN(otpValue) || enteredOtp.length !== 4) { setOtpError(t('invalidotp')); return; } setOtpError(''); updateStatus("Completed", otpValue); }, [enteredOtp, updateStatus]);
