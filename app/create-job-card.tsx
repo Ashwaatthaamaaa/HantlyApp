@@ -38,7 +38,7 @@ const COLORS = {
   placeholder: '#AAAAAA', accent: '#696969', headerBg: '#FFFFFF',
   headerText: '#333333', error: '#D9534F', borderColor: '#E0E0E0',
   buttonBg: '#696969', buttonText: '#FFFFFF', buttonDisabledBg: '#AAAAAA',
-  imagePickerBg: '#FFFFFF', imagePickerBorder: '#CCCCCC',
+  imagePickerBg: '#FFFFFF', imagePickerBorder: '#CCCCCC', tagIcon: '#888888',
 };
 // --------------------
 
@@ -354,7 +354,7 @@ export default function CreateJobCardScreen() {
                         </TouchableOpacity>
                     </View>
                 ))}
-             </View>
+            </View>
         )}
          {/* --- End Service Category --- */}
 
@@ -429,4 +429,8 @@ const styles = StyleSheet.create({
   label: { fontSize: 16, color: COLORS.textPrimary, marginBottom: 5, fontWeight: 'bold', }, //
   selectorButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.borderColor, borderRadius: 8, paddingHorizontal: 15, height: 50, marginBottom: 5, }, //
   errorText: { color: COLORS.error, fontSize: 12, marginTop: 0, marginBottom: 10, alignSelf: 'flex-start', marginLeft: 5, }, //
+  tagContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 15, marginTop: 5 }, //
+  tag: { backgroundColor: '#F0F0F0', borderRadius: 16, paddingVertical: 6, paddingHorizontal: 12, marginRight: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center' }, //
+  tagText: { fontSize: 14, color: COLORS.textPrimary, marginRight: 5 }, //
+  tagRemoveIcon: { padding: 2 }, //
 });
