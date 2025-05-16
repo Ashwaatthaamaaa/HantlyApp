@@ -345,9 +345,11 @@ export default function RegisterPartnerScreen() {
         </View>
         {/* Logo Picker (Original structure) */}
         <View style={styles.logoContainer}>
-            <Image
-                 source={companyLogo?.uri ? { uri: companyLogo.uri } : require('@/assets/images/icon.png')} // Use default icon if needed
-                 style={styles.logoPreview} />
+            <View
+     style={[styles.logoPreview, {backgroundColor: '#F0F0F0', justifyContent: 'center', alignItems: 'center'}]}>
+     {!companyLogo?.uri && <Ionicons name="business-outline" size={30} color={COLORS.textSecondary} />}
+     {companyLogo?.uri && <Image source={{ uri: companyLogo.uri }} style={{width: '100%', height: '100%', borderRadius: 8}} />}
+</View>
              <TouchableOpacity style={[styles.logoButton, isSigningUp && styles.buttonDisabled]} onPress={handlePickLogo} disabled={isSigningUp}>
                 <Text style={styles.logoButtonText}>{companyLogo ? t('changelogo') + ' *' : t('selectlogo') + ' *'}</Text>
              </TouchableOpacity>
