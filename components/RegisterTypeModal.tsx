@@ -23,7 +23,7 @@ const COLORS = {
   modalBackdrop: 'rgba(0, 0, 0, 0.6)', // Darker backdrop
   borderColor: '#E0E0E0',
   buttonPartnerBg: '#6C757D', // Example: Greyish for Partner
-  buttonUserBg: '#007BFF',    // Example: Blue for User
+  buttonUserBg: '#6C757D',    // Example: Blue for User
   buttonText: '#FFFFFF',
   closeButton: '#AAAAAA',
 };

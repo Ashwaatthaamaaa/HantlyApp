@@ -387,6 +387,7 @@ export const en = {
     review_submit_error: "Could not submit review",
     missinginfo: "Missing information", // Can reuse this if appropriate
     commentdisplay_prefix: "Comment:",
+    providerresponse: "Provider Response:",
     partner_view_review_title: "Customer Review",
     partner_view_comment_prefix: "Comment:", // Can be same as user view or different if needed
     partner_view_no_comment: "The customer left no comment.", // Message when comment is empty/null
