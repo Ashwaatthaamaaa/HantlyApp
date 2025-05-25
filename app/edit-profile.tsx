@@ -50,6 +50,9 @@ export default function EditProfileScreen() {
   const [municipalityId, setMunicipalityId] = useState('');
   const [locationId, setLocationId] = useState('');
 
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [tempUsername, setTempUsername] = useState('');
+
   const [counties, setCounties] = useState<any[]>([]);
   const [municipalities, setMunicipalities] = useState<any[]>([]);
   
@@ -67,7 +70,8 @@ export default function EditProfileScreen() {
       emailId.trim() !== '' &&
       userId !== 0 &&
       countyId !== '' &&
-      municipalityId !== ''
+      municipalityId !== '' &&
+      (!isEditingUsername || tempUsername.trim() !== '')
     );
   };  
 
@@ -141,6 +145,13 @@ export default function EditProfileScreen() {
 
   const handleSave = async () => {
     setSaving(true);
+
+    if (isEditingUsername && tempUsername.trim() === '') {
+      Alert.alert(t('error'), t('username_required'));
+      setSaving(false);
+      return;
+    }
+    
   
     if (!isFormValid()) {
       Alert.alert(t('incomplete_form'), t('complete_all_fields'));
@@ -152,7 +163,7 @@ export default function EditProfileScreen() {
       userId,
       locationId: parseInt(locationId),
       mobileNumber,
-      contactPerson,
+      contactPerson: isEditingUsername ? tempUsername : username, // Use the appropriate value
       emailId,
       countyId: parseInt(countyId),
       municipalityId: parseInt(municipalityId),
@@ -168,6 +179,11 @@ export default function EditProfileScreen() {
       if (!res.ok) {
         const errorText = await res.text();
         throw new Error(errorText || 'Update failed');
+      }
+
+      if (isEditingUsername) {
+        setUsername(tempUsername);
+        setIsEditingUsername(false);
       }
   
       Alert.alert(t('success'), t('profile_updated'));
@@ -269,9 +285,9 @@ export default function EditProfileScreen() {
           {/* -- [Personal Info] -- */}
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarText}>{username.charAt(0).toUpperCase()}</Text>
-              </View>
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarText}>{(isEditingUsername ? tempUsername : username).charAt(0).toUpperCase()}</Text>
+            </View>
             </View>
             <Text style={styles.usernameDisplay}>{username}</Text>
             <Text style={styles.emailDisplay}>{emailId}</Text>
@@ -295,27 +311,76 @@ export default function EditProfileScreen() {
             </View>
           </View>
 
-          {/* -- Contact Person -- */}
+          {/* -- Username -- */}
           <View style={styles.inputGroup}>
-          <Text style={styles.label}>{t('name')}</Text>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() =>
-              Toast.show({
-                type: 'info',
-                text1: "Username can't be edited",
-                position: 'bottom',
-                visibilityTime: 2000
-              })
-            }
-            style={styles.inputContainer}
-          >
-            <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
-            <Text style={[styles.input, { paddingVertical: 12, color: '#999' }]}>
-              {username || t('not_available')}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <Text style={styles.label}>{t('name')}</Text>
+            {isEditingUsername ? (
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
+                <TextInput 
+                  style={styles.input} 
+                  value={tempUsername} 
+                  onChangeText={setTempUsername}
+                  placeholder={t('enter_username')} 
+                  autoFocus
+                />
+                <TouchableOpacity 
+                  onPress={() => {
+                    setTempUsername(username);
+                    setIsEditingUsername(false);
+                  }}
+                  style={styles.editIcon}
+                >
+                  <Ionicons name="close" size={20} color="#666" />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={() => {
+                    if (tempUsername.trim() === '') {
+                      Alert.alert(t('error'), t('username_required'));
+                      return;
+                    }
+                    setUsername(tempUsername);
+                    setIsEditingUsername(false);
+                  }}
+                  style={styles.editIcon}
+                  disabled={tempUsername.trim() === ''}
+                >
+                  <Ionicons 
+                    name="checkmark" 
+                    size={20} 
+                    color={tempUsername.trim() === '' ? '#CCCCCC' : '#696969'} 
+                  />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity 
+                style={[styles.inputContainer, styles.disabledInput]}
+                onPress={() => {
+                  Alert.alert(
+                    t('confirm_edit'),
+                    t('confirm_edit_username'),
+                    [
+                      {
+                        text: t('cancel'),
+                        style: 'cancel'
+                      },
+                      {
+                        text: t('confirm'),
+                        onPress: () => {
+                          setTempUsername(username);
+                          setIsEditingUsername(true);
+                        }
+                      }
+                    ]
+                  );
+                }}
+              >
+                <Ionicons name="person-outline" size={20} color="#AAA" style={styles.inputIcon} />
+                <Text style={[styles.input, styles.disabledText]}>{username}</Text>
+                <Ionicons name="pencil" size={18} color="#AAA" style={styles.editIcon} />
+              </TouchableOpacity>
+            )}
+          </View>
 
           {/* -- Location Section -- */}
           <Text style={styles.sectionTitle}>{t('location')}</Text>
@@ -621,5 +686,16 @@ const styles = StyleSheet.create({
   separator: {
     height: 1,
     backgroundColor: '#EEEEEE'
+  },
+  disabledInput: {
+    backgroundColor: '#F0F0F0',
+    borderColor: '#CCCCCC',
+  },
+  disabledText: {
+    color: '#999999',
+  },
+  editIcon: {
+    marginLeft: 10,
+    padding: 5
   }
 });

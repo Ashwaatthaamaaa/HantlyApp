@@ -175,7 +175,7 @@ export default function ProfileScreen() {
                        <Ionicons name="person" size={40} color={COLORS.textSecondary} />
                     </View>
                     <View style={styles.userDetails}>
-                       <Text style={styles.userName}>{user?.username ?? session.name ?? 'User'}</Text>
+                       <Text style={styles.userName}>{user?.username ?? user?.username ?? session.name ?? 'N/A'}                       </Text>
                        <Text style={styles.userEmail}>{user?.emailId ?? session.email}</Text>
                     </View>
                 </View>
@@ -231,7 +231,7 @@ export default function ProfileScreen() {
                          </View> 
                        )}
                        <View style={styles.userDetails}>
-                           <Text style={styles.userName}>{session.name ?? partner?.username ?? 'N/A'}</Text>
+                           <Text style={styles.userName}>{partner?.companyName ?? partner?.username ?? session.name ?? 'N/A'}                           </Text>
                            <Text style={styles.userEmail}>{partner?.emailId ?? session.email}</Text>
                            <Text style={styles.regNumber}>{t('registrationnumber')} {partner?.companyRegistrationNumber ?? 'N/A'}</Text>
                        </View>

@@ -49,7 +49,7 @@ export const sv = {
     home: "Hem",
     time: "Tid",
     success: "Framgång",
-    bookings: "Bokningar",
+    bookings: "Annonser",
     
     // Filter and bookings related keys (added)
     no_description: "Ingen beskrivning",
@@ -121,7 +121,7 @@ export const sv = {
     back: "Tillbaka",
     
     // Urgent Job List Screen
-    urgentjob247: "Akutjobb 24/7",
+    urgentjob247: "Tillgängligt jobb 24/7",
     urgentpartners: "24/7 Tillgängliga Partners",
     accessdenied: "Åtkomst nekad. Användarsession hittades inte.",
     failedtoloadcompanies: "Kunde inte ladda tillgängliga företag:",
@@ -177,6 +177,10 @@ export const sv = {
     municipalityloadfailed: "Kunde inte ladda kommuner: {message}",
     signuperrorwithstatus: "Ett fel inträffade (Status: {status}).",
     termslinktext: "Användarvillkoren & Integritetspolicy",
+    username_required: "Användarnamn får inte vara tomt",
+
+    confirm_edit_username: "Är du säker på att du vill ändra ditt användarnamn? Denna ändring kommer att vara permanent.",
+    enter_username: "Ange ditt användarnamn",
 
     // Urgent Job List Screen (Swedish)
     urgentjobpartners247: "24/7 Tillgängliga Partners",
@@ -236,6 +240,11 @@ export const sv = {
 
     // Errors
     error_title: "Fel",
+
+    
+    confirm_edit: "Bekräfta redigering",
+    confirm_edit_company_name: "Är du säker på att du vill ändra företagsnamnet? Denna ändring kommer att vara permanent.",
+    confirm: "Bekräfta",
 
     // Review Feature Keys (Swedish)
     review_section_title: "Betygsätt denna tjänst",

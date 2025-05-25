@@ -59,6 +59,9 @@ export default function EditCompanyScreen() {
   const [logoImagePath, setLogoImagePath] = useState('');
   const [locationId, setLocationId] = useState('');
 
+  const [isEditingCompanyName, setIsEditingCompanyName] = useState(false);
+  const [tempCompanyName, setTempCompanyName] = useState('');
+
   // Selected Lists
   const [countyIdList, setCountyIdList] = useState<string[]>([]);
   const [municipalityIdList, setMunicipalityIdList] = useState<string[]>([]);
@@ -462,16 +465,63 @@ export default function EditCompanyScreen() {
           {/* -- Company Name -- */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>{t('companyname')}</Text>
-            <View style={[styles.inputContainer, styles.disabledInput]}>
-              <Ionicons name="business-outline" size={20} color="#AAA" style={styles.inputIcon} />
-              <TextInput 
-                style={[styles.input, styles.disabledText]} 
-                value={companyName} 
-                editable={false}
-                placeholder={t('enter_company_name')} 
-                placeholderTextColor="#AAA"
-              />
-            </View>
+            {isEditingCompanyName ? (
+              <View style={styles.inputContainer}>
+                <Ionicons name="business-outline" size={20} color="#666" style={styles.inputIcon} />
+                <TextInput 
+                  style={styles.input} 
+                  value={tempCompanyName} 
+                  onChangeText={setTempCompanyName}
+                  placeholder={t('enter_company_name')} 
+                  autoFocus
+                />
+                <TouchableOpacity 
+                  onPress={() => {
+                    setTempCompanyName(companyName);
+                    setIsEditingCompanyName(false);
+                  }}
+                  style={styles.editIcon}
+                >
+                  <Ionicons name="close" size={20} color="#666" />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={() => {
+                    setCompanyName(tempCompanyName);
+                    setIsEditingCompanyName(false);
+                  }}
+                  style={styles.editIcon}
+                >
+                  <Ionicons name="checkmark" size={20} color="#696969" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity 
+                style={[styles.inputContainer, styles.disabledInput]}
+                onPress={() => {
+                  Alert.alert(
+                    t('confirm_edit'),
+                    t('confirm_edit_company_name'),
+                    [
+                      {
+                        text: t('cancel'),
+                        style: 'cancel'
+                      },
+                      {
+                        text: t('confirm'),
+                        onPress: () => {
+                          setTempCompanyName(companyName);
+                          setIsEditingCompanyName(true);
+                        }
+                      }
+                    ]
+                  );
+                }}
+              >
+                <Ionicons name="business-outline" size={20} color="#AAA" style={styles.inputIcon} />
+                <Text style={[styles.input, styles.disabledText]}>{companyName}</Text>
+                <Ionicons name="pencil" size={18} color="#AAA" style={styles.editIcon} />
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* -- Registration Number -- */}
@@ -1018,5 +1068,10 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-  }
+  },
+
+  editIcon: {
+    marginLeft: 10,
+    padding: 5
+  },
 });

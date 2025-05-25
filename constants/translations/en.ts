@@ -26,7 +26,7 @@ export const en = {
     profile: "Profile",
     settings: "Settings",
     services: "Services",
-    bookings: "Bookings",
+    bookings: "Jobs",
     dashboard: "Dashboard",
 
     // Filters & Lists
@@ -141,11 +141,12 @@ export const en = {
     dontworry: "Don't worry, You can post your Requirement",
     didntfindyourservice: "Didn't find your Service?",
     newjobrequest: "New Job Request",
-    urgentjob: "Urgent Job",
-    urgentjob247: "Urgent Job 24/7",
+    urgentjob: "Available Job",
+    urgentjob247: "Available Job 24/7",
     viewall: "View All",
     register: "Register",
     loginsrequired: "Login Required",
+    username_required: "Username cannot be empty",
     logintoproceed: "Please login or register to continue.",
     newjobrequestmessage: "Would you like to create a new job request?",
     urgentjobmessage: "Would you like to view available urgent job partners?",
@@ -156,6 +157,8 @@ export const en = {
     featurenotavailable: "Feature Not Available", // Added from home.tsx
     onlyavailableforusers: "This feature is only available for users.", // Added from home.tsx
 
+    confirm_edit_username: "Are you sure you want to edit your username? This change will be permanent.",
+    enter_username: "Enter your username",
     // Profile Screen
     loginsettings: "Settings",
     logincreateaccount: "Log in or create an account.",
@@ -365,6 +368,10 @@ export const en = {
 
     // OTP Handling
     enter_acceptance_otp: "Enter acceptance OTP",
+
+    confirm_edit: "Confirm Edit",
+    confirm_edit_company_name: "Are you sure you want to edit your company name? This change will be permanent.",
+    confirm: "Confirm",
 
     // Logo Management (alternative versions)
     changelogo: "Change logo",
