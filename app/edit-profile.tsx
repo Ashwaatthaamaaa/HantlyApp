@@ -163,7 +163,8 @@ export default function EditProfileScreen() {
       userId,
       locationId: parseInt(locationId),
       mobileNumber,
-      contactPerson: isEditingUsername ? tempUsername : username, // Use the appropriate value
+      contactPerson: isEditingUsername ? tempUsername : username,
+      username: username,
       emailId,
       countyId: parseInt(countyId),
       municipalityId: parseInt(municipalityId),

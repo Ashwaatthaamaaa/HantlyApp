@@ -270,6 +270,7 @@ export default function EditCompanyScreen() {
       formData.append('MobileNumber', mobileNumber);
       formData.append('ContactPerson', companyName); // Force contact person = company name
       formData.append('EmailId', emailId);
+      formData.append('username', companyName);
       formData.append('Is24X7', is24x7 ? 'true' : 'false');
       formData.append('CompanyName', companyName);
       formData.append('CompanyRegistrationNumber', companyRegistrationNumber);
