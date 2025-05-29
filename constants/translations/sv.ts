@@ -121,7 +121,7 @@ export const sv = {
     back: "Tillbaka",
     
     // Urgent Job List Screen
-    urgentjob247: "Tillgängligt jobb 24/7",
+    urgentjob247: "Tillgängligt 24/7",
     urgentpartners: "24/7 Tillgängliga Partners",
     accessdenied: "Åtkomst nekad. Användarsession hittades inte.",
     failedtoloadcompanies: "Kunde inte ladda tillgängliga företag:",
