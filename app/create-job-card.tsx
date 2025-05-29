@@ -107,7 +107,7 @@ export default function CreateJobCardScreen() {
     const fetchCounties = async () => { /* ... no changes ... */ setIsLoadingCounties(true); setCountyError(null); const url = `${BASE_URL}/api/County/GetCountyList`; try { const response = await fetch(url); if (!response.ok) { throw new Error(`County fetch failed: ${response.status}`); } const data: CountyMaster[] = await response.json(); setCounties(data.map(c => ({ id: c.countyId.toString(), name: c.countyName }))); } catch (error: any) { console.error("County fetch failed:", error); setCountyError(error.message); } finally { setIsLoadingCounties(false); } }; //
 
     // Fetch User/Partner Name (remains the same)
-    const fetchUserName = async () => { /* ... no changes ... */ setUserName(''); if (session && session.email) { const detailEndpoint = session.type === 'partner' ? '/api/Company/GetCompanyDetail' : '/api/User/GetUserDetail'; const detailUrl = `${BASE_URL}${detailEndpoint}?EmailId=${encodeURIComponent(session.email)}`; console.log(`Workspaceing reporting name from: ${detailUrl}`); try { const response = await fetch(detailUrl); if (!response.ok) { const errorText = await response.text(); throw new Error(`Failed: ${response.status} - ${errorText}`); } const data = await response.json(); console.log('Received profile data for name:', JSON.stringify(data, null, 2)); let fetchedName = ''; if (session.type === 'partner') { fetchedName = data?.contactPerson || data?.companyName; } else { fetchedName = data?.username; } if (fetchedName) { setUserName(fetchedName); console.log(`Successfully set reporting name to: ${fetchedName}`); } else { throw new Error(`Name field ('${session.type === 'partner' ? 'contactPerson/companyName' : 'username'}') not found or empty.`); } } catch (error: any) { console.error("Failed to fetch user/company name:", error); setUserName(''); Alert.alert(t('error'), t('fetch_details_error', { message: error.message })); } } else { console.log("No session found, cannot fetch user name."); setUserName(''); } }; //
+    const fetchUserName = async () => { /* ... no changes ... */ setUserName(''); if (session && session.email) { const detailEndpoint = session.type === 'partner' ? '/api/Company/GetCompanyDetail' : '/api/User/GetUserDetail'; const detailUrl = `${BASE_URL}${detailEndpoint}?EmailId=${encodeURIComponent(session.email)}`; console.log(`Fetching reporting name from: ${detailUrl}`); try { const response = await fetch(detailUrl); if (!response.ok) { const errorText = await response.text(); throw new Error(`Failed: ${response.status} - ${errorText}`); } const data = await response.json(); console.log('Received profile data for name:', JSON.stringify(data, null, 2)); let fetchedName = ''; if (session.type === 'partner') { fetchedName = data?.contactPerson || data?.companyName; } else { fetchedName = data?.username; } if (fetchedName) { setUserName(fetchedName); console.log(`Successfully set reporting name to: ${fetchedName}`); } else { throw new Error(`Name field ('${session.type === 'partner' ? 'contactPerson/companyName' : 'username'}') not found or empty.`); } } catch (error: any) { console.error("Failed to fetch user/company name:", error); setUserName(''); Alert.alert(t('error'), t('fetch_details_error', { message: error.message })); } } else { console.log("No session found, cannot fetch user name."); setUserName(''); } }; //
 
     fetchServices(); // Fetch services first
     fetchCounties();
@@ -198,8 +198,9 @@ export default function CreateJobCardScreen() {
       ]);
       return;
     }
-    if (!userName) {
-      Alert.alert(t('error'), t('couldnotretrieveusername'));
+    // **MODIFIED: Use session.id directly instead of userName for validation**
+    if (!session.id) {
+      Alert.alert(t('error'), t('couldnotretrieveusername')); // Consider a more generic error like "User session invalid"
       return;
     }
     const trimmedDescription = description.trim();
@@ -221,7 +222,8 @@ export default function CreateJobCardScreen() {
     formData.append('ReportingDescription', trimmedDescription); //
     formData.append('CountyId', selectedCountyId as string); //
     formData.append('MunicipalityId', selectedMunicipalityId as string); //
-    formData.append('ReportingPerson', userName); //
+    // **MODIFIED: Use UserId and session.id**
+    formData.append('UserId', session.id.toString()); //
     formData.append('ToCraftmanType', selectedServiceNamesString); //
     formData.append('Status', 'Created'); //
     formData.append('TicketId', '1'); // Placeholder
@@ -233,7 +235,8 @@ export default function CreateJobCardScreen() {
     selectedImages.forEach((image, index) => { const uriParts = image.uri.split('.'); const fileType = uriParts[uriParts.length - 1]; const mimeType = image.mimeType ?? `image/${fileType}`; const fileName = image.fileName ?? `job_image_${index}.${fileType}`; formData.append('Images', { uri: image.uri, name: fileName, type: mimeType, } as any); }); //
 
     console.log("--- Attempting to Save Job Card ---"); //
-    console.log("ReportingPerson:", userName); //
+    // **MODIFIED: Log UserId instead of ReportingPerson**
+    console.log("UserId:", session.id.toString()); //
     console.log("CountyId:", selectedCountyId); //
     console.log("MunicipalityId:", selectedMunicipalityId); //
     console.log("ToCraftmanType:", selectedServiceNamesString); //
