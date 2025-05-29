@@ -142,7 +142,7 @@ export const en = {
     didntfindyourservice: "Didn't find your Service?",
     newjobrequest: "New Job Request",
     urgentjob: "Available Job",
-    urgentjob247: "Available Job 24/7",
+    urgentjob247: "Available 24/7",
     viewall: "View All",
     register: "Register",
     loginsrequired: "Login Required",
